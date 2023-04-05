@@ -4,11 +4,23 @@
     "es6": true,
     "node": true
   },
+  "plugins": ["import"],
   "extends": ["react-app", "airbnb-base"],
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  },
   "parserOptions": {
     "ecmaVersion": "latest"
   },
   "rules": {
+    "import/extensions": ["error", "never"],
     "quotes": ["error", "double"],
     "linebreak-style": ["error", "unix"],
     "react/react-in-jsx-scope": "off",
