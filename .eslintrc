@@ -4,8 +4,8 @@
     "es6": true,
     "node": true
   },
-  "plugins": ["import"],
-  "extends": ["react-app", "airbnb-base"],
+  "plugins": ["import", "prettier"],
+  "extends": ["react-app", "airbnb-base", "prettier"],
   "settings": {
     "import/parsers": {
       "@typescript-eslint/parser": [".ts", ".tsx"]
@@ -20,6 +20,7 @@
     "ecmaVersion": "latest"
   },
   "rules": {
+    "prettier/prettier": "error",
     "import/extensions": ["error", "never"],
     "quotes": ["error", "double"],
     "linebreak-style": ["error", "unix"],
