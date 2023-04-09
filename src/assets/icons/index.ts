@@ -1,0 +1,11 @@
+export { ReactComponent as DraggableIcon } from "./draggable.svg";
+export { ReactComponent as EllipseIcon } from "./ellipse.svg";
+export { ReactComponent as FullScreenIcon } from "./fullscreen.svg";
+export { ReactComponent as HandIcon } from "./hand.svg";
+export { ReactComponent as PenIcon } from "./pen.svg";
+export { ReactComponent as RectIcon } from "./rect.svg";
+export { ReactComponent as RedoIcon } from "./redo.svg";
+export { ReactComponent as SelectIcon } from "./select.svg";
+export { ReactComponent as UndoIcon } from "./undo.svg";
+export { ReactComponent as ZoomInIcon } from "./zoomin.svg";
+export { ReactComponent as ZoomOutIcon } from "./zoomout.svg";
