@@ -5,7 +5,12 @@
     "node": true
   },
   "plugins": ["import", "prettier"],
-  "extends": ["react-app", "airbnb-base", "prettier"],
+  "extends": [
+    "react-app",
+    "airbnb-base",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
   "settings": {
     "import/parsers": {
       "@typescript-eslint/parser": [".ts", ".tsx"]
@@ -20,24 +25,17 @@
     "ecmaVersion": "latest"
   },
   "rules": {
-    "prettier/prettier": "error",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error"],
     "import/extensions": ["error", "never"],
     "quotes": ["error", "double"],
     "linebreak-style": ["error", "unix"],
     "react/react-in-jsx-scope": "off",
     "no-console": "warn",
-    "comma-dangle": ["warn", "never"],
-    "max-len": [
-      "error",
-      {
-        "code": 80,
-        "ignoreComments": true,
-        "ignoreTrailingComments": true,
-        "ignoreUrls": true,
-        "ignoreStrings": true,
-        "ignoreRegExpLiterals": true
-      }
-    ],
+    "comma-dangle": ["warn", "always-multiline"],
+    "max-len": ["error", { "code": 80 }],
     "object-curly-newline": "off",
     "react/prop-types": "off",
     "operator-linebreak": "off",
