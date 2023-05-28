@@ -1,0 +1,49 @@
+@import "../../css/mixins.scss";
+
+.ToolButton {
+  width: var(--general-button-size);
+  height: var(--general-button-size);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ToolButton_type_button {
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  outline: none;
+  border-radius: var(--general-border-radius);
+  &:hover {
+    background-color: var(--tool-button-hover-bg-color);
+  }
+  &:active {
+    outline: var(--accent-color) solid 1px;
+  }
+  @include buttonFocusStyles();
+  svg {
+    width: var(--tool-button-icon-size);
+    height: var(--tool-button-icon-size);
+    stroke: var(--tool-button-icon-color);
+  }
+}
+.ToolButton_type_radio {
+  &--checkbox {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    &:checked + .ToolButton_type_radio--icon {
+      background-color: var(--tool-button-selected-bg-color);
+      svg {
+        stroke: var(--tool-button-selected-icon-color);
+        fill: var(--tool-button-selected-icon-color);
+      }
+    }
+  }
+  &--icon {
+    @extend .ToolButton_type_button;
+    width: 100%;
+    height: 100%;
+  }
+}

@@ -1,0 +1,22 @@
+$accent-color: rgb(61, 132, 255);
+$page-bg-color: #111;
+:root {
+  --accent-color: #{$accent-color};
+  --page-bg-color: #{$page-bg-color};
+
+  --general-border-color: #{lighten($page-bg-color, 7%)};
+  --general-border-radius: 9px;
+  --general-button-size: 35px;
+
+  --toolbar-bg-color: #{lighten($page-bg-color, 2%)};
+  --toolbar-offset: 10px;
+  --toolbar-divider-size: 70%;
+  --toolbar-gap: 10px;
+  --toolbar-padding: 5px;
+
+  --tool-button-hover-bg-color: #{lighten($page-bg-color, 7%)};
+  --tool-button-selected-bg-color: #{transparentize($accent-color, 0.8)};
+  --tool-button-selected-icon-color: #{$accent-color};
+  --tool-button-icon-color: #{lighten($page-bg-color, 30%)};
+  --tool-button-icon-size: 45%;
+}
