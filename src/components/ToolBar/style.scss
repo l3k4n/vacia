@@ -1,0 +1,43 @@
+@import "@/css/mixins.scss";
+
+.ToolBar {
+  background-color: var(--toolbar-bg-color);
+  position: absolute;
+  border: 1px solid var(--general-border-color);
+  border-radius: var(--general-border-radius);
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: var(--toolbar-gap);
+  padding: var(--toolbar-padding);
+  &_divider {
+    height: var(--toolbar-divider-size);
+    width: 0;
+    border: 1px hidden var(--general-border-color);
+    border-left-style: solid;
+    align-self: center;
+    justify-self: center;
+  }
+}
+.UtilityBar {
+  @extend .ToolBar;
+  bottom: var(--toolbar-offset);
+  right: var(--toolbar-offset);
+}
+.ToolBar_position {
+  &_top {
+    top: var(--toolbar-offset);
+    @include toolbarOrientation(vertical);
+  }
+  &_bottom {
+    bottom: var(--toolbar-offset);
+    @include toolbarOrientation(vertical);
+  }
+  &_left {
+    left: var(--toolbar-offset);
+    @include toolbarOrientation(horizontal);
+  }
+  &_right {
+    right: var(--toolbar-offset);
+    @include toolbarOrientation(horizontal);
+  }
+}
