@@ -8,7 +8,10 @@ import path from "path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@assets": path.resolve(__dirname, "./src/assets"),
+      "@components": path.resolve(__dirname, "./src/components"),
+      "@constants": path.resolve(__dirname, "./src/constants.ts"),
+      "@css": path.resolve(__dirname, "./src/css")
     },
   },
   plugins: [react(), eslint(), svgr()],
