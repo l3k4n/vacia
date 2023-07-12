@@ -1,4 +1,4 @@
-import { TOOLBAR_POSITIONS } from "@/utils/constants";
+import { TOOLBAR_POSITIONS } from "@/constants";
 import "./style.scss";
 
 interface ToolBarProps {
