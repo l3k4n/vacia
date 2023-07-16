@@ -15,14 +15,30 @@ import { TOOLBAR_POSITIONS, DESIGN_TOOLS, UTILITY_TOOLS } from "@constants";
 import "@css/App.scss";
 // TODO: create Draggable ToolMenu component
 
-class App extends React.Component<null, { activeTool: DESIGN_TOOLS }> {
+interface AppState {
+  width: number;
+  height: number;
+  activeTool: DESIGN_TOOLS;
+}
+class App extends React.Component<null, AppState> {
+  canvas: HTMLCanvasElement | null = null;
+
   constructor(props: null) {
     super(props);
     this.state = {
+      width: window.innerWidth,
+      height: window.innerHeight,
       activeTool: DESIGN_TOOLS.HAND,
     };
   }
 
+  private setCanvasRef = (canvas: HTMLCanvasElement) => {
+    if (canvas) {
+      this.canvas = canvas;
+    }
+  };
+
+  // rendering
   renderToolBar() {
     const DesignToolItem = (
       props: React.PropsWithChildren<{
@@ -94,12 +110,23 @@ class App extends React.Component<null, { activeTool: DESIGN_TOOLS }> {
   }
 
   render() {
+    const canvasWidth = this.state.width;
+    const canvasHeight = this.state.height;
+    const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
+    const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
+
     return (
       <div className="app">
         <div className="tools">
           {this.renderToolBar()}
           {this.renderUtilityBar()}
         </div>
+        <canvas
+          width={canvasVirtualWidth}
+          height={canvasVirtualHeight}
+          style={{ width: canvasWidth, height: canvasHeight }}
+          ref={this.setCanvasRef}
+        />
       </div>
     );
   }
