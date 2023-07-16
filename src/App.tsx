@@ -1,5 +1,4 @@
 import React from "react";
-import { renderFrame } from "./core/renderer";
 import {
   EllipseIcon,
   FullScreenIcon,
@@ -13,6 +12,7 @@ import {
 import ToolBar, { UtilityBar, ToolBarDivider } from "@components/ToolBar";
 import ToolButton from "@components/ToolButton";
 import { TOOLBAR_POSITIONS, DESIGN_TOOLS, UTILITY_TOOLS } from "@constants";
+import { renderFrame } from "@core/renderer";
 import "@css/App.scss";
 // TODO: create Draggable ToolMenu component
 
