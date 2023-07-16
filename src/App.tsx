@@ -1,4 +1,5 @@
 import React from "react";
+import { renderFrame } from "./core/renderer";
 import {
   EllipseIcon,
   FullScreenIcon,
@@ -37,6 +38,15 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.canvas = canvas;
     }
   };
+
+  // react lifecycle
+  componentDidMount() {
+    renderFrame({
+      canvas: this.canvas!,
+      state: this.state,
+      scale: window.devicePixelRatio,
+    });
+  }
 
   // rendering
   renderToolBar() {
