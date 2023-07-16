@@ -20,10 +20,10 @@ interface AppState {
   height: number;
   activeTool: DESIGN_TOOLS;
 }
-class App extends React.Component<null, AppState> {
+class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
 
-  constructor(props: null) {
+  constructor(props: Record<string, never>) {
     super(props);
     this.state = {
       width: window.innerWidth,
