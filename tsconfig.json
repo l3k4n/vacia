@@ -19,6 +19,7 @@
       "@assets/*": ["./src/assets/*"],
       "@components/*": ["./src/components/*"],
       "@constants": ["./src/constants.ts"],
+      "@core/*": ["./src/core/*"],
       "@css/*": ["./src/css/*"]
     }
   },

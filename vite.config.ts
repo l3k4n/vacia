@@ -11,7 +11,8 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "./src/assets"),
       "@components": path.resolve(__dirname, "./src/components"),
       "@constants": path.resolve(__dirname, "./src/constants.ts"),
-      "@css": path.resolve(__dirname, "./src/css")
+      "@core": path.resolve(__dirname, "./src/core"),
+      "@css": path.resolve(__dirname, "./src/css"),
     },
   },
   plugins: [react(), eslint(), svgr()],
