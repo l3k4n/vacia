@@ -13,14 +13,10 @@ import ToolBar, { UtilityBar, ToolBarDivider } from "@components/ToolBar";
 import ToolButton from "@components/ToolButton";
 import { TOOLBAR_POSITIONS, DESIGN_TOOLS, UTILITY_TOOLS } from "@constants";
 import { renderFrame } from "@core/renderer";
+import { AppState } from "@core/types";
 import "@css/App.scss";
 // TODO: create Draggable ToolMenu component
 
-interface AppState {
-  width: number;
-  height: number;
-  activeTool: DESIGN_TOOLS;
-}
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
 
