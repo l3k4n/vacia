@@ -1,5 +1,7 @@
+import { AppState } from "@core/types";
+
 interface RenderConfig {
-  state: { width: number; height: number };
+  state: AppState;
   canvas: HTMLCanvasElement;
   scale: number;
 }
