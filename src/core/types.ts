@@ -1,7 +1,9 @@
-import { DESIGN_TOOLS } from "@constants";
+import DrawingTools from "./drawingTools";
+
+export type DrawingToolLabel = "Hand" | (typeof DrawingTools)[number]["label"];
 
 export interface AppState {
   width: number;
   height: number;
-  activeTool: DESIGN_TOOLS;
+  activeTool: DrawingToolLabel;
 }

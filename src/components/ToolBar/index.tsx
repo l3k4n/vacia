@@ -1,19 +1,38 @@
-import { TOOLBAR_POSITIONS } from "@constants";
+import { HandIcon } from "@assets/icons";
+import ToolButton from "@components/ToolButton";
+import DrawingTools from "@core/drawingTools";
+import { DrawingToolLabel } from "@core/types";
 import "./style.scss";
 
 interface ToolBarProps {
-  options: {
-    position: TOOLBAR_POSITIONS;
-  };
-  children: React.ReactNode;
+  position: "top" | "left" | "right" | "bottom";
+  activeTool: DrawingToolLabel;
+  onToolChange: (tool: DrawingToolLabel) => void;
+}
+interface ToolItemProps {
+  label: DrawingToolLabel;
+  icon: React.ReactElement;
 }
 
-const ToolBar = ({ options, children }: ToolBarProps) => (
-  <div className={`ToolBar ${options.position}`} children={children} />
-);
-export const UtilityBar = ({ children }: React.PropsWithChildren) => (
-  <div className={"UtilityBar"} children={children} />
-);
-export const ToolBarDivider = () => <div className="ToolBar_divider" />;
-
-export default ToolBar;
+export default function ToolBar(props: ToolBarProps) {
+  const ToolBarSeparator = () => <div className="ToolBar_separator" />;
+  const ToolItem = (toolProps: ToolItemProps) => (
+    <ToolButton
+      type="radio"
+      name="selected-tool"
+      label={toolProps.label}
+      checked={props.activeTool === toolProps.label}
+      children={toolProps.icon}
+      onChange={() => props.onToolChange(toolProps.label)}
+    />
+  );
+  return (
+    <div className={`ToolBar ToolBar_position_${props.position}`}>
+      <ToolItem label={"Hand"} icon={<HandIcon />} />
+      <ToolBarSeparator />
+      {DrawingTools.map(({ icon: ToolIcon, label }) => (
+        <ToolItem label={label} icon={<ToolIcon />} />
+      ))}
+    </div>
+  );
+}
