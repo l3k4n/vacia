@@ -1,3 +1,5 @@
+import drawGrid from "./drawGrid";
+import { GRID_COLOR } from "@constants";
 import { AppState } from "@core/types";
 
 interface RenderConfig {
@@ -14,6 +16,18 @@ export function renderFrame(config: RenderConfig) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.save();
   ctx.scale(scale, scale);
+
+  const normalizedCanvasWidth = canvas.width / scale;
+  const normalizedCanvasHeight = canvas.height / scale;
+
+  drawGrid(ctx, {
+    type: state.grid.type,
+    width: normalizedCanvasWidth,
+    height: normalizedCanvasHeight,
+    gridSize: state.grid.size,
+    strokeColor: GRID_COLOR,
+    offset: { x: 0, y: 0 },
+  });
 
   ctx.fillStyle = "red";
   const rectWidth = 200;

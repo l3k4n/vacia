@@ -6,4 +6,5 @@ export interface AppState {
   width: number;
   height: number;
   activeTool: DrawingToolLabel;
+  grid: { type: "line" | "none"; size: number };
 }

@@ -14,6 +14,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       width: window.innerWidth,
       height: window.innerHeight,
       activeTool: "Hand",
+      grid: { type: "line", size: 20 },
     };
   }
 
