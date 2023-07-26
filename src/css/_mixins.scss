@@ -1,36 +1,47 @@
 @mixin deviceQuery($device) {
-  @if ($device == mobile) {
+  @if ($device ==mobile) {
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  } @else if ($device == tablet) {
+  }
+
+  @else if ($device ==tablet) {
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  } @else if ($device == pc) {
+  }
+
+  @else if ($device ==pc) {
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  } @else {
+  }
+
+  @else {
     @error Invalid media $device (expected 'mobile', 'tablet', or 'pc');
   }
 }
+
 @mixin buttonFocusStyles {
   &:focus-visible {
     outline: var(--accent-color) solid 1px;
   }
 }
+
 @mixin toolbarOrientation($orientation) {
-  @if ($orientation == horizontal) {
+  @if ($orientation ==horizontal) {
     top: 50%;
     transform: translate(0, -50%);
     grid-auto-flow: row;
-    .ToolBar_divider {
+
+    .ToolBar_separator {
       width: var(--toolbar-divider-size);
       height: 0;
       border-top-style: solid;
     }
-  } @else if($orientation == vertical) {
+  }
+
+  @else if($orientation ==vertical) {
     left: 50%;
     transform: translate(-50%, 0);
   }

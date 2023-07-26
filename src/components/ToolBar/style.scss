@@ -10,7 +10,29 @@
   grid-gap: var(--toolbar-gap);
   padding: var(--toolbar-padding);
 
-  &_divider {
+  &_position {
+    &_top {
+      top: var(--toolbar-offset);
+      @include toolbarOrientation(vertical);
+    }
+
+    &_bottom {
+      bottom: var(--toolbar-offset);
+      @include toolbarOrientation(vertical);
+    }
+
+    &_left {
+      left: var(--toolbar-offset);
+      @include toolbarOrientation(horizontal);
+    }
+
+    &_right {
+      right: var(--toolbar-offset);
+      @include toolbarOrientation(horizontal);
+    }
+  }
+
+  &_separator {
     height: var(--toolbar-divider-size);
     width: 0;
     border: 1px hidden var(--general-border-color);
@@ -18,32 +40,5 @@
     align-self: center;
     justify-self: center;
   }
-}
 
-.UtilityBar {
-  @extend .ToolBar;
-  bottom: var(--toolbar-offset);
-  right: var(--toolbar-offset);
-}
-
-.ToolBar_position {
-  &_top {
-    top: var(--toolbar-offset);
-    @include toolbarOrientation(vertical);
-  }
-
-  &_bottom {
-    bottom: var(--toolbar-offset);
-    @include toolbarOrientation(vertical);
-  }
-
-  &_left {
-    left: var(--toolbar-offset);
-    @include toolbarOrientation(horizontal);
-  }
-
-  &_right {
-    right: var(--toolbar-offset);
-    @include toolbarOrientation(horizontal);
-  }
 }

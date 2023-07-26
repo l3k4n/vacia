@@ -1,0 +1,11 @@
+.QuickActionsIsland {
+  width: fit-content;
+  border: 1px solid var(--general-border-color);
+  padding: var(--toolbar-padding);
+  border-radius: var(--general-border-radius);
+  background-color: var(--toolbar-bg-color);
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: var(--toolbar-gap);
+  position: absolute;
+}
