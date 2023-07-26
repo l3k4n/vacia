@@ -4,7 +4,6 @@ import ToolBar from "@components/ToolBar";
 import { renderFrame } from "@core/renderer";
 import { AppState, DrawingToolLabel } from "@core/types";
 import "@css/App.scss";
-// TODO: create Draggable ToolMenu component
 
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
