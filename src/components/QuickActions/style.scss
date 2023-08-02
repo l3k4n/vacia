@@ -7,4 +7,6 @@
   grid-auto-flow: column;
   grid-gap: var(--toolbar-gap);
   position: absolute;
+  right: var(--widget-page-inset);
+  bottom: var(--widget-page-inset);
 }
