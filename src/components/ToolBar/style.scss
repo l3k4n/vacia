@@ -1,41 +1,57 @@
-@import "@css/mixins.scss";
+@mixin toolbarOrientation($orientation) {
+  @if ($orientation ==horizontal) {
+    top: 50%;
+    transform: translate(0, -50%);
+    grid-auto-flow: row;
+
+    .ToolBar_separator {
+      width: var(--toolbar-separator-size);
+      height: 0;
+      border-top-style: solid;
+    }
+  }
+
+  @else if($orientation ==vertical) {
+    left: 50%;
+    transform: translate(-50%, 0);
+  }
+}
 
 .ToolBar {
-  background-color: var(--toolbar-bg-color);
+  background-color: var(--widget-bg-color);
   position: absolute;
-  border: 1px solid var(--general-border-color);
-  border-radius: var(--general-border-radius);
+  border-radius: var(--widget-border-radius);
   display: grid;
   grid-auto-flow: column;
   grid-gap: var(--toolbar-gap);
-  padding: var(--toolbar-padding);
+  padding: calc(var(--toolbar-gap) / 2);
 
   &_position {
     &_top {
-      top: var(--toolbar-offset);
+      top: var(--widget-page-inset);
       @include toolbarOrientation(vertical);
     }
 
     &_bottom {
-      bottom: var(--toolbar-offset);
+      bottom: var(--widget-page-inset);
       @include toolbarOrientation(vertical);
     }
 
     &_left {
-      left: var(--toolbar-offset);
+      left: var(--widget-page-inset);
       @include toolbarOrientation(horizontal);
     }
 
     &_right {
-      right: var(--toolbar-offset);
+      right: var(--widget-page-inset);
       @include toolbarOrientation(horizontal);
     }
   }
 
   &_separator {
-    height: var(--toolbar-divider-size);
+    height: var(--toolbar-separator-size);
     width: 0;
-    border: 1px hidden var(--general-border-color);
+    border: 1px hidden var(--color-grey-70);
     border-left-style: solid;
     align-self: center;
     justify-self: center;

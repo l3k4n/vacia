@@ -21,28 +21,3 @@
     @error Invalid media $device (expected 'mobile', 'tablet', or 'pc');
   }
 }
-
-@mixin buttonFocusStyles {
-  &:focus-visible {
-    outline: var(--accent-color) solid 1px;
-  }
-}
-
-@mixin toolbarOrientation($orientation) {
-  @if ($orientation ==horizontal) {
-    top: 50%;
-    transform: translate(0, -50%);
-    grid-auto-flow: row;
-
-    .ToolBar_separator {
-      width: var(--toolbar-divider-size);
-      height: 0;
-      border-top-style: solid;
-    }
-  }
-
-  @else if($orientation ==vertical) {
-    left: 50%;
-    transform: translate(-50%, 0);
-  }
-}

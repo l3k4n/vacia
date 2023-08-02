@@ -1,22 +1,28 @@
-$accent-color: rgb(61, 132, 255);
-$page-bg-color: #111;
 :root {
-  --accent-color: #{$accent-color};
-  --page-bg-color: #{$page-bg-color};
+  --accent-color: rgb(61, 132, 255);
+  --accent-color-darker: rgb(34, 46, 67);
 
-  --general-border-color: #{lighten($page-bg-color, 7%)};
-  --general-border-radius: 9px;
-  --general-button-size: 35px;
+  --color-grey-10: #e5e5e5;
+  --color-grey-20: #d6d6d6;
+  --color-grey-30: #a5a5a5;
+  --color-grey-40: #888888;
+  --color-grey-50: #5c5c5c;
+  --color-grey-60: #555555;
+  --color-grey-70: #3f3f3f;
+  --color-grey-80: #2c2c2c;
+  --color-grey-90: #1c1c1c;
+  --color-grey-100: #111;
 
-  --toolbar-bg-color: #{lighten($page-bg-color, 2%)};
-  --toolbar-offset: 10px;
-  --toolbar-divider-size: 70%;
-  --toolbar-gap: 10px;
-  --toolbar-padding: 5px;
+  --widget-bg-color: var(--color-grey-90);
+  --widget-border-radius: 9px;
+  --widget-page-inset: 10px;
 
-  --tool-button-hover-bg-color: #{lighten($page-bg-color, 7%)};
-  --tool-button-selected-bg-color: #{transparentize($accent-color, 0.8)};
-  --tool-button-selected-icon-color: #{$accent-color};
-  --tool-button-icon-color: #{lighten($page-bg-color, 30%)};
-  --tool-button-icon-size: 45%;
+  --button-size: 35px;
+  --button-hover-bg: var(--color-grey-80);
+
+  --icon-stroke-color: var(--color-grey-50);
+  --icon-size: 1rem;
+
+  --toolbar-separator-size: 1.5rem;
+  --toolbar-gap: 0.6rem;
 }
