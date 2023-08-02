@@ -28,22 +28,22 @@
 
   &_position {
     &_top {
-      top: var(--toolbar-offset);
+      top: var(--widget-page-inset);
       @include toolbarOrientation(vertical);
     }
 
     &_bottom {
-      bottom: var(--toolbar-offset);
+      bottom: var(--widget-page-inset);
       @include toolbarOrientation(vertical);
     }
 
     &_left {
-      left: var(--toolbar-offset);
+      left: var(--widget-page-inset);
       @include toolbarOrientation(horizontal);
     }
 
     &_right {
-      right: var(--toolbar-offset);
+      right: var(--widget-page-inset);
       @include toolbarOrientation(horizontal);
     }
   }

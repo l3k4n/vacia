@@ -4,7 +4,7 @@ import "./style.scss";
 
 export default function QuickActions() {
   return (
-    <div className="QuickActionsIsland" style={{ right: 10, bottom: 10 }}>
+    <div className="QuickActionsIsland">
       <ToolButton type="button" children={<ZoomOutIcon />} label={"zoom out"} />
       <ToolButton type="button" children={<ZoomInIcon />} label={"zoom in"} />
       <ToolButton
