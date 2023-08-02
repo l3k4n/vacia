@@ -1,46 +1,55 @@
-@import "../../css/mixins.scss";
-
 .ToolButton {
-  width: var(--general-button-size);
-  height: var(--general-button-size);
+  width: var(--button-size);
+  height: var(--button-size);
   border: none;
   padding: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
 .ToolButton_type_button {
   background-color: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
   outline: none;
-  border-radius: var(--general-border-radius);
-  &:hover {
-    background-color: var(--tool-button-hover-bg-color);
+  border-radius: var(--widget-border-radius);
+
+  svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    stroke: var(--icon-stroke-color);
   }
+
+  &:hover {
+    background-color: var(--button-hover-bg);
+  }
+
   &:active {
     outline: var(--accent-color) solid 1px;
   }
-  @include buttonFocusStyles();
-  svg {
-    width: var(--tool-button-icon-size);
-    height: var(--tool-button-icon-size);
-    stroke: var(--tool-button-icon-color);
+
+  &:focus-visible {
+    outline: var(--accent-color) solid 1px;
   }
 }
+
 .ToolButton_type_radio {
   &--checkbox {
     position: absolute;
     pointer-events: none;
     opacity: 0;
-    &:checked + .ToolButton_type_radio--icon {
-      background-color: var(--tool-button-selected-bg-color);
+
+    &:checked+.ToolButton_type_radio--icon {
+      background-color: var(--accent-color-darker);
+
       svg {
-        stroke: var(--tool-button-selected-icon-color);
-        fill: var(--tool-button-selected-icon-color);
+        stroke: var(--accent-color);
+        fill: var(--accent-color);
       }
     }
   }
+
   &--icon {
     @extend .ToolButton_type_button;
     width: 100%;

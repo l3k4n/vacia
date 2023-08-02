@@ -1,9 +1,8 @@
 .QuickActionsIsland {
   width: fit-content;
-  border: 1px solid var(--general-border-color);
-  padding: var(--toolbar-padding);
-  border-radius: var(--general-border-radius);
-  background-color: var(--toolbar-bg-color);
+  padding: calc(var(--toolbar-gap) / 2);
+  border-radius: var(--widget-border-radius);
+  background-color: var(--widget-bg-color);
   display: grid;
   grid-auto-flow: column;
   grid-gap: var(--toolbar-gap);
