@@ -37,11 +37,13 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
-    this.pointer = {
-      origin: { x: e.clientX, y: e.clientY },
-      dragOffset: { x: 0, y: 0 },
-      initialScrollOffset: { ...this.state.scrollOffset },
-    };
+    if (e.buttons === 1) {
+      this.pointer = {
+        origin: { x: e.clientX, y: e.clientY },
+        dragOffset: { x: 0, y: 0 },
+        initialScrollOffset: { ...this.state.scrollOffset },
+      };
+    }
   };
 
   private onWindowPointerUp = () => {
