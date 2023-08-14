@@ -38,15 +38,17 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  private zoomToCoords = (amount: number, point: XYCoords) => {
+  /** Handles zooming around an anchor point.
+   * Anchor point will visibly remain in same position after zooming. */
+  private zoomToCoords = (newZoom: number, point: XYCoords) => {
     const currentZoom = this.state.zoom;
-    const zoomMulitplier = amount / currentZoom;
+    const zoomMulitplier = newZoom / currentZoom;
 
     const scrollOffsetFromPointX = point.x - this.state.scrollOffset.x;
     const scrollOffsetFromPointY = point.y - this.state.scrollOffset.y;
 
     this.setState({
-      zoom: amount,
+      zoom: newZoom,
       scrollOffset: {
         x: point.x - scrollOffsetFromPointX * zoomMulitplier,
         y: point.y - scrollOffsetFromPointY * zoomMulitplier,
