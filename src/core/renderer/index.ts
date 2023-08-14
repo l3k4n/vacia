@@ -8,8 +8,7 @@ interface RenderConfig {
   scale: number;
 }
 
-// eslint-disable-next-line import/prefer-default-export
-export function renderFrame(config: RenderConfig) {
+export default function renderFrame(config: RenderConfig) {
   const { canvas, state, scale } = config;
   const ctx = canvas.getContext("2d")!;
   requestAnimationFrame(() => {

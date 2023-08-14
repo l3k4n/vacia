@@ -2,7 +2,7 @@ import React from "react";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
-import { renderFrame } from "@core/renderer";
+import renderFrame from "@core/renderer";
 import {
   AppState,
   CanvasPointer,
