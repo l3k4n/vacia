@@ -1,4 +1,4 @@
-import { AppState } from "@core/types";
+import { AppState, XYCoords } from "@core/types";
 
 interface GridOptions {
   width: number;
@@ -6,7 +6,7 @@ interface GridOptions {
   type: AppState["grid"]["type"];
   strokeColor: string;
   gridSize: number;
-  offset: { x: number; y: number };
+  offset: XYCoords;
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, options: GridOptions) {

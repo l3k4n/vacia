@@ -3,7 +3,12 @@ import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
 import { renderFrame } from "@core/renderer";
-import { AppState, CanvasPointer, DrawingToolLabel } from "@core/types";
+import {
+  AppState,
+  CanvasPointer,
+  DrawingToolLabel,
+  XYCoords,
+} from "@core/types";
 import "@css/App.scss";
 
 class App extends React.Component<Record<string, never>, AppState> {
@@ -32,7 +37,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  private zoomToCoords = (amount: number, point: { x: number; y: number }) => {
+  private zoomToCoords = (amount: number, point: XYCoords) => {
     const currentZoom = this.state.zoom;
     const zoomMulitplier = amount / currentZoom;
 
