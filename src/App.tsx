@@ -9,6 +9,7 @@ import {
   DrawingToolLabel,
   XYCoords,
 } from "@core/types";
+import { getVisibleCenterCoords } from "@core/utils";
 import "@css/App.scss";
 
 class App extends React.Component<Record<string, never>, AppState> {
@@ -124,6 +125,13 @@ class App extends React.Component<Record<string, never>, AppState> {
     const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
     const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
 
+    const zoomFromCenter = (direction: "in" | "out") => {
+      const directionValue = direction === "in" ? 1 : -1;
+      const zoomAmount = this.state.zoom + directionValue * ZOOM_STEP;
+
+      this.zoomToCoords(zoomAmount, getVisibleCenterCoords(this.state));
+    };
+
     return (
       <div className="app">
         <div className="tools">
@@ -132,7 +140,10 @@ class App extends React.Component<Record<string, never>, AppState> {
             activeTool={this.state.activeTool}
             onToolChange={this.handleToolChange}
           />
-          <QuickActions />
+          <QuickActions
+            onZoomIn={() => zoomFromCenter("in")}
+            onZoomOut={() => zoomFromCenter("out")}
+          />
         </div>
         <canvas
           width={canvasVirtualWidth}
