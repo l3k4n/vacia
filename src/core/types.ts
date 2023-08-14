@@ -9,6 +9,7 @@ export interface AppState {
   grid: { type: "line" | "none"; size: number };
   // canvas offset from { x: 0, y: 0 }
   scrollOffset: { x: number; y: number };
+  zoom: number;
 }
 
 /* pointer state since the last pointer down */

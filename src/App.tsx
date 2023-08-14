@@ -1,6 +1,7 @@
 import React from "react";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
+import { ZOOM_STEP } from "@constants";
 import { renderFrame } from "@core/renderer";
 import { AppState, CanvasPointer, DrawingToolLabel } from "@core/types";
 import "@css/App.scss";
@@ -17,6 +18,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       activeTool: "Hand",
       grid: { type: "line", size: 20 },
       scrollOffset: { x: 0, y: 0 },
+      zoom: 1,
     };
   }
 
@@ -30,10 +32,27 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
+  private zoomToCoords = (amount: number, point: { x: number; y: number }) => {
+    const currentZoom = this.state.zoom;
+    const zoomMulitplier = amount / currentZoom;
+
+    const scrollOffsetFromPointX = point.x - this.state.scrollOffset.x;
+    const scrollOffsetFromPointY = point.y - this.state.scrollOffset.y;
+
+    this.setState({
+      zoom: amount,
+      scrollOffset: {
+        x: point.x - scrollOffsetFromPointX * zoomMulitplier,
+        y: point.y - scrollOffsetFromPointY * zoomMulitplier,
+      },
+    });
+  };
+
   // event handling
   private addEventListeners = () => {
     window.addEventListener("pointermove", this.onWindowPointerMove);
     window.addEventListener("pointerup", this.onWindowPointerUp);
+    window.addEventListener("wheel", this.onWindowWheel, { passive: false });
   };
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
@@ -43,6 +62,16 @@ class App extends React.Component<Record<string, never>, AppState> {
         dragOffset: { x: 0, y: 0 },
         initialScrollOffset: { ...this.state.scrollOffset },
       };
+    }
+  };
+
+  private onWindowWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    if (e.metaKey || e.ctrlKey) {
+      const direction = -Math.sign(e.deltaY);
+      const zoomAmount = this.state.zoom + direction * ZOOM_STEP;
+
+      this.zoomToCoords(zoomAmount, { x: e.clientX, y: e.clientY });
     }
   };
 

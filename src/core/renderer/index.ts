@@ -16,20 +16,20 @@ export function renderFrame(config: RenderConfig) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.save();
-    ctx.scale(scale, scale);
+    ctx.scale(scale * state.zoom, scale * state.zoom);
 
     const normalizedCanvasWidth = canvas.width / scale;
     const normalizedCanvasHeight = canvas.height / scale;
 
     drawGrid(ctx, {
       type: state.grid.type,
-      width: normalizedCanvasWidth,
-      height: normalizedCanvasHeight,
+      width: normalizedCanvasWidth / state.zoom,
+      height: normalizedCanvasHeight / state.zoom,
       gridSize: state.grid.size,
       strokeColor: GRID_COLOR,
       offset: {
-        x: state.scrollOffset.x % state.grid.size,
-        y: state.scrollOffset.y % state.grid.size,
+        x: (state.scrollOffset.x / state.zoom) % state.grid.size,
+        y: (state.scrollOffset.y / state.zoom) % state.grid.size,
       },
     });
 
@@ -37,8 +37,8 @@ export function renderFrame(config: RenderConfig) {
     const rectWidth = 200;
     const rectHeight = 150;
     ctx.fillRect(
-      state.scrollOffset.x,
-      state.scrollOffset.y,
+      state.scrollOffset.x / state.zoom,
+      state.scrollOffset.y / state.zoom,
       rectWidth,
       rectHeight,
     );
