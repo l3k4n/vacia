@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import eslint from "vite-plugin-eslint";
@@ -16,4 +18,20 @@ export default defineConfig({
     },
   },
   plugins: [react(), eslint(), svgr()],
+  test: {
+    dir: "./src/tests",
+    setupFiles: ["./src/tests/__setup__/vitest.ts"],
+    globals: true,
+    environment: "jsdom",
+    server: {
+      deps: {
+        inline: ["vitest-canvas-mock"],
+      },
+    },
+    environmentOptions: {
+      jsdom: {
+        resources: "usable",
+      },
+    },
+  },
 });
