@@ -12,6 +12,7 @@ interface ToolBarProps {
 interface ToolItemProps {
   label: DrawingToolLabel;
   icon: React.ReactElement;
+  testId: string;
 }
 
 export default function ToolBar(props: ToolBarProps) {
@@ -24,14 +25,19 @@ export default function ToolBar(props: ToolBarProps) {
       checked={props.activeTool === toolProps.label}
       children={toolProps.icon}
       onChange={() => props.onToolChange(toolProps.label)}
+      testId={toolProps.testId}
     />
   );
   return (
     <div className={`ToolBar ToolBar_position_${props.position}`}>
-      <ToolItem label={"Hand"} icon={<HandIcon />} />
+      <ToolItem label={"Hand"} icon={<HandIcon />} testId={"toolitem-hand"} />
       <ToolBarSeparator />
       {DrawingTools.map(({ icon: ToolIcon, label }) => (
-        <ToolItem label={label} icon={<ToolIcon />} />
+        <ToolItem
+          label={label}
+          icon={<ToolIcon />}
+          testId={`toolitem-${label}`.toLowerCase()}
+        />
       ))}
     </div>
   );

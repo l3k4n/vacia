@@ -15,17 +15,20 @@ export default function QuickActions(props: QuickActionsProps) {
         children={<ZoomOutIcon />}
         label={"zoom out"}
         onClick={props.onZoomOut}
+        testId="quickaction-zoom-out"
       />
       <ToolButton
         type="button"
         children={<ZoomInIcon />}
         label={"zoom in"}
         onClick={props.onZoomIn}
+        testId="quickaction-zoom-in"
       />
       <ToolButton
         type="button"
         children={<FullScreenIcon />}
         label={"fullscreen"}
+        testId="quickaction-fullscreen"
       />
     </div>
   );

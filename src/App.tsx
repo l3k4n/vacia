@@ -12,6 +12,16 @@ import {
 import { getVisibleCenterCoords } from "@core/utils";
 import "@css/App.scss";
 
+declare global {
+  interface Window {
+    appData: {
+      state: AppState;
+      setState: (state: Partial<AppState>) => void;
+      pointer: CanvasPointer | null;
+    };
+  }
+}
+
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: CanvasPointer | null = null;
@@ -26,6 +36,25 @@ class App extends React.Component<Record<string, never>, AppState> {
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
     };
+    if (import.meta.env.DEV) {
+      window.appData = {} as Window["appData"];
+      Object.defineProperties(window.appData, {
+        state: {
+          configurable: true,
+          get: () => this.state,
+        },
+        setState: {
+          configurable: true,
+          value: (...args: Parameters<typeof this.setState>) => {
+            this.setState(...args);
+          },
+        },
+        pointer: {
+          configurable: true,
+          get: () => this.pointer,
+        },
+      });
+    }
   }
 
   private setCanvasRef = (canvas: HTMLCanvasElement) => {
@@ -148,6 +177,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           />
         </div>
         <canvas
+          data-testid="app-canvas"
           width={canvasVirtualWidth}
           height={canvasVirtualHeight}
           style={{ width: canvasWidth, height: canvasHeight }}

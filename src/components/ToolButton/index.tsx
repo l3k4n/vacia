@@ -7,12 +7,14 @@ interface RadioToolProps {
   name: string;
   checked: boolean;
   onChange?(): void;
+  testId: string;
 }
 interface ButtonToolProps {
   type: "button";
   label: string;
   children?: React.ReactNode;
   onClick?(event: React.MouseEvent): void;
+  testId: string;
 }
 type ToolProps = RadioToolProps | ButtonToolProps;
 
@@ -25,11 +27,15 @@ export default function ToolButton(props: ToolProps) {
         title={props.label}
         children={props.children}
         onClick={props.onClick}
+        data-testid={props.testId}
       />
     );
   }
   return (
-    <label className="ToolButton ToolButton_type_radio" title={props.label}>
+    <label
+      className="ToolButton ToolButton_type_radio"
+      title={props.label}
+      data-testid={props.testId}>
       <input
         type="radio"
         name={props.name}
