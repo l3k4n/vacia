@@ -10,7 +10,6 @@ interface ZoomOptions {
 /** Calculates scrolloffset and zoom value around a specified anchor point,
  * ensuring that the anchor point remains visually in the same position. */
 
-// eslint-disable-next-line import/prefer-default-export
 export function getNewZoomState(
   { value, anchor }: ZoomOptions,
   state: AppState,
