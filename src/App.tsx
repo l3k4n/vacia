@@ -3,13 +3,9 @@ import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
 import renderFrame from "@core/renderer";
-import {
-  AppState,
-  CanvasPointer,
-  DrawingToolLabel,
-  XYCoords,
-} from "@core/types";
+import { AppState, CanvasPointer, DrawingToolLabel } from "@core/types";
 import { getVisibleCenterCoords } from "@core/utils";
+import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
 
 declare global {
@@ -67,24 +63,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  /** Handles zooming around an anchor point.
-   * Anchor point will visibly remain in same position after zooming. */
-  private zoomToCoords = (newZoom: number, point: XYCoords) => {
-    const currentZoom = this.state.zoom;
-    const zoomMulitplier = newZoom / currentZoom;
-
-    const scrollOffsetFromPointX = point.x - this.state.scrollOffset.x;
-    const scrollOffsetFromPointY = point.y - this.state.scrollOffset.y;
-
-    this.setState({
-      zoom: newZoom,
-      scrollOffset: {
-        x: point.x - scrollOffsetFromPointX * zoomMulitplier,
-        y: point.y - scrollOffsetFromPointY * zoomMulitplier,
-      },
-    });
-  };
-
   // event handling
   private addEventListeners = () => {
     window.addEventListener("pointermove", this.onWindowPointerMove);
@@ -106,9 +84,16 @@ class App extends React.Component<Record<string, never>, AppState> {
     e.preventDefault();
     if (e.metaKey || e.ctrlKey) {
       const direction = -Math.sign(e.deltaY);
-      const zoomAmount = this.state.zoom + direction * ZOOM_STEP;
 
-      this.zoomToCoords(zoomAmount, { x: e.clientX, y: e.clientY });
+      const zoomState = getNewZoomState(
+        {
+          value: this.state.zoom + direction * ZOOM_STEP,
+          anchor: { x: e.clientX, y: e.clientY },
+        },
+        this.state,
+      );
+
+      this.setState(zoomState);
     }
   };
 
@@ -156,11 +141,27 @@ class App extends React.Component<Record<string, never>, AppState> {
     const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
     const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
 
-    const zoomFromCenter = (direction: "in" | "out") => {
-      const directionValue = direction === "in" ? 1 : -1;
-      const zoomAmount = this.state.zoom + directionValue * ZOOM_STEP;
+    const handleZoomInAction = () => {
+      const zoomState = getNewZoomState(
+        {
+          value: this.state.zoom + ZOOM_STEP,
+          anchor: getVisibleCenterCoords(this.state),
+        },
+        this.state,
+      );
 
-      this.zoomToCoords(zoomAmount, getVisibleCenterCoords(this.state));
+      this.setState(zoomState);
+    };
+    const handleZoomOutAction = () => {
+      const zoomState = getNewZoomState(
+        {
+          value: this.state.zoom - ZOOM_STEP,
+          anchor: getVisibleCenterCoords(this.state),
+        },
+        this.state,
+      );
+
+      this.setState(zoomState);
     };
 
     return (
@@ -172,8 +173,8 @@ class App extends React.Component<Record<string, never>, AppState> {
             onToolChange={this.handleToolChange}
           />
           <QuickActions
-            onZoomIn={() => zoomFromCenter("in")}
-            onZoomOut={() => zoomFromCenter("out")}
+            onZoomIn={handleZoomInAction}
+            onZoomOut={handleZoomOutAction}
           />
         </div>
         <canvas
