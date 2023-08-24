@@ -32,8 +32,9 @@ export default function ToolBar(props: ToolBarProps) {
     <div className={`ToolBar ToolBar_position_${props.position}`}>
       <ToolItem label={"Hand"} icon={<HandIcon />} testId={"toolitem-hand"} />
       <ToolBarSeparator />
-      {DrawingTools.map(({ icon: ToolIcon, label }) => (
+      {DrawingTools.map(({ icon: ToolIcon, label }, i) => (
         <ToolItem
+          key={i}
           label={label}
           icon={<ToolIcon />}
           testId={`toolitem-${label}`.toLowerCase()}
