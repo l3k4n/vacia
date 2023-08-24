@@ -1,4 +1,6 @@
+import { MAX_ZOOM, MIN_ZOOM } from "@constants";
 import { AppState, XYCoords } from "@core/types";
+import { clampNumber } from "@core/utils";
 
 interface ZoomOptions {
   value: number;
@@ -14,7 +16,7 @@ export function getNewZoomState(
   state: AppState,
 ) {
   const currentZoom = state.zoom;
-  const newZoom = value;
+  const newZoom = clampNumber(value, MIN_ZOOM, MAX_ZOOM);
 
   const zoomMulitplier = newZoom / currentZoom;
 
