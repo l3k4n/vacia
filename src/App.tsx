@@ -72,11 +72,23 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
     if (e.buttons === 1) {
-      this.pointer = {
-        origin: { x: e.clientX, y: e.clientY },
-        dragOffset: { x: 0, y: 0 },
-        initialScrollOffset: { ...this.state.scrollOffset },
-      };
+      switch (this.state.activeTool) {
+        case "Hand": {
+          this.pointer = {
+            origin: { x: e.clientX, y: e.clientY },
+            dragOffset: { x: 0, y: 0 },
+            initialScrollOffset: { ...this.state.scrollOffset },
+          };
+          break;
+        }
+        case "Selection": {
+          break;
+        }
+        default: {
+          // handle drawing tools
+          break;
+        }
+      }
     }
   };
 
