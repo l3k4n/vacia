@@ -58,6 +58,7 @@
           "caseInsensitive": false
         }
       }
-    ]
+    ],
+    "react/jsx-pascal-case": "off"
   }
 }
