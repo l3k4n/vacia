@@ -3,7 +3,7 @@ import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
 import renderFrame from "@core/renderer";
-import { AppState, CanvasPointer, DrawingToolLabel } from "@core/types";
+import { AppState, CanvasPointer, ToolLabel } from "@core/types";
 import { getVisibleCenterCoords } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
@@ -59,7 +59,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private handleToolChange = (tool: DrawingToolLabel) => {
+  private handleToolChange = (tool: ToolLabel) => {
     this.setState({ activeTool: tool });
   };
 

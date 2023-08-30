@@ -1,16 +1,15 @@
-import { HandIcon } from "@assets/icons";
 import ToolButton from "@components/ToolButton";
-import DrawingTools from "@core/drawingTools";
-import { DrawingToolLabel } from "@core/types";
+import { DrawingTools, ControlTools } from "@core/tools";
+import { ToolLabel } from "@core/types";
 import "./style.scss";
 
 interface ToolBarProps {
   position: "top" | "left" | "right" | "bottom";
-  activeTool: DrawingToolLabel;
-  onToolChange: (tool: DrawingToolLabel) => void;
+  activeTool: ToolLabel;
+  onToolChange: (tool: ToolLabel) => void;
 }
 interface ToolItemProps {
-  label: DrawingToolLabel;
+  label: ToolLabel;
   icon: React.ReactElement;
   testId: string;
 }
@@ -30,8 +29,17 @@ export default function ToolBar(props: ToolBarProps) {
   );
   return (
     <div className={`ToolBar ToolBar_position_${props.position}`}>
-      <ToolItem label={"Hand"} icon={<HandIcon />} testId={"toolitem-hand"} />
+      <ToolItem
+        label={ControlTools.hand.label}
+        icon={<ControlTools.hand.icon />}
+        testId={"toolitem-hand"}
+      />
       <ToolBarSeparator />
+      <ToolItem
+        label={ControlTools.select.label}
+        icon={<ControlTools.select.icon />}
+        testId={"toolitem-select"}
+      />
       {DrawingTools.map(({ icon: ToolIcon, label }, i) => (
         <ToolItem
           key={i}
