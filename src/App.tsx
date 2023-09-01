@@ -34,6 +34,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       grid: { type: "line", size: 20 },
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
+      selection: { boxHighlight: null, elements: [] },
     };
     if (import.meta.env.DEV) {
       window.appData = {} as Window["appData"];
@@ -95,12 +96,9 @@ class App extends React.Component<Record<string, never>, AppState> {
       });
       switch (this.state.activeTool) {
         case "Hand":
+        case "Selection":
           /** does nothing onpointerdown since pointer postion
            * is already known */
-          break;
-
-        case "Selection":
-          // TODO handle select tool
           break;
 
         case "Ellipse": {
@@ -167,6 +165,14 @@ class App extends React.Component<Record<string, never>, AppState> {
       // remove pointer and completes any element being created
       this.pointer = null;
       this.elementLayer.finalizeElementCreation();
+
+      // remove selection highlight
+      this.setState({
+        selection: {
+          boxHighlight: null,
+          elements: this.state.selection.elements,
+        },
+      });
     }
   };
 
@@ -188,7 +194,19 @@ class App extends React.Component<Record<string, never>, AppState> {
       return;
     }
 
-    if (this.state.activeTool === "Selection") return;
+    if (this.state.activeTool === "Selection") {
+      this.setState({
+        selection: {
+          boxHighlight: {
+            ...this.screenOffsetToVirtualOffset(this.pointer.origin),
+            w: this.pointer.dragOffset.x / this.state.zoom,
+            h: this.pointer.dragOffset.y / this.state.zoom,
+          },
+          elements: [],
+        },
+      });
+      return;
+    }
 
     const elementBeingCreated = this.elementLayer.getElementBeingCreated();
 

@@ -27,6 +27,13 @@ export type ControlToolLabel =
 /** Toolbar tool names */
 export type ToolLabel = DrawingToolLabel | ControlToolLabel;
 
+export interface CanvasSelection {
+  /** highlighted cursor drag */
+  boxHighlight: { x: number; y: number; w: number; h: number } | null;
+  /** single rect containing all selected elements */
+  elements: CanvasElement[];
+}
+
 export interface AppState {
   width: number;
   height: number;
@@ -35,6 +42,7 @@ export interface AppState {
   // canvas offset from { x: 0, y: 0 }
   scrollOffset: XYCoords;
   zoom: number;
+  selection: CanvasSelection;
 }
 
 /* pointer state since the last pointer down */

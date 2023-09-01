@@ -1,4 +1,5 @@
 import drawGrid from "./drawGrid";
+import renderBoxHighlight from "./renderBoxHighlight";
 import { GRID_COLOR } from "@constants";
 import renderElement from "@core/elements/renderer";
 import { AppState, CanvasElement } from "@core/types";
@@ -45,6 +46,11 @@ export default function renderFrame(config: RenderConfig) {
 
     for (let i = 0; i < elements.length; i += 1) {
       renderElement(ctx, elements[i]);
+    }
+
+    // render selection hightlight and selected element bounding boxes
+    if (state.selection) {
+      renderBoxHighlight(ctx, state.selection.boxHighlight);
     }
 
     ctx.restore();
