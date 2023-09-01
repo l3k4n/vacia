@@ -2,8 +2,10 @@ import React from "react";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
+import { createFreedrawElement, createShapeElement } from "@core/elements";
+import ElementLayer from "@core/elements/layer";
 import renderFrame from "@core/renderer";
-import { AppState, CanvasPointer, ToolLabel } from "@core/types";
+import { AppState, CanvasPointer, ToolLabel, XYCoords } from "@core/types";
 import { getVisibleCenterCoords } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
@@ -21,6 +23,7 @@ declare global {
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: CanvasPointer | null = null;
+  elementLayer = new ElementLayer();
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -63,6 +66,15 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
+  /** Converts a screen position to its corresponding position relative to the
+   * scroll offset. */
+  private screenOffsetToVirtualOffset(position: XYCoords) {
+    return {
+      x: (position.x - this.state.scrollOffset.x) / this.state.zoom,
+      y: (position.y - this.state.scrollOffset.y) / this.state.zoom,
+    };
+  }
+
   // event handling
   private addEventListeners = () => {
     window.addEventListener("pointermove", this.onWindowPointerMove);
@@ -72,22 +84,63 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
     if (e.buttons === 1) {
+      this.pointer = {
+        origin: { x: e.clientX, y: e.clientY },
+        dragOffset: { x: 0, y: 0 },
+        initialScrollOffset: { ...this.state.scrollOffset },
+      };
+      const elementPos = this.screenOffsetToVirtualOffset({
+        x: e.clientX,
+        y: e.clientY,
+      });
       switch (this.state.activeTool) {
-        case "Hand": {
-          this.pointer = {
-            origin: { x: e.clientX, y: e.clientY },
-            dragOffset: { x: 0, y: 0 },
-            initialScrollOffset: { ...this.state.scrollOffset },
-          };
+        case "Hand":
+          /** does nothing onpointerdown since pointer postion
+           * is already known */
+          break;
+
+        case "Selection":
+          // TODO handle select tool
+          break;
+
+        case "Ellipse": {
+          const element = createShapeElement({
+            shape: "ellipse",
+            x: elementPos.x,
+            y: elementPos.y,
+            w: 0,
+            h: 0,
+          });
+          this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
-        case "Selection": {
+
+        case "Rectangle": {
+          const element = createShapeElement({
+            shape: "rect",
+            x: elementPos.x,
+            y: elementPos.y,
+            w: 0,
+            h: 0,
+          });
+          this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
-        default: {
-          // handle drawing tools
+
+        case "Freedraw": {
+          const element = createFreedrawElement({
+            path: [],
+            x: elementPos.x,
+            y: elementPos.y,
+            w: 0,
+            h: 0,
+          });
+          this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
+
+        default:
+          break;
       }
     }
   };
@@ -110,21 +163,54 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private onWindowPointerUp = () => {
-    this.pointer = null;
+    if (this.pointer) {
+      // remove pointer and completes any element being created
+      this.pointer = null;
+      this.elementLayer.finalizeElementCreation();
+    }
   };
 
   private onWindowPointerMove = (e: PointerEvent) => {
-    if (this.pointer) {
-      this.pointer.dragOffset = {
-        x: e.clientX - this.pointer.origin.x,
-        y: e.clientY - this.pointer.origin.y,
-      };
+    if (!this.pointer) return;
+    // update pointer position regardless of active tool
+    this.pointer.dragOffset = {
+      x: e.clientX - this.pointer.origin.x,
+      y: e.clientY - this.pointer.origin.y,
+    };
+
+    if (this.state.activeTool === "Hand") {
       this.setState({
         scrollOffset: {
           x: this.pointer.initialScrollOffset.x + this.pointer.dragOffset.x,
           y: this.pointer.initialScrollOffset.y + this.pointer.dragOffset.y,
         },
       });
+      return;
+    }
+
+    if (this.state.activeTool === "Selection") return;
+
+    const elementBeingCreated = this.elementLayer.getElementBeingCreated();
+
+    if (elementBeingCreated) {
+      switch (elementBeingCreated.type) {
+        case "shape":
+          elementBeingCreated.w = this.pointer.dragOffset.x / this.state.zoom;
+          elementBeingCreated.h = this.pointer.dragOffset.y / this.state.zoom;
+          break;
+
+        case "freedraw": {
+          const { x, y } = this.screenOffsetToVirtualOffset(e);
+          elementBeingCreated.path.push([x, y]);
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      // modifying elementBeingCreated does nothing, so trigger a rerender
+      this.setState({});
     }
   };
 
@@ -135,6 +221,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       canvas: this.canvas!,
       state: this.state,
       scale: window.devicePixelRatio,
+      elements: this.elementLayer.getAllElements(),
     });
   }
 
@@ -143,6 +230,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       canvas: this.canvas!,
       state: this.state,
       scale: window.devicePixelRatio,
+      elements: this.elementLayer.getAllElements(),
     });
   }
 

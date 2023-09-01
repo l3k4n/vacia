@@ -1,6 +1,23 @@
 import { DrawingTools, ControlTools } from "./tools";
 
 export type XYCoords = { x: number; y: number };
+export type Point = [number, number];
+
+interface AbstractElement {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+export interface ShapeElement extends AbstractElement {
+  type: "shape";
+  shape: "rect" | "ellipse";
+}
+export interface FreedrawElement extends AbstractElement {
+  type: "freedraw";
+  path: Point[];
+}
+export type CanvasElement = ShapeElement | FreedrawElement;
 
 /** Toolbar tools that have render elements (e.g Ellipse tool) */
 export type DrawingToolLabel = (typeof DrawingTools)[number]["label"];

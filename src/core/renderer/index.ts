@@ -1,15 +1,17 @@
 import drawGrid from "./drawGrid";
 import { GRID_COLOR } from "@constants";
-import { AppState } from "@core/types";
+import renderElement from "@core/elements/renderer";
+import { AppState, CanvasElement } from "@core/types";
 
 interface RenderConfig {
   state: AppState;
   canvas: HTMLCanvasElement;
   scale: number;
+  elements: CanvasElement[];
 }
 
 export default function renderFrame(config: RenderConfig) {
-  const { canvas, state, scale } = config;
+  const { canvas, state, scale, elements } = config;
   const ctx = canvas.getContext("2d")!;
   requestAnimationFrame(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -32,15 +34,19 @@ export default function renderFrame(config: RenderConfig) {
       },
     });
 
-    ctx.fillStyle = "red";
-    const rectWidth = 200;
-    const rectHeight = 150;
-    ctx.fillRect(
+    // apply scroll offset
+    ctx.translate(
       state.scrollOffset.x / state.zoom,
       state.scrollOffset.y / state.zoom,
-      rectWidth,
-      rectHeight,
     );
+
+    ctx.fillStyle = "red";
+    ctx.fillRect(0, 0, 300, 150);
+
+    for (let i = 0; i < elements.length; i += 1) {
+      renderElement(ctx, elements[i]);
+    }
+
     ctx.restore();
   });
 }
