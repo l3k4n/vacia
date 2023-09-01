@@ -6,7 +6,7 @@ import { createFreedrawElement, createShapeElement } from "@core/elements";
 import ElementLayer from "@core/elements/layer";
 import renderFrame from "@core/renderer";
 import { AppState, CanvasPointer, ToolLabel, XYCoords } from "@core/types";
-import { getVisibleCenterCoords } from "@core/utils";
+import { getVisibleCenterCoords, invertNegativeDimensions } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
 
@@ -212,10 +212,26 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     if (elementBeingCreated) {
       switch (elementBeingCreated.type) {
-        case "shape":
-          elementBeingCreated.w = this.pointer.dragOffset.x / this.state.zoom;
-          elementBeingCreated.h = this.pointer.dragOffset.y / this.state.zoom;
+        case "shape": {
+          // flip x and y axis if element size is negative
+          const { dimensions, didFlipX, didFlipY } = invertNegativeDimensions({
+            ...this.screenOffsetToVirtualOffset(this.pointer.origin),
+            // make the size relative to current zoom
+            w: this.pointer.dragOffset.x / this.state.zoom,
+            h: this.pointer.dragOffset.y / this.state.zoom,
+          });
+
+          Object.assign(elementBeingCreated, {
+            ...dimensions,
+            transforms: {
+              ...elementBeingCreated.transforms,
+              // set axes that flipped
+              flippedX: didFlipX,
+              flippedY: didFlipY,
+            },
+          });
           break;
+        }
 
         case "freedraw": {
           const { x, y } = this.screenOffsetToVirtualOffset(e);
