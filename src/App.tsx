@@ -294,6 +294,23 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         case "freedraw": {
           const { x, y } = this.screenOffsetToVirtualOffset(e);
+
+          // adjust width and x position if point is outside bounding box
+          if (elementBeingCreated.x + elementBeingCreated.w < x) {
+            elementBeingCreated.w = x - elementBeingCreated.x;
+          } else if (elementBeingCreated.x > x) {
+            elementBeingCreated.w += elementBeingCreated.x - x;
+            elementBeingCreated.x = x;
+          }
+
+          // adjust height and y position if point is outside bounding box
+          if (elementBeingCreated.y + elementBeingCreated.h < y) {
+            elementBeingCreated.h = y - elementBeingCreated.y;
+          } else if (elementBeingCreated.y > y) {
+            elementBeingCreated.h += elementBeingCreated.y - y;
+            elementBeingCreated.y = y;
+          }
+
           elementBeingCreated.path.push([x, y]);
           break;
         }
