@@ -1,18 +1,20 @@
 import drawGrid from "./drawGrid";
+import renderBoundingBoxes from "./renderBoundingBoxes";
 import renderBoxHighlight from "./renderBoxHighlight";
 import { GRID_COLOR } from "@constants";
 import renderElement from "@core/elements/renderer";
-import { AppState, CanvasElement } from "@core/types";
+import { AppState, CanvasElement, CanvasSelection } from "@core/types";
 
 interface RenderConfig {
   state: AppState;
   canvas: HTMLCanvasElement;
   scale: number;
   elements: CanvasElement[];
+  selection: CanvasSelection;
 }
 
 export default function renderFrame(config: RenderConfig) {
-  const { canvas, state, scale, elements } = config;
+  const { canvas, state, scale, elements, selection } = config;
   const ctx = canvas.getContext("2d")!;
   requestAnimationFrame(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -49,9 +51,8 @@ export default function renderFrame(config: RenderConfig) {
     }
 
     // render selection hightlight and selected element bounding boxes
-    if (state.selection) {
-      renderBoxHighlight(ctx, state.selection.boxHighlight);
-    }
+    renderBoxHighlight(ctx, selection.boxHighlight);
+    renderBoundingBoxes(ctx, selection.elements, state.zoom);
 
     ctx.restore();
   });

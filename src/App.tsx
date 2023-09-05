@@ -4,8 +4,20 @@ import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import ElementLayer from "@core/elements/layer";
+import {
+  hitTestElementAgainstBox,
+  hitTestPointAgainstBox,
+} from "@core/hitTest";
 import renderFrame from "@core/renderer";
-import { AppState, CanvasPointer, ToolLabel, XYCoords } from "@core/types";
+import SelectionManager from "@core/selection";
+import {
+  AppState,
+  CanvasElement,
+  CanvasPointer,
+  Dimensions,
+  ToolLabel,
+  XYCoords,
+} from "@core/types";
 import { getVisibleCenterCoords, invertNegativeDimensions } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
@@ -24,6 +36,11 @@ class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: CanvasPointer | null = null;
   elementLayer = new ElementLayer();
+  selection = new SelectionManager(this.onCanvasSelectionChange.bind(this), {
+    getAllElements: this.elementLayer.getAllElements,
+    getAllElementsInBox: this.selectElementsWithinBox.bind(this),
+    getFirstElementAtPoint: this.selectElementsAtPoint.bind(this),
+  });
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -34,7 +51,6 @@ class App extends React.Component<Record<string, never>, AppState> {
       grid: { type: "line", size: 20 },
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
-      selection: { boxHighlight: null, elements: [] },
     };
     if (import.meta.env.DEV) {
       window.appData = {} as Window["appData"];
@@ -57,14 +73,40 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
+  private selectElementsAtPoint(point: XYCoords) {
+    const allElements = this.elementLayer.getAllElements();
+    let hitElement: CanvasElement | null = null;
+
+    for (let i = allElements.length - 1; i > -1; i -= 1) {
+      const element = allElements[i];
+
+      if (hitTestPointAgainstBox(element, point)) {
+        hitElement = element;
+        break;
+      }
+    }
+    return hitElement;
+  }
+
+  private selectElementsWithinBox(box: Dimensions) {
+    const allElements = this.elementLayer.getAllElements();
+    const hitElements: CanvasElement[] = [];
+
+    for (let i = 0; i < allElements.length; i += 1) {
+      const element = allElements[i];
+
+      if (hitTestElementAgainstBox(element, box)) {
+        hitElements.push(element);
+      }
+    }
+
+    return hitElements;
+  }
+
   private setCanvasRef = (canvas: HTMLCanvasElement) => {
     if (canvas) {
       this.canvas = canvas;
     }
-  };
-
-  private handleToolChange = (tool: ToolLabel) => {
-    this.setState({ activeTool: tool });
   };
 
   /** Converts a screen position to its corresponding position relative to the
@@ -74,6 +116,15 @@ class App extends React.Component<Record<string, never>, AppState> {
       x: (position.x - this.state.scrollOffset.x) / this.state.zoom,
       y: (position.y - this.state.scrollOffset.y) / this.state.zoom,
     };
+  }
+
+  // custom events
+  private handleToolChange = (tool: ToolLabel) => {
+    this.setState({ activeTool: tool });
+  };
+
+  private onCanvasSelectionChange() {
+    this.setState({});
   }
 
   // event handling
@@ -96,10 +147,25 @@ class App extends React.Component<Record<string, never>, AppState> {
       });
       switch (this.state.activeTool) {
         case "Hand":
-        case "Selection":
           /** does nothing onpointerdown since pointer postion
            * is already known */
           break;
+
+        case "Selection": {
+          // if shift key is'nt down when pointerdown occurs,
+          // empty selection before adding new element
+          if (!e.shiftKey) {
+            this.selection.clearSelectedElements();
+          }
+          const elementWasFound = this.selection.addElementAtPoint(
+            e.nativeEvent,
+          );
+          // checks shiftKey to allow drag select, from a point with no elements
+          if (!elementWasFound && !e.shiftKey) {
+            this.selection.clearSelectedElements();
+          }
+          break;
+        }
 
         case "Ellipse": {
           const element = createShapeElement({
@@ -165,14 +231,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       // remove pointer and completes any element being created
       this.pointer = null;
       this.elementLayer.finalizeElementCreation();
-
-      // remove selection highlight
-      this.setState({
-        selection: {
-          boxHighlight: null,
-          elements: this.state.selection.elements,
-        },
-      });
+      this.selection.clearBoxHighlight();
     }
   };
 
@@ -195,19 +254,18 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     if (this.state.activeTool === "Selection") {
-      this.setState({
-        selection: {
-          boxHighlight: {
-            ...this.screenOffsetToVirtualOffset(this.pointer.origin),
-            w: this.pointer.dragOffset.x / this.state.zoom,
-            h: this.pointer.dragOffset.y / this.state.zoom,
-          },
-          elements: [],
-        },
-      });
+      const selectionBox = {
+        ...this.screenOffsetToVirtualOffset(this.pointer.origin),
+        w: this.pointer.dragOffset.x / this.state.zoom,
+        h: this.pointer.dragOffset.y / this.state.zoom,
+      };
+      this.selection.setBoxHighlight(selectionBox);
+      this.selection.addElementsWithinBox(selectionBox);
       return;
     }
 
+    // Note: there will never be an element being created when using hand or
+    // selection tool, so handle them outside switch statement below
     const elementBeingCreated = this.elementLayer.getElementBeingCreated();
 
     if (elementBeingCreated) {
@@ -256,6 +314,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
+      selection: this.selection.getSelectionData(),
     });
   }
 
@@ -265,6 +324,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
+      selection: this.selection.getSelectionData(),
     });
   }
 
