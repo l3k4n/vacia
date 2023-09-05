@@ -254,11 +254,12 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     if (this.state.activeTool === "Selection") {
-      const selectionBox = {
+      const { dimensions: selectionBox } = invertNegativeDimensions({
         ...this.screenOffsetToVirtualOffset(this.pointer.origin),
         w: this.pointer.dragOffset.x / this.state.zoom,
         h: this.pointer.dragOffset.y / this.state.zoom,
-      };
+      });
+
       this.selection.setBoxHighlight(selectionBox);
       this.selection.addElementsWithinBox(selectionBox);
       return;
