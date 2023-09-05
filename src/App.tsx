@@ -158,7 +158,7 @@ class App extends React.Component<Record<string, never>, AppState> {
             this.selection.clearSelectedElements();
           }
           const elementWasFound = this.selection.addElementAtPoint(
-            e.nativeEvent,
+            this.screenOffsetToVirtualOffset(e.nativeEvent),
           );
           // checks shiftKey to allow drag select, from a point with no elements
           if (!elementWasFound && !e.shiftKey) {
