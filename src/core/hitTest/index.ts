@@ -1,14 +1,14 @@
-import { CanvasElement, Dimensions, XYCoords } from "@core/types";
+import { CanvasElement, BoundingBox, XYCoords } from "@core/types";
 
-function hitTestRect(dimensions: Dimensions, coords: XYCoords) {
-  const { x, y, w, h } = dimensions;
+function hitTestRect(box: BoundingBox, coords: XYCoords) {
+  const { x, y, w, h } = box;
   const isInHorizontalBounds = coords.x >= x && coords.x <= x + w;
   const isInVerticalBounds = coords.y >= y && coords.y <= y + h;
   return isInHorizontalBounds && isInVerticalBounds;
 }
 
-function hitTestEllipse(dimensions: Dimensions, coords: XYCoords) {
-  const { x, y, w, h } = dimensions;
+function hitTestEllipse(box: BoundingBox, coords: XYCoords) {
+  const { x, y, w, h } = box;
 
   const rX = w / 2;
   const rY = h / 2;
@@ -28,14 +28,12 @@ function hitTestEllipse(dimensions: Dimensions, coords: XYCoords) {
 /** Returns true if element is completely contained within the bounding box */
 export function hitTestElementAgainstBox(
   element: CanvasElement,
-  dimensions: Dimensions,
+  box: BoundingBox,
 ): boolean {
   const horizontalBoundsFitsBox =
-    element.x >= dimensions.x &&
-    element.x + element.w <= dimensions.x + dimensions.w;
+    element.x >= box.x && element.x + element.w <= box.x + box.w;
   const verticalBoundsFitsBox =
-    element.y >= dimensions.y &&
-    element.y + element.h <= dimensions.y + dimensions.h;
+    element.y >= box.y && element.y + element.h <= box.y + box.h;
 
   return horizontalBoundsFitsBox && verticalBoundsFitsBox;
 }

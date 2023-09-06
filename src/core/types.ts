@@ -2,7 +2,7 @@ import { DrawingTools, ControlTools } from "./tools";
 
 export type XYCoords = { x: number; y: number };
 export type Point = [number, number];
-export type Dimensions = XYCoords & { w: number; h: number };
+export type BoundingBox = XYCoords & { w: number; h: number };
 
 interface ElementTransforms {
   // if element is flipped along an axis
@@ -10,7 +10,7 @@ interface ElementTransforms {
   flippedY?: boolean;
 }
 
-interface AbstractElement extends Dimensions {
+interface AbstractElement extends BoundingBox {
   /** modifications to make when rendering element (e.g invert, crop) */
   transforms: ElementTransforms;
 }

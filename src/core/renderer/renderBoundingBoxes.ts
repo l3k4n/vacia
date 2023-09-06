@@ -1,6 +1,6 @@
-import { SelectionState, Dimensions } from "@core/types";
+import { SelectionState, BoundingBox } from "@core/types";
 
-interface BoxOptions extends Dimensions {
+interface BoxOptions extends BoundingBox {
   scale: number;
   handleSize: number;
 }

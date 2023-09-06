@@ -1,11 +1,11 @@
-import { CanvasElement, SelectionState, Dimensions } from "@core/types";
+import { CanvasElement, SelectionState, BoundingBox } from "@core/types";
 
 type SMChangeEventHandler = (selection: Readonly<SelectionState>) => void;
 
 /** Manages all selected elements and selection highlight */
 export default class SelectionManager {
   private elements: Set<CanvasElement> = new Set<CanvasElement>();
-  private boxHighlight: Dimensions | null = null;
+  private boxHighlight: BoundingBox | null = null;
   private onChange: () => void;
 
   constructor(onChange: SMChangeEventHandler) {
@@ -38,7 +38,7 @@ export default class SelectionManager {
   }
 
   // boxhighlight
-  setBoxHighlight(box: Dimensions) {
+  setBoxHighlight(box: BoundingBox) {
     this.boxHighlight = box;
     this.onChange();
   }

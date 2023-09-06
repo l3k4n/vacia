@@ -15,11 +15,11 @@ import {
   CanvasElement,
   PointerState,
   SelectionState,
-  Dimensions,
+  BoundingBox,
   ToolLabel,
   XYCoords,
 } from "@core/types";
-import { getScreenCenterCoords, invertNegativeDimensions } from "@core/utils";
+import { getScreenCenterCoords, invertNegativeBoundingBox } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
 
@@ -88,7 +88,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElement;
   }
 
-  private getAllElementsWithinBox(box: Dimensions) {
+  private getAllElementsWithinBox(box: BoundingBox) {
     const allElements = this.elementLayer.getAllElements();
     const hitElements: CanvasElement[] = [];
 
@@ -146,7 +146,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         initialScrollOffset: { ...this.state.scrollOffset },
       };
 
-      // dimensions of the element to be created
+      // bounding box of the element to be created
       const elementBox = {
         w: 0,
         h: 0,
@@ -244,7 +244,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     if (this.state.activeTool === "Selection") {
-      const { dimensions: selectionBox } = invertNegativeDimensions({
+      const { box: selectionBox } = invertNegativeBoundingBox({
         ...this.screenOffsetToVirtualOffset(this.pointer.origin),
         w: this.pointer.dragOffset.x / this.state.zoom,
         h: this.pointer.dragOffset.y / this.state.zoom,
@@ -263,7 +263,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       switch (elementBeingCreated.type) {
         case "shape": {
           // flip x and y axis if element size is negative
-          const { dimensions, didFlipX, didFlipY } = invertNegativeDimensions({
+          const { box, didFlipX, didFlipY } = invertNegativeBoundingBox({
             ...this.screenOffsetToVirtualOffset(this.pointer.origin),
             // make the size relative to current zoom
             w: this.pointer.dragOffset.x / this.state.zoom,
@@ -271,7 +271,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           });
 
           Object.assign(elementBeingCreated, {
-            ...dimensions,
+            ...box,
             transforms: {
               ...elementBeingCreated.transforms,
               // set axes that flipped
