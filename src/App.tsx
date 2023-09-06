@@ -103,6 +103,23 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
+  /** checks if element should be discarded (i.e too small, etc)  */
+  private isElementNegligible(element: CanvasElement) {
+    switch (element.type) {
+      case "freedraw":
+        return element.path.length < 2;
+
+      case "shape":
+        // shape is smaller than one grid pixel
+        return (
+          element.w < this.state.grid.size && element.h < this.state.grid.size
+        );
+
+      default:
+        return false;
+    }
+  }
+
   // setup functions
   private setCanvasRef = (canvas: HTMLCanvasElement) => {
     if (canvas) {
@@ -155,14 +172,11 @@ class App extends React.Component<Record<string, never>, AppState> {
 
       switch (this.state.activeTool) {
         case "Hand":
-          // does nothing onpointerdown since pointer postion
-          // is already known
+          // does nothing onpointerdown since pointer postion is already known
           break;
 
         case "Selection": {
-          const element = this.getFirstElementAtPoint(
-            this.screenOffsetToVirtualOffset(e.nativeEvent),
-          );
+          const element = this.getFirstElementAtPoint(elementBox);
 
           // if shift key is'nt down when pointerdown occurs,
           // empty selection before adding new element
@@ -216,11 +230,22 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private onWindowPointerUp = () => {
-    if (this.pointer) {
-      // remove pointer and completes any element being created
-      this.pointer = null;
-      this.elementLayer.finalizeElementCreation();
+  private onWindowPointerUp = (e: PointerEvent) => {
+    if (!this.pointer) return;
+    // remove pointer and completes any element being created
+    this.pointer = null;
+    const elementBeingCreated = this.elementLayer.getElementBeingCreated();
+
+    if (elementBeingCreated) {
+      if (this.isElementNegligible(elementBeingCreated)) {
+        this.elementLayer.deleteElement(elementBeingCreated);
+        this.setState({});
+      } else {
+        this.elementLayer.finalizeElementCreation();
+      }
+    }
+
+    if (this.state.activeTool === "Selection") {
       this.selection.clearBoxHighlight();
     }
   };

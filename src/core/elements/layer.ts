@@ -12,6 +12,17 @@ export default class ElementLayer {
     }
   }
 
+  deleteElement(element: CanvasElement) {
+    const elementIndex = this.elements.indexOf(element);
+
+    if (elementIndex > -1) {
+      this.elements.splice(elementIndex, 1);
+    }
+    if (element === this.elementBeingCreated) {
+      this.elementBeingCreated = null;
+    }
+  }
+
   getAllElements() {
     return this.elements;
   }
