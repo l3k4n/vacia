@@ -103,6 +103,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
+  // setup functions
   private setCanvasRef = (canvas: HTMLCanvasElement) => {
     if (canvas) {
       this.canvas = canvas;
@@ -144,14 +145,18 @@ class App extends React.Component<Record<string, never>, AppState> {
         dragOffset: { x: 0, y: 0 },
         initialScrollOffset: { ...this.state.scrollOffset },
       };
-      const elementPos = this.screenOffsetToVirtualOffset({
-        x: e.clientX,
-        y: e.clientY,
-      });
+
+      // dimensions of the element to be created
+      const elementBox = {
+        w: 0,
+        h: 0,
+        ...this.screenOffsetToVirtualOffset({ x: e.clientX, y: e.clientY }),
+      };
+
       switch (this.state.activeTool) {
         case "Hand":
-          /** does nothing onpointerdown since pointer postion
-           * is already known */
+          // does nothing onpointerdown since pointer postion
+          // is already known
           break;
 
         case "Selection": {
@@ -170,35 +175,20 @@ class App extends React.Component<Record<string, never>, AppState> {
         case "Ellipse": {
           const element = createShapeElement({
             shape: "ellipse",
-            x: elementPos.x,
-            y: elementPos.y,
-            w: 0,
-            h: 0,
+            ...elementBox,
           });
           this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
 
         case "Rectangle": {
-          const element = createShapeElement({
-            shape: "rect",
-            x: elementPos.x,
-            y: elementPos.y,
-            w: 0,
-            h: 0,
-          });
+          const element = createShapeElement({ shape: "rect", ...elementBox });
           this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
 
         case "Freedraw": {
-          const element = createFreedrawElement({
-            path: [],
-            x: elementPos.x,
-            y: elementPos.y,
-            w: 0,
-            h: 0,
-          });
+          const element = createFreedrawElement({ path: [], ...elementBox });
           this.elementLayer.addElement(element, { isBeingCreated: true });
           break;
         }
