@@ -1,71 +1,40 @@
-import {
-  CanvasElement,
-  CanvasSelection,
-  Dimensions,
-  XYCoords,
-} from "@core/types";
+import { CanvasElement, CanvasSelection, Dimensions } from "@core/types";
 
 type SMChangeEventHandler = (selection: Readonly<CanvasSelection>) => void;
-interface SMCallbacks {
-  getAllElements: () => CanvasElement[];
-  getAllElementsInBox: (box: Dimensions) => CanvasElement[];
-  getFirstElementAtPoint: (point: XYCoords) => CanvasElement | null;
-}
 
 /** Manages all selected elements and selection highlight */
 export default class SelectionManager {
-  private callbacks: SMCallbacks;
   private elements: Set<CanvasElement> = new Set<CanvasElement>();
   private boxHighlight: Dimensions | null = null;
   private onChange: () => void;
 
-  constructor(onChange: SMChangeEventHandler, callbacks: SMCallbacks) {
-    this.callbacks = callbacks;
+  constructor(onChange: SMChangeEventHandler) {
     this.onChange = () => {
-      onChange({
-        boxHighlight: this.boxHighlight,
-        elements: Array.from(this.elements),
-      });
+      onChange(this.getData());
     };
   }
 
-  private addMultipleElements(newElements: CanvasElement[]) {
-    for (let i = 0; i < newElements.length; i += 1) {
-      this.elements.add(newElements[i]);
+  /** Add elements to selection */
+  addElements(elements: CanvasElement[]) {
+    for (let i = 0; i < elements.length; i += 1) {
+      this.elements.add(elements[i]);
     }
+
+    if (elements.length) this.onChange();
   }
 
-  // adding to selection
-  /** hit test's point against all elements the and adds first hitting element
-   *  to selection. returns true if an element was found at point */
-  addElementAtPoint(point: XYCoords) {
-    const element = this.callbacks.getFirstElementAtPoint(point);
-    if (element) {
-      this.elements.add(element);
-      this.onChange();
-      return true;
+  removeElements(elements: CanvasElement[]) {
+    for (let i = 0; i < elements.length; i += 1) {
+      this.elements.delete(elements[i]);
     }
-    return false;
+
+    if (elements.length) this.onChange();
   }
 
-  /** adds all elements within bounding box to selection. returns true
-   * if an element was found in box */
-  addElementsWithinBox(box: Dimensions) {
-    const elements = this.callbacks.getAllElementsInBox(box);
-    if (elements.length > 0) {
-      this.addMultipleElements(elements);
-      this.onChange();
-      return true;
-    }
-    return false;
-  }
-
-  addAllElements() {
-    const elements = this.callbacks.getAllElements();
-    if (elements.length > 0) {
-      this.addMultipleElements(elements);
-      this.onChange();
-    }
+  /** empties out all elements from selection */
+  clearElements() {
+    this.elements.clear();
+    this.onChange();
   }
 
   // boxhighlight
@@ -80,13 +49,7 @@ export default class SelectionManager {
     this.onChange();
   }
 
-  /** removes all elements from selection */
-  clearSelectedElements() {
-    this.elements.clear();
-    this.onChange();
-  }
-
-  getSelectionData() {
+  getData() {
     return {
       boxHighlight: this.boxHighlight,
       elements: Array.from(this.elements),

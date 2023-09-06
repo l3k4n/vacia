@@ -47,7 +47,9 @@ export interface AppState {
   // canvas offset from { x: 0, y: 0 }
   scrollOffset: XYCoords;
   zoom: number;
-  // selection: CanvasSelection;
+  session: {
+    selection: CanvasSelection;
+  };
 }
 
 /* pointer state since the last pointer down */

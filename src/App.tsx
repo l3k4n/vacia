@@ -14,6 +14,7 @@ import {
   AppState,
   CanvasElement,
   CanvasPointer,
+  CanvasSelection,
   Dimensions,
   ToolLabel,
   XYCoords,
@@ -36,11 +37,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: CanvasPointer | null = null;
   elementLayer = new ElementLayer();
-  selection = new SelectionManager(this.onCanvasSelectionChange.bind(this), {
-    getAllElements: this.elementLayer.getAllElements,
-    getAllElementsInBox: this.selectElementsWithinBox.bind(this),
-    getFirstElementAtPoint: this.selectElementsAtPoint.bind(this),
-  });
+  selection = new SelectionManager((s) => this.onElementSelection(s));
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -51,6 +48,9 @@ class App extends React.Component<Record<string, never>, AppState> {
       grid: { type: "line", size: 20 },
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
+      session: {
+        selection: this.selection.getData(),
+      },
     };
     if (import.meta.env.DEV) {
       window.appData = {} as Window["appData"];
@@ -73,7 +73,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
-  private selectElementsAtPoint(point: XYCoords) {
+  private getFirstElementAtPoint(point: XYCoords) {
     const allElements = this.elementLayer.getAllElements();
     let hitElement: CanvasElement | null = null;
 
@@ -88,7 +88,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElement;
   }
 
-  private selectElementsWithinBox(box: Dimensions) {
+  private getAllElementsWithinBox(box: Dimensions) {
     const allElements = this.elementLayer.getAllElements();
     const hitElements: CanvasElement[] = [];
 
@@ -123,8 +123,11 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  private onCanvasSelectionChange() {
-    this.setState({});
+  private onElementSelection(selection: CanvasSelection) {
+    const { session } = this.state;
+    session.selection = selection;
+
+    this.setState({ session });
   }
 
   // event handling
@@ -152,18 +155,15 @@ class App extends React.Component<Record<string, never>, AppState> {
           break;
 
         case "Selection": {
-          // if shift key is'nt down when pointerdown occurs,
-          // empty selection before adding new element
-          if (!e.shiftKey) {
-            this.selection.clearSelectedElements();
-          }
-          const elementWasFound = this.selection.addElementAtPoint(
+          const element = this.getFirstElementAtPoint(
             this.screenOffsetToVirtualOffset(e.nativeEvent),
           );
-          // checks shiftKey to allow drag select, from a point with no elements
-          if (!elementWasFound && !e.shiftKey) {
-            this.selection.clearSelectedElements();
-          }
+
+          // if shift key is'nt down when pointerdown occurs,
+          // empty selection before adding new element
+          if (!e.shiftKey) this.selection.clearElements();
+          if (element) this.selection.addElements([element]);
+
           break;
         }
 
@@ -261,7 +261,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       });
 
       this.selection.setBoxHighlight(selectionBox);
-      this.selection.addElementsWithinBox(selectionBox);
+      this.selection.addElements(this.getAllElementsWithinBox(selectionBox));
       return;
     }
 
@@ -332,7 +332,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
-      selection: this.selection.getSelectionData(),
+      selection: this.state.session.selection,
     });
   }
 
@@ -342,7 +342,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
-      selection: this.selection.getSelectionData(),
+      selection: this.state.session.selection,
     });
   }
 
