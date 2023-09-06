@@ -47,6 +47,7 @@ export interface AppState {
   // canvas offset from { x: 0, y: 0 }
   scrollOffset: XYCoords;
   zoom: number;
+  /** stores data for the current user session. (Note: data does not persist) */
   session: {
     selection: CanvasSelection;
   };

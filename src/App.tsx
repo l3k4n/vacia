@@ -19,7 +19,7 @@ import {
   ToolLabel,
   XYCoords,
 } from "@core/types";
-import { getVisibleCenterCoords, invertNegativeDimensions } from "@core/utils";
+import { getScreenCenterCoords, invertNegativeDimensions } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
 
@@ -347,7 +347,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       const zoomState = getNewZoomState(
         {
           value: this.state.zoom + ZOOM_STEP,
-          anchor: getVisibleCenterCoords(this.state),
+          anchor: getScreenCenterCoords(this.state),
         },
         this.state,
       );
@@ -358,7 +358,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       const zoomState = getNewZoomState(
         {
           value: this.state.zoom - ZOOM_STEP,
-          anchor: getVisibleCenterCoords(this.state),
+          anchor: getScreenCenterCoords(this.state),
         },
         this.state,
       );
