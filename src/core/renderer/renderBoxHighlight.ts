@@ -1,8 +1,8 @@
-import { CanvasSelection } from "@core/types";
+import { SelectionState } from "@core/types";
 
 export default function renderBoxHighlight(
   ctx: CanvasRenderingContext2D,
-  box: CanvasSelection["boxHighlight"],
+  box: SelectionState["boxHighlight"],
 ) {
   if (!box) return;
   ctx.save();

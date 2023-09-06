@@ -13,8 +13,8 @@ import SelectionManager from "@core/selection";
 import {
   AppState,
   CanvasElement,
-  CanvasPointer,
-  CanvasSelection,
+  PointerState,
+  SelectionState,
   Dimensions,
   ToolLabel,
   XYCoords,
@@ -28,14 +28,14 @@ declare global {
     appData: {
       state: AppState;
       setState: (state: Partial<AppState>) => void;
-      pointer: CanvasPointer | null;
+      pointer: PointerState | null;
     };
   }
 }
 
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
-  pointer: CanvasPointer | null = null;
+  pointer: PointerState | null = null;
   elementLayer = new ElementLayer();
   selection = new SelectionManager((s) => this.onElementSelection(s));
 
@@ -124,7 +124,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  private onElementSelection(selection: CanvasSelection) {
+  private onElementSelection(selection: SelectionState) {
     const { session } = this.state;
     session.selection = selection;
 

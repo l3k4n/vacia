@@ -1,6 +1,6 @@
-import { CanvasElement, CanvasSelection, Dimensions } from "@core/types";
+import { CanvasElement, SelectionState, Dimensions } from "@core/types";
 
-type SMChangeEventHandler = (selection: Readonly<CanvasSelection>) => void;
+type SMChangeEventHandler = (selection: Readonly<SelectionState>) => void;
 
 /** Manages all selected elements and selection highlight */
 export default class SelectionManager {

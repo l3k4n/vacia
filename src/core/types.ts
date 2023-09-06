@@ -32,7 +32,7 @@ export type ControlToolLabel =
 /** Toolbar tool names */
 export type ToolLabel = DrawingToolLabel | ControlToolLabel;
 
-export interface CanvasSelection {
+export interface SelectionState {
   /** highlighted cursor drag */
   boxHighlight: { x: number; y: number; w: number; h: number } | null;
   /** single rect containing all selected elements */
@@ -49,12 +49,12 @@ export interface AppState {
   zoom: number;
   /** stores data for the current user session. (Note: data does not persist) */
   session: {
-    selection: CanvasSelection;
+    selection: SelectionState;
   };
 }
 
 /* pointer state since the last pointer down */
-export type CanvasPointer = {
+export type PointerState = {
   origin: XYCoords;
   // distance between pointer down origin and current pointer position
   dragOffset: XYCoords;

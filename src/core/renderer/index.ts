@@ -3,14 +3,14 @@ import renderBoundingBoxes from "./renderBoundingBoxes";
 import renderBoxHighlight from "./renderBoxHighlight";
 import { GRID_COLOR } from "@constants";
 import renderElement from "@core/elements/renderer";
-import { AppState, CanvasElement, CanvasSelection } from "@core/types";
+import { AppState, CanvasElement, SelectionState } from "@core/types";
 
 interface RenderConfig {
   state: AppState;
   canvas: HTMLCanvasElement;
   scale: number;
   elements: CanvasElement[];
-  selection: CanvasSelection;
+  selection: SelectionState;
 }
 
 export default function renderFrame(config: RenderConfig) {
