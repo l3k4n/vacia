@@ -1,0 +1,148 @@
+@mixin FocusTransition($propertyToAffect) {
+  transition: $propertyToAffect 0.1s linear;
+}
+
+.DesignMenu {
+  position: absolute;
+  width: 250px;
+  background-color: rgb(28, 28, 28, 0.9);
+  border-radius: 12px;
+  border: 1px solid #272727;
+  backdrop-filter: blur(25px) saturate(200%);
+
+  .DesignMenuSection {
+    padding: 15px 20px;
+    border-bottom: 1px solid #272727;
+
+    &_hidden {
+      .DesignMenuSectionTitle {
+        svg {
+          width: 12px;
+          margin-right: 10px;
+        }
+      }
+
+      .DesignMenuSectionContent {
+        margin-top: 0;
+        grid-template-rows: 0fr;
+        visibility: hidden;
+      }
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &Title {
+      color: #444;
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+
+      svg {
+        stroke: #585858;
+        stroke-width: 2;
+        width: 0;
+        height: 12px;
+        transition: 0.3s;
+      }
+    }
+
+    &Content {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: 0.2s ease-in-out;
+      margin-top: 5px;
+
+      >* {
+        overflow: hidden;
+      }
+    }
+
+  }
+
+  .MS_ {
+    &ColorPicker {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+
+      .colorPreview {
+        width: 20px;
+        height: 20px;
+        background-color: #000;
+        border: 2px solid #272727;
+        margin-right: 10px;
+        border-radius: 5px;
+
+        &:focus-visible {
+          border-color: var(--accent-color);
+        }
+      }
+
+      .hexInput {
+        width: 90px;
+      }
+
+      .opacityInput {
+        width: 60px;
+      }
+
+      input {
+        font: inherit;
+        color: #ccc;
+        border: 2px solid transparent;
+        padding: 5px;
+        background-color: transparent;
+        border-radius: 5px;
+
+        &:focus-visible {
+          border-color: var(--accent-color);
+        }
+      }
+
+      >* {
+        @include FocusTransition(border-color)
+      }
+    }
+
+    &LayoutEditor {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 30px);
+
+      label {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 500;
+        border: 2px solid transparent;
+        border-radius: 5px;
+        width: 100%;
+        box-sizing: border-box;
+        @include FocusTransition(border-color);
+
+        span {
+          color: #444;
+          width: 20px;
+          text-align: right;
+          margin-right: 10px;
+        }
+
+        input {
+          color: #ccc;
+          width: 100%;
+          background-color: transparent;
+          font: inherit;
+        }
+
+        &:focus-within {
+          border-color: var(--accent-color);
+        }
+      }
+    }
+  }
+}

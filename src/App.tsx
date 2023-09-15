@@ -1,4 +1,5 @@
 import React from "react";
+import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
@@ -393,6 +394,11 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     return (
       <div className="app">
+        <DesignMenu
+          selectionConfig={{
+            canBeFilled: this.state.session.selection.elements.length > 0,
+          }}
+        />
         <div className="tools">
           <ToolBar
             position={"left"}
