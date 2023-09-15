@@ -1,10 +1,10 @@
 import ToolButton from "@components/ToolButton";
 import { DrawingTools, ControlTools } from "@core/tools";
-import { ToolLabel } from "@core/types";
+import { ToolLabel, ToolbarPosition } from "@core/types";
 import "./style.scss";
 
 interface ToolBarProps {
-  position: "top" | "left" | "right" | "bottom";
+  position: ToolbarPosition;
   activeTool: ToolLabel;
   onToolChange: (tool: ToolLabel) => void;
 }

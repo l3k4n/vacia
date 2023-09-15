@@ -49,6 +49,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       grid: { type: "line", size: 20 },
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
+      toolbarPosition: "left",
       session: {
         selection: this.selection.getData(),
       },
@@ -102,6 +103,24 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     return hitElements;
+  }
+
+  /** returns a config object describing currently selected elements */
+  private getDesignMenuProps(): React.ComponentProps<typeof DesignMenu> {
+    const { elements } = this.state.session.selection;
+
+    const selectionConfig = {
+      canBeFilled: false,
+    };
+
+    for (let i = 0; i < elements.length; i += 1) {
+      const element = elements[i];
+      if (element.type === "shape") {
+        selectionConfig.canBeFilled = true;
+      }
+    }
+
+    return { selectionConfig, toolbarPosition: this.state.toolbarPosition };
   }
 
   /** checks if element should be discarded (i.e too small, etc)  */
@@ -394,14 +413,12 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     return (
       <div className="app">
-        <DesignMenu
-          selectionConfig={{
-            canBeFilled: this.state.session.selection.elements.length > 0,
-          }}
-        />
+        {!!this.state.session.selection.elements.length && (
+          <DesignMenu {...this.getDesignMenuProps()} />
+        )}
         <div className="tools">
           <ToolBar
-            position={"left"}
+            position={this.state.toolbarPosition}
             activeTool={this.state.activeTool}
             onToolChange={this.handleToolChange}
           />

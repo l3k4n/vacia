@@ -9,6 +9,8 @@
   border-radius: 12px;
   border: 1px solid #272727;
   backdrop-filter: blur(25px) saturate(200%);
+  transform: translate(0, -50%);
+  top: 50%;
 
   .DesignMenuSection {
     padding: 15px 20px;

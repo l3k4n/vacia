@@ -32,6 +32,8 @@ export type ControlToolLabel =
 /** Toolbar tool names */
 export type ToolLabel = DrawingToolLabel | ControlToolLabel;
 
+export type ToolbarPosition = "top" | "left" | "right" | "bottom";
+
 export interface SelectionState {
   /** highlighted cursor drag */
   boxHighlight: { x: number; y: number; w: number; h: number } | null;
@@ -47,6 +49,7 @@ export interface AppState {
   // canvas offset from { x: 0, y: 0 }
   scrollOffset: XYCoords;
   zoom: number;
+  toolbarPosition: ToolbarPosition;
   /** stores data for the current user session. (Note: data does not persist) */
   session: {
     selection: SelectionState;
