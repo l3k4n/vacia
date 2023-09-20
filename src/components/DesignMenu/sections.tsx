@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useUnmount } from "../../hooks/useUnmount";
 import { ProhibitedIcon } from "@assets/icons";
 import { BoundingBox } from "@core/types";
 import { ColorTransformer, EvalMathExpression, clampNumber } from "@core/utils";
+import { useUnmount } from "@hooks/useUnmount";
 
 interface MenuSectionProps {
   title: string;

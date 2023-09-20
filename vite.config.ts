@@ -14,6 +14,7 @@ export default defineConfig({
       "@constants": path.resolve(__dirname, "./src/constants.ts"),
       "@core": path.resolve(__dirname, "./src/core"),
       "@css": path.resolve(__dirname, "./src/css"),
+      "@hooks": path.resolve(__dirname, "./src/hooks"),
     },
   },
   plugins: [react(), eslint(), svgr()],

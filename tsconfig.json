@@ -20,7 +20,8 @@
       "@components/*": ["./src/components/*"],
       "@constants": ["./src/constants.ts"],
       "@core/*": ["./src/core/*"],
-      "@css/*": ["./src/css/*"]
+      "@css/*": ["./src/css/*"],
+      "@hooks/*": ["./src/hooks/*"]
     }
   },
   "include": ["src"],
