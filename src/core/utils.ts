@@ -1,3 +1,4 @@
+import tinycolor from "tinycolor2";
 import { AppState, XYCoords, BoundingBox } from "./types";
 
 /** returns the center position of in screen coords */
@@ -36,4 +37,84 @@ export function invertNegativeBoundingBox(box: BoundingBox): {
   }
 
   return { didFlipX, didFlipY, box: { x, y, w, h } };
+}
+
+/** evalutes a string as a math expression and returns result or null if string
+ * is invalid */
+export function EvalMathExpression(exp: string, units?: string): number | null {
+  if (units) {
+    // remove units if preset
+    // eslint-disable-next-line no-param-reassign
+    exp = exp.replaceAll(units, "");
+  }
+  const tokens = exp
+    .replaceAll(" ", "")
+    .match(/^([+-]?)(\d+(?:\.\d+)?)([-+*/])([+-]?)(\d+(?:\.\d+)?)$/);
+
+  if (tokens) {
+    const num1 = +(tokens[1] + [tokens[2]]);
+    const num2 = +(tokens[4] + tokens[5]);
+    const operator = tokens[3] as "+" | "-" | "*" | "/";
+    let result = 0;
+
+    switch (operator) {
+      case "+":
+        result = num1 + num2;
+        break;
+      case "-":
+        result = num1 - num2;
+        break;
+      case "*":
+        result = num1 * num2;
+        break;
+      case "/":
+        result = num1 / num2;
+        break;
+      default:
+    }
+
+    if (!Number.isFinite(result)) {
+      result = 0;
+    }
+
+    return result;
+  }
+
+  return null;
+}
+
+/** converts colors between different formats */
+export class ColorTransformer {
+  private tc: ReturnType<typeof tinycolor>;
+  constructor(str: string) {
+    this.tc = tinycolor(str);
+  }
+
+  setColor(color: string) {
+    const newColor = tinycolor(color);
+
+    if (newColor.isValid()) {
+      /** if color does not include alpha (i.e 8 char hex),
+       * use previous alpha */
+      if (newColor.getFormat() !== "hex8") {
+        newColor.setAlpha(this.tc.getAlpha());
+      }
+      this.tc = newColor;
+    }
+
+    return this;
+  }
+
+  setOpacity(opacity: string) {
+    const alpha = +opacity.split("%")[0] / 100;
+    this.tc.setAlpha(alpha);
+
+    return this;
+  }
+
+  getHex = () => this.tc.toHexString().toUpperCase();
+
+  getOpacity = () => `${(this.tc.getAlpha() * 100).toFixed(0)}%`;
+
+  getFullColor = () => this.tc.toHex8String();
 }

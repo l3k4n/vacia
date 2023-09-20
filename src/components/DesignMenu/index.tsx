@@ -22,8 +22,15 @@ export default function DesignMenu(props: DesignMenuProps) {
 
   return (
     <div className="DesignMenu" style={horizontalMenuPosition}>
-      <LayoutSection />
-      <ColorSection disabled={!props.selectionConfig.canBeFilled} />
+      <LayoutSection
+        onChange={() => null}
+        value={{ x: 400, y: 30, w: 3, h: 4 }}
+      />
+      <ColorSection
+        onChange={() => null}
+        value={"red"}
+        disabled={!props.selectionConfig.canBeFilled}
+      />
     </div>
   );
 }
