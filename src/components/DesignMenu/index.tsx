@@ -1,12 +1,14 @@
 import React from "react";
 import { LayoutSection, ColorSection } from "./sections";
-import getSelectionDetails from "./selectionDetails";
-import { CanvasElement, ToolbarPosition } from "@core/types";
+import getSelectionDetails, { SelectionProps } from "./selectionDetails";
+import { BoundingBox, CanvasElement, ToolbarPosition } from "@core/types";
+import { shallowDiff } from "@core/utils";
 import "./style.scss";
 
 interface DesignMenuProps {
   toolbarPosition: ToolbarPosition;
   selectedElements: CanvasElement[];
+  onChange(): void;
 }
 
 class DesignMenu extends React.Component<DesignMenuProps> {
@@ -41,14 +43,41 @@ class DesignMenu extends React.Component<DesignMenuProps> {
     }
   }
 
+  onBoundingBoxChange = (box: SelectionProps["box"]) => {
+    const { props: selectionProps } = this.selectionDetails;
+    const elements = this.selectionElementsToApplyChangesTo;
+
+    // get all properties that changed
+    const changes = shallowDiff(box, selectionProps.box);
+    const normalizedChanges = {} as Partial<BoundingBox>;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    Object.keys(changes).forEach((key: keyof BoundingBox) => {
+      /** cast all changes that aren't 'Mixed' to number */
+      const value = changes[key];
+      if (value !== "Mixed") normalizedChanges[key] = +value!;
+    });
+    // Note: normalizedChanges now holds all changes that can be applied
+    elements.forEach((elem) => Object.assign(elem, normalizedChanges));
+    this.props.onChange();
+  };
+
+  onFillChange = (color: string) => {
+    // TODO: handle fill when CanvasElement can change fill
+    this.props.onChange();
+  };
+
   render(): React.ReactNode {
-    const { metadata, sharedProperties } = this.selectionDetails;
+    const { metadata, props: selectionProps } = this.selectionDetails;
     return (
       <div className="DesignMenu" style={this.horizontalMenuPosition}>
-        <LayoutSection onChange={() => null} value={sharedProperties.box} />
+        <LayoutSection
+          onChange={this.onBoundingBoxChange}
+          value={selectionProps.box}
+        />
         <ColorSection
-          onChange={() => null}
-          value={"red"}
+          onChange={this.onFillChange}
+          value={selectionProps.fill}
           disabled={!metadata.canBeFilled}
         />
       </div>

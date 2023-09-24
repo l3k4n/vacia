@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import tinycolor from "tinycolor2";
 import { AppState, XYCoords, BoundingBox } from "./types";
 
@@ -117,4 +118,28 @@ export class ColorTransformer {
   getOpacity = () => `${(this.tc.getAlpha() * 100).toFixed(0)}%`;
 
   getFullColor = () => this.tc.toHex8String();
+}
+
+/** returns all properties of the target object that are different from the
+ * corresponding property in the comparedObject.
+ * @param target object to compare
+ * @param comparedObject object to compare against
+ * */
+export function shallowDiff<T extends object, S extends object>(
+  target: S,
+  comparedObject: T,
+): Partial<S> {
+  const keys = Object.keys(target);
+  const diff = {};
+
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    // @ts-ignore
+    if (target[key] !== comparedObject[key]) {
+      // @ts-ignore
+      diff[key] = target[key];
+    }
+  }
+
+  return diff as Partial<S>;
 }

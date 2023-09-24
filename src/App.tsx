@@ -399,6 +399,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           <DesignMenu
             selectedElements={this.state.session.selection.elements}
             toolbarPosition={this.state.toolbarPosition}
+            onChange={() => this.setState({})}
           />
         )}
         <div className="tools">

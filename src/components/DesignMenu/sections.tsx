@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { SelectionProps } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
-import { BoundingBox } from "@core/types";
 import { ColorTransformer, EvalMathExpression, clampNumber } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
 
@@ -46,36 +46,43 @@ function MenuSection(props: MenuSectionProps) {
   );
 }
 
-export function LayoutSection(props: SectionProps<BoundingBox>) {
-  const [x, setX] = useState(props.value.x.toString());
-  const [y, setY] = useState(props.value.y.toString());
-  const [w, setW] = useState(props.value.w.toString());
-  const [h, setH] = useState(props.value.h.toString());
+export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
+  /** value to return to if input is invalid */
+  const fallback = useRef(props.value);
+  const [x, setX] = useState(props.value.x);
+  const [y, setY] = useState(props.value.y);
+  const [w, setW] = useState(props.value.w);
+  const [h, setH] = useState(props.value.h);
 
-  /** Evaluates input string as a number or math expression and returns the
-   * result or 0 if input is invalid. */
-  const evalInput = (value: string): number => {
-    const intValue = +value.replaceAll(" ", "");
-    if (Number.isFinite(intValue)) return intValue;
-    return EvalMathExpression(value) ?? 0;
+  const updateInputs = (values: SelectionProps["box"]) => {
+    fallback.current = values;
+    setX(values.x);
+    setY(values.y);
+    setW(values.w);
+    setH(values.h);
   };
 
   const submit = () => {
-    const values = {
-      x: evalInput(x),
-      y: evalInput(y),
-      w: evalInput(w),
-      h: evalInput(h),
+    /** Evaluates input string as a number or math expression and returns the
+     * result or the fallback if value is invalid. */
+    const evalInput = (value: string) => {
+      const intValue = +value.replaceAll(" ", "");
+      if (Number.isFinite(intValue)) return intValue.toString();
+      return EvalMathExpression(value);
     };
 
-    setX(values.x.toString());
-    setY(values.y.toString());
-    setW(values.w.toString());
-    setH(values.h.toString());
+    const evaluatedValues = {
+      x: (evalInput(x) ?? fallback.current.x).toString(),
+      y: (evalInput(y) ?? fallback.current.y).toString(),
+      w: (evalInput(w) ?? fallback.current.w).toString(),
+      h: (evalInput(h) ?? fallback.current.h).toString(),
+    };
 
-    props.onChange(values);
+    updateInputs(evaluatedValues);
+    props.onChange(evaluatedValues);
   };
 
+  useEffect(() => updateInputs(props.value), [props.value]);
   useUnmount(submit);
 
   return (
@@ -106,8 +113,7 @@ export function LayoutSection(props: SectionProps<BoundingBox>) {
   );
 }
 
-export function ColorSection(props: SectionProps<string>) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
   const colorTransformer = useMemo(
     () => new ColorTransformer(props.value),
     [props.value],

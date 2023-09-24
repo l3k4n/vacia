@@ -1,7 +1,8 @@
 import { BoundingBox, CanvasElement } from "@core/types";
 
 export interface SelectionProps {
-  box: BoundingBox;
+  box: { [key in keyof BoundingBox]: string };
+  fill: string;
 }
 export interface SelectionMetadata {
   canBeFilled: boolean;
@@ -18,15 +19,23 @@ function getSelectionDetails(elements: CanvasElement[]): SelectionDetails {
   const firstElement = elements[0];
   const props = {
     box: {
-      x: firstElement.x,
-      y: firstElement.y,
-      w: firstElement.w,
-      h: firstElement.h,
+      x: firstElement.x.toString(),
+      y: firstElement.y.toString(),
+      w: firstElement.w.toString(),
+      h: firstElement.h.toString(),
     },
+    fill: "red", // placeholder value
   };
 
   for (let i = 0; i < elements.length; i += 1) {
     const element = elements[i];
+
+    // bounding box
+    if (element.x.toString() !== props.box.x) props.box.x = "Mixed";
+    if (element.y.toString() !== props.box.y) props.box.y = "Mixed";
+    if (element.w.toString() !== props.box.w) props.box.w = "Mixed";
+    if (element.h.toString() !== props.box.h) props.box.h = "Mixed";
+
     if (element.type === "shape") {
       metadata.canBeFilled = true;
     }
