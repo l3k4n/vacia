@@ -105,24 +105,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
-  /** returns a config object describing currently selected elements */
-  private getDesignMenuProps(): React.ComponentProps<typeof DesignMenu> {
-    const { elements } = this.state.session.selection;
-
-    const selectionConfig = {
-      canBeFilled: false,
-    };
-
-    for (let i = 0; i < elements.length; i += 1) {
-      const element = elements[i];
-      if (element.type === "shape") {
-        selectionConfig.canBeFilled = true;
-      }
-    }
-
-    return { selectionConfig, toolbarPosition: this.state.toolbarPosition };
-  }
-
   /** checks if element should be discarded (i.e too small, etc)  */
   private isElementNegligible(element: CanvasElement) {
     switch (element.type) {
@@ -414,7 +396,10 @@ class App extends React.Component<Record<string, never>, AppState> {
     return (
       <div className="app">
         {!!this.state.session.selection.elements.length && (
-          <DesignMenu {...this.getDesignMenuProps()} />
+          <DesignMenu
+            selectedElements={this.state.session.selection.elements}
+            toolbarPosition={this.state.toolbarPosition}
+          />
         )}
         <div className="tools">
           <ToolBar
