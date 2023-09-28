@@ -37,15 +37,21 @@ class DesignMenu extends React.Component<DesignMenuProps> {
         : { left: 10 };
   }
 
-  componentDidUpdate(prevProps: DesignMenuProps) {
-    if (prevProps.selectedElements !== this.props.selectedElements) {
+  /** using `shouldComponentUpdate` so that by the time the render function is
+   * called `selectionDetails` has already been updated */
+  shouldComponentUpdate(nextProps: Readonly<DesignMenuProps>) {
+    /** if selection changes while still editing in input, changes might be
+     * applied to the lastest one instead of the previous. To prevent that,
+     * I will hold onto previous elements if selection changes and go back to
+     * the latest if it doesn't */
+    if (nextProps.selectedElements !== this.props.selectedElements) {
       this.selectionDetails = getSelectionDetails(this.props.selectedElements);
-      /** selection changed so keep track of the previous one */
-      this.selectionElementsToApplyChangesTo = prevProps.selectedElements;
-    } else {
-      /** selection did not change so use the current one */
       this.selectionElementsToApplyChangesTo = this.props.selectedElements;
+    } else {
+      this.selectionElementsToApplyChangesTo = nextProps.selectedElements;
     }
+
+    return nextProps.selectedElements !== this.props.selectedElements;
   }
 
   onBoundingBoxChange = (box: SelectionProps["box"]) => {

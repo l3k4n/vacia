@@ -47,15 +47,12 @@ function MenuSection(props: MenuSectionProps) {
 }
 
 export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
-  /** value to return to if input is invalid */
-  const fallback = useRef(props.value);
   const [x, setX] = useState(props.value.x);
   const [y, setY] = useState(props.value.y);
   const [w, setW] = useState(props.value.w);
   const [h, setH] = useState(props.value.h);
 
   const updateInputs = (values: SelectionProps["box"]) => {
-    fallback.current = values;
     setX(values.x);
     setY(values.y);
     setW(values.w);
@@ -72,10 +69,10 @@ export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
     };
 
     const evaluatedValues = {
-      x: (evalInput(x) ?? fallback.current.x).toString(),
-      y: (evalInput(y) ?? fallback.current.y).toString(),
-      w: (evalInput(w) ?? fallback.current.w).toString(),
-      h: (evalInput(h) ?? fallback.current.h).toString(),
+      x: (evalInput(x) ?? props.value.x).toString(),
+      y: (evalInput(y) ?? props.value.y).toString(),
+      w: (evalInput(w) ?? props.value.w).toString(),
+      h: (evalInput(h) ?? props.value.h).toString(),
     };
 
     updateInputs(evaluatedValues);
