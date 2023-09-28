@@ -1,4 +1,4 @@
-import { SelectionState, BoundingBox } from "@core/types";
+import { BoundingBox, CanvasElement } from "@core/types";
 
 interface BoxOptions extends BoundingBox {
   scale: number;
@@ -39,7 +39,7 @@ function drawBoundingBoxWithHandles(
 
 export default function renderBoundingBoxes(
   ctx: CanvasRenderingContext2D,
-  elements: SelectionState["elements"],
+  elements: CanvasElement[],
   scale: number,
 ) {
   if (elements.length < 1) return;

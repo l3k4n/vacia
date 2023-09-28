@@ -24,6 +24,9 @@ export interface FreedrawElement extends AbstractElement {
 }
 export type CanvasElement = ShapeElement | FreedrawElement;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CanvasElementMutations = { [key: string]: any };
+
 /** Toolbar tools that have render elements (e.g Ellipse tool) */
 export type DrawingToolLabel = (typeof DrawingTools)[number]["label"];
 /** Toolbar tools that don't map to real elements (e.g Select tool) */
@@ -34,26 +37,17 @@ export type ToolLabel = DrawingToolLabel | ControlToolLabel;
 
 export type ToolbarPosition = "top" | "left" | "right" | "bottom";
 
-export interface SelectionState {
-  /** highlighted cursor drag */
-  boxHighlight: { x: number; y: number; w: number; h: number } | null;
-  /** single rect containing all selected elements */
-  elements: CanvasElement[];
-}
-
 export interface AppState {
   width: number;
   height: number;
   activeTool: ToolLabel;
   grid: { type: "line" | "none"; size: number };
-  // canvas offset from { x: 0, y: 0 }
+  /** canvas offset from { x: 0, y: 0 } */
   scrollOffset: XYCoords;
   zoom: number;
   toolbarPosition: ToolbarPosition;
-  /** stores data for the current user session. (Note: data does not persist) */
-  session: {
-    selection: SelectionState;
-  };
+  /** bounding box (in virtual coords) to highlight when drag selecting */
+  selectionHighlight: BoundingBox | null;
 }
 
 /* pointer state since the last pointer down */

@@ -1,14 +1,19 @@
 import React from "react";
 import { LayoutSection, ColorSection } from "./sections";
 import getSelectionDetails, { SelectionProps } from "./selectionDetails";
-import { BoundingBox, CanvasElement, ToolbarPosition } from "@core/types";
+import {
+  BoundingBox,
+  CanvasElement,
+  CanvasElementMutations,
+  ToolbarPosition,
+} from "@core/types";
 import { shallowDiff } from "@core/utils";
 import "./style.scss";
 
 interface DesignMenuProps {
   toolbarPosition: ToolbarPosition;
   selectedElements: CanvasElement[];
-  onChange(): void;
+  onChange(elements: CanvasElement[], changes: CanvasElementMutations): void;
 }
 
 class DesignMenu extends React.Component<DesignMenuProps> {
@@ -58,13 +63,13 @@ class DesignMenu extends React.Component<DesignMenuProps> {
       if (value !== "Mixed") normalizedChanges[key] = +value!;
     });
     // Note: normalizedChanges now holds all changes that can be applied
-    elements.forEach((elem) => Object.assign(elem, normalizedChanges));
-    this.props.onChange();
+    this.props.onChange(elements, normalizedChanges);
   };
 
   onFillChange = (color: string) => {
     // TODO: handle fill when CanvasElement can change fill
-    this.props.onChange();
+    const elements = this.selectionElementsToApplyChangesTo;
+    this.props.onChange(elements, {});
   };
 
   render(): React.ReactNode {

@@ -1,10 +1,9 @@
-import { SelectionState } from "@core/types";
+import { BoundingBox } from "@core/types";
 
 export default function renderBoxHighlight(
   ctx: CanvasRenderingContext2D,
-  box: SelectionState["boxHighlight"],
+  box: BoundingBox,
 ) {
-  if (!box) return;
   ctx.save();
 
   ctx.fillStyle = "rgba(255,0,0,0.2)";

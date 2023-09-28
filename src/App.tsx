@@ -3,22 +3,21 @@ import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ZOOM_STEP } from "@constants";
+import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
-import ElementLayer from "@core/elements/layer";
 import {
   hitTestElementAgainstBox,
   hitTestPointAgainstBox,
 } from "@core/hitTest";
 import renderFrame from "@core/renderer";
-import SelectionManager from "@core/selection";
 import {
   AppState,
   CanvasElement,
   PointerState,
-  SelectionState,
   BoundingBox,
   ToolLabel,
   XYCoords,
+  CanvasElementMutations,
 } from "@core/types";
 import { getScreenCenterCoords, invertNegativeBoundingBox } from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
@@ -37,8 +36,7 @@ declare global {
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: PointerState | null = null;
-  elementLayer = new ElementLayer();
-  selection = new SelectionManager((s) => this.onElementSelection(s));
+  elementLayer = new ElementLayer(this.onElementLayerChange.bind(this));
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -50,9 +48,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       scrollOffset: { x: 0, y: 0 },
       zoom: 1,
       toolbarPosition: "left",
-      session: {
-        selection: this.selection.getData(),
-      },
+      selectionHighlight: null,
     };
     if (import.meta.env.DEV) {
       window.appData = {} as Window["appData"];
@@ -143,12 +139,19 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ activeTool: tool });
   };
 
-  private onElementSelection(selection: SelectionState) {
-    const { session } = this.state;
-    session.selection = selection;
-
-    this.setState({ session });
+  private onElementLayerChange(e: ElementLayerChangeEvent) {
+    this.setState({});
   }
+
+  private onDesignMenuUpdate = (
+    elements: CanvasElement[],
+    mutations: CanvasElementMutations,
+  ) => {
+    for (let i = 0; i < elements.length; i += 1) {
+      const element = elements[i];
+      this.elementLayer.mutateElement(element, mutations);
+    }
+  };
 
   // event handling
   private addEventListeners = () => {
@@ -181,9 +184,9 @@ class App extends React.Component<Record<string, never>, AppState> {
           const element = this.getFirstElementAtPoint(elementBox);
 
           // if shift key is'nt down when pointerdown occurs,
-          // empty selection before adding new element
-          if (!e.shiftKey) this.selection.clearElements();
-          if (element) this.selection.addElements([element]);
+          // replace selection with clicked element otherwise append element
+          if (!e.shiftKey) this.elementLayer.unSelectAllElements();
+          if (element) this.elementLayer.selectElements([element]);
 
           break;
         }
@@ -193,19 +196,19 @@ class App extends React.Component<Record<string, never>, AppState> {
             shape: "ellipse",
             ...elementBox,
           });
-          this.elementLayer.addElement(element, { isBeingCreated: true });
+          this.elementLayer.addElementBeingCreated(element);
           break;
         }
 
         case "Rectangle": {
           const element = createShapeElement({ shape: "rect", ...elementBox });
-          this.elementLayer.addElement(element, { isBeingCreated: true });
+          this.elementLayer.addElementBeingCreated(element);
           break;
         }
 
         case "Freedraw": {
           const element = createFreedrawElement({ path: [], ...elementBox });
-          this.elementLayer.addElement(element, { isBeingCreated: true });
+          this.elementLayer.addElementBeingCreated(element);
           break;
         }
 
@@ -234,21 +237,18 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onWindowPointerUp = (e: PointerEvent) => {
     if (!this.pointer) return;
-    // remove pointer and completes any element being created
     this.pointer = null;
+
     const elementBeingCreated = this.elementLayer.getElementBeingCreated();
 
-    if (elementBeingCreated) {
-      if (this.isElementNegligible(elementBeingCreated)) {
-        this.elementLayer.deleteElement(elementBeingCreated);
-        this.setState({});
-      } else {
-        this.elementLayer.finalizeElementCreation();
-      }
+    if (elementBeingCreated && this.isElementNegligible(elementBeingCreated)) {
+      this.elementLayer.deleteElement(elementBeingCreated);
+    } else {
+      this.elementLayer.finishCreatingElement();
     }
 
     if (this.state.activeTool === "Selection") {
-      this.selection.clearBoxHighlight();
+      this.setState({ selectionHighlight: null });
     }
   };
 
@@ -277,8 +277,10 @@ class App extends React.Component<Record<string, never>, AppState> {
         h: this.pointer.dragOffset.y / this.state.zoom,
       });
 
-      this.selection.setBoxHighlight(selectionBox);
-      this.selection.addElements(this.getAllElementsWithinBox(selectionBox));
+      this.setState({ selectionHighlight: selectionBox });
+      this.elementLayer.selectElements(
+        this.getAllElementsWithinBox(selectionBox),
+      );
       return;
     }
 
@@ -297,7 +299,7 @@ class App extends React.Component<Record<string, never>, AppState> {
             h: this.pointer.dragOffset.y / this.state.zoom,
           });
 
-          Object.assign(elementBeingCreated, {
+          this.elementLayer.mutateElement(elementBeingCreated, {
             ...box,
             transforms: {
               ...elementBeingCreated.transforms,
@@ -312,32 +314,40 @@ class App extends React.Component<Record<string, never>, AppState> {
         case "freedraw": {
           const { x, y } = this.screenOffsetToVirtualOffset(e);
 
+          const mutations = {
+            x: elementBeingCreated.x,
+            y: elementBeingCreated.y,
+            w: elementBeingCreated.w,
+            h: elementBeingCreated.h,
+            path: [...elementBeingCreated.path],
+          };
+
           // adjust width and x position if point is outside bounding box
           if (elementBeingCreated.x + elementBeingCreated.w < x) {
-            elementBeingCreated.w = x - elementBeingCreated.x;
+            mutations.w = x - elementBeingCreated.x;
           } else if (elementBeingCreated.x > x) {
-            elementBeingCreated.w += elementBeingCreated.x - x;
-            elementBeingCreated.x = x;
+            mutations.w += elementBeingCreated.x - x;
+            mutations.x = x;
           }
 
           // adjust height and y position if point is outside bounding box
           if (elementBeingCreated.y + elementBeingCreated.h < y) {
-            elementBeingCreated.h = y - elementBeingCreated.y;
+            mutations.h = y - elementBeingCreated.y;
           } else if (elementBeingCreated.y > y) {
-            elementBeingCreated.h += elementBeingCreated.y - y;
-            elementBeingCreated.y = y;
+            mutations.h += elementBeingCreated.y - y;
+            mutations.y = y;
           }
 
-          elementBeingCreated.path.push([x, y]);
+          mutations.path.push([x, y]);
+
+          // apply mutations
+          this.elementLayer.mutateElement(elementBeingCreated, mutations);
           break;
         }
 
         default:
           break;
       }
-
-      // modifying elementBeingCreated does nothing, so trigger a rerender
-      this.setState({});
     }
   };
 
@@ -349,7 +359,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
-      selection: this.state.session.selection,
+      selectedElements: this.elementLayer.getSelectedElements(),
     });
   }
 
@@ -359,7 +369,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
-      selection: this.state.session.selection,
+      selectedElements: this.elementLayer.getSelectedElements(),
     });
   }
 
@@ -393,13 +403,15 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.setState(zoomState);
     };
 
+    const selectedElements = this.elementLayer.getSelectedElements();
+
     return (
       <div className="app">
-        {!!this.state.session.selection.elements.length && (
+        {!!selectedElements.length && (
           <DesignMenu
-            selectedElements={this.state.session.selection.elements}
+            selectedElements={selectedElements}
             toolbarPosition={this.state.toolbarPosition}
-            onChange={() => this.setState({})}
+            onChange={this.onDesignMenuUpdate}
           />
         )}
         <div className="tools">
