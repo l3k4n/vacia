@@ -20,7 +20,7 @@ export default defineConfig({
   plugins: [react(), eslint(), svgr()],
   test: {
     dir: "./src/tests",
-    setupFiles: ["./src/tests/__setup__/vitest-canvas-mock.ts"],
+    setupFiles: ["./src/tests/__setup__/testDependencies.ts"],
     globals: true,
     environment: "jsdom",
     server: {
