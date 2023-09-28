@@ -38,8 +38,8 @@ export function hitTestElementAgainstBox(
   return horizontalBoundsFitsBox && verticalBoundsFitsBox;
 }
 
-/** Returns true if a point is inside the specified bounding box */
-export function hitTestPointAgainstBox(
+/** Returns true if a point is inside the specified element */
+export function hitTestPointAgainstElement(
   element: CanvasElement,
   coords: XYCoords,
 ): boolean {

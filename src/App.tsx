@@ -7,7 +7,7 @@ import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
   hitTestElementAgainstBox,
-  hitTestPointAgainstBox,
+  hitTestPointAgainstElement,
 } from "@core/hitTest";
 import renderFrame from "@core/renderer";
 import {
@@ -78,7 +78,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     for (let i = allElements.length - 1; i > -1; i -= 1) {
       const element = allElements[i];
 
-      if (hitTestPointAgainstBox(element, point)) {
+      if (hitTestPointAgainstElement(element, point)) {
         hitElement = element;
         break;
       }

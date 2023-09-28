@@ -1,7 +1,7 @@
 import { fireEvent } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import { describe, test, expect } from "vitest";
-import { renderApp } from "./utils";
+import { renderApp } from "./test-utils/renderApp";
 
 describe("Movement around canvas", () => {
   test("panning", () => {
@@ -46,5 +46,26 @@ describe("Movement around canvas", () => {
       deltaY: 125,
     });
     expect(window.appData.state.zoom.toFixed(2)).toBe("1.00");
+  });
+
+  test("only pan if Hand tool is active", () => {
+    const { canvas } = renderApp();
+
+    const panToBottomLeft = () => {
+      fireEvent.pointerDown(canvas, { clientX: 0, clientY: 0, buttons: 1 });
+      fireEvent.pointerMove(canvas, { clientX: 30, clientY: 30 });
+      fireEvent.pointerUp(canvas);
+    };
+
+    act(() => window.appData.setState({ activeTool: "Freedraw" }));
+
+    panToBottomLeft();
+
+    expect(window.appData.state.scrollOffset).toMatchObject({ x: 0, y: 0 });
+
+    act(() => window.appData.setState({ activeTool: "Hand" }));
+    panToBottomLeft();
+
+    expect(window.appData.state.scrollOffset).toMatchObject({ x: 30, y: 30 });
   });
 });
