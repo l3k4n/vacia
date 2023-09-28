@@ -1,10 +1,10 @@
 /* eslint-disable no-param-reassign */
-import { CanvasElement, CanvasElementMutations } from "@core/types";
+import { CanvasElement, CanvasElementMutations, Writeable } from "@core/types";
 
 /** This function only mutates elements and does not trigger re-render
  * or fire any event listeners associated with mutations.
  * `elementLayer.mutateElement` method for proper functionality. */
-function ApplyElementSpecificMutation<T extends CanvasElement>(
+function ApplyElementSpecificMutation<T extends Writeable<CanvasElement>>(
   elem: T,
   mutations: CanvasElementMutations,
 ): T {

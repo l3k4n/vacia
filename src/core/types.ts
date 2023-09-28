@@ -3,6 +3,7 @@ import { DrawingTools, ControlTools } from "./tools";
 export type XYCoords = { x: number; y: number };
 export type Point = [number, number];
 export type BoundingBox = XYCoords & { w: number; h: number };
+export type Writeable<T> = { -readonly [K in keyof T]: T[K] };
 
 interface ElementTransforms {
   // if element is flipped along an axis
@@ -12,7 +13,7 @@ interface ElementTransforms {
 
 interface AbstractElement extends BoundingBox {
   /** modifications to make when rendering element (e.g invert, crop) */
-  transforms: ElementTransforms;
+  readonly transforms: ElementTransforms;
 }
 export interface ShapeElement extends AbstractElement {
   type: "shape";
@@ -22,7 +23,7 @@ export interface FreedrawElement extends AbstractElement {
   type: "freedraw";
   path: Point[];
 }
-export type CanvasElement = ShapeElement | FreedrawElement;
+export type CanvasElement = Readonly<ShapeElement | FreedrawElement>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CanvasElementMutations = { [key: string]: any };
