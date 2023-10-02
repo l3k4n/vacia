@@ -52,10 +52,22 @@ export interface AppState {
 }
 
 /* pointer state since the last pointer down */
-export type PointerState = {
+export interface PointerState {
   origin: XYCoords;
-  // distance between pointer down origin and current pointer position
-  dragOffset: XYCoords;
-  // value of state.scrollOffset when pointer down occured
-  initialScrollOffset: XYCoords;
-} | null;
+  /** pointer drag data */
+  drag: {
+    /** distance between pointer down origin and current pointer position */
+    offset: XYCoords;
+    /** drag offset of the last pointermove event */
+    previousOffset: XYCoords;
+    /** since drag offset might vome back to it's original position this
+     * indicates whether a drag occured or not */
+    occurred: boolean;
+  };
+  hit: {
+    /** element that was clicked when pointer down occurred  */
+    element: CanvasElement | null;
+    withShiftKey: boolean;
+    withCtrlKey: boolean;
+  };
+}

@@ -1,4 +1,5 @@
 import { BoundingBox, CanvasElement } from "@core/types";
+import { getSurroundingBoundingBox } from "@core/utils";
 
 interface BoxOptions extends BoundingBox {
   scale: number;
@@ -46,34 +47,18 @@ export default function renderBoundingBoxes(
 
   ctx.save();
 
-  // use first element as surrounding box to avoid zero as default values
-  const surroundingBoxPoints = {
-    x1: elements[0].x,
-    y1: elements[0].y,
-    x2: elements[0].w + elements[0].x,
-    y2: elements[0].h + elements[0].y,
-  };
-
   ctx.strokeStyle = "blue";
   ctx.lineWidth = 2 / scale;
 
+  /** draw bounding box for individual elements */
   for (let i = 0; i < elements.length; i += 1) {
     const { x, y, w, h } = elements[i];
-
-    surroundingBoxPoints.x1 = Math.min(surroundingBoxPoints.x1, x);
-    surroundingBoxPoints.y1 = Math.min(surroundingBoxPoints.y1, y);
-    surroundingBoxPoints.x2 = Math.max(surroundingBoxPoints.x2, w + x);
-    surroundingBoxPoints.y2 = Math.max(surroundingBoxPoints.y2, h + y);
-
-    // draw individual element box
     ctx.strokeRect(x, y, w, h);
   }
 
   drawBoundingBoxWithHandles(ctx, {
-    x: surroundingBoxPoints.x1,
-    y: surroundingBoxPoints.y1,
-    w: surroundingBoxPoints.x2 - surroundingBoxPoints.x1,
-    h: surroundingBoxPoints.y2 - surroundingBoxPoints.y1,
+    /** bounding box of all selected elements */
+    ...getSurroundingBoundingBox(elements),
     handleSize: 7,
     scale,
   });

@@ -7,6 +7,7 @@ import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
   hitTestElementAgainstBox,
+  hitTestPointAgainstBox,
   hitTestPointAgainstElement,
 } from "@core/hitTest";
 import renderFrame from "@core/renderer";
@@ -19,7 +20,11 @@ import {
   XYCoords,
   CanvasElementMutations,
 } from "@core/types";
-import { getScreenCenterCoords, invertNegativeBoundingBox } from "@core/utils";
+import {
+  getScreenCenterCoords,
+  getSurroundingBoundingBox,
+  invertNegativeBoundingBox,
+} from "@core/utils";
 import { getNewZoomState } from "@core/viewport/zoom";
 import "@css/App.scss";
 
@@ -164,8 +169,12 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (e.buttons === 1) {
       this.pointer = {
         origin: { x: e.clientX, y: e.clientY },
-        dragOffset: { x: 0, y: 0 },
-        initialScrollOffset: { ...this.state.scrollOffset },
+        drag: {
+          offset: { x: 0, y: 0 },
+          previousOffset: { x: 0, y: 0 },
+          occurred: false,
+        },
+        hit: { element: null, withShiftKey: false, withCtrlKey: false },
       };
 
       // bounding box of the element to be created
@@ -183,11 +192,42 @@ class App extends React.Component<Record<string, never>, AppState> {
         case "Selection": {
           const element = this.getFirstElementAtPoint(elementBox);
 
-          // if shift key is'nt down when pointerdown occurs,
-          // replace selection with clicked element otherwise append element
-          if (!e.shiftKey) this.elementLayer.unSelectAllElements();
-          if (element) this.elementLayer.selectElements([element]);
+          this.pointer.hit = {
+            element,
+            withShiftKey: e.shiftKey,
+            withCtrlKey: e.ctrlKey,
+          };
 
+          const selectedElements = this.elementLayer.getSelectedElements();
+          /** Bounding box of all selected elements */
+          const selectionBox = getSurroundingBoundingBox(selectedElements);
+          /** whether or not pointer clicked inside selectionBox */
+          const pointIsInSelection = hitTestPointAgainstBox(
+            this.pointer.origin,
+            selectionBox,
+          );
+
+          if (pointIsInSelection) {
+            /** Add all selected elements to dragging elements if the pointer
+             * is within the bounding box of the selected elements. */
+            this.elementLayer.setElementsBeingDragged(selectedElements);
+          } else {
+            // If shift key is not pressed, unselect all elements.
+            if (!e.shiftKey) {
+              this.elementLayer.unSelectAllElements();
+            }
+
+            if (element) {
+              /** If an element was hit but it is outside the selectionBox, add
+               * the element to the selection. Note: If shift key was not
+               * pressed, it will be the only selected element. */
+              this.elementLayer.selectElements([element]);
+              this.elementLayer.setElementsBeingDragged(
+                // Selection changed, so use the latest selected elements.
+                this.elementLayer.getSelectedElements(),
+              );
+            }
+          }
           break;
         }
 
@@ -237,10 +277,34 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onWindowPointerUp = (e: PointerEvent) => {
     if (!this.pointer) return;
+
+    /** return true if multiple elements were dragged */
+    const MultiElementDragOccurred =
+      !this.pointer.drag.occurred &&
+      this.state.activeTool === "Selection" &&
+      this.elementLayer.getSelectedElements().length > 1;
+
+    /** if pointer does not drag when there are 2 or more selected elements
+     * replace selection replace selection with clicked element or add the
+     * element to selection if shiftKey was pressed */
+    if (MultiElementDragOccurred) {
+      if (!this.pointer.hit.withShiftKey) {
+        this.elementLayer.unSelectAllElements();
+      }
+
+      if (this.pointer.hit.element) {
+        this.elementLayer.selectElements([this.pointer.hit.element]);
+      }
+    }
+
+    /** pointer is released so clear elements being dragged */
+    this.elementLayer.clearElementsBeingDragged();
     this.pointer = null;
 
     const elementBeingCreated = this.elementLayer.getElementBeingCreated();
 
+    /** If a new element was created, delete it if it was large enough
+     * otherwise delete it */
     if (elementBeingCreated && this.isElementNegligible(elementBeingCreated)) {
       this.elementLayer.deleteElement(elementBeingCreated);
     } else {
@@ -254,34 +318,59 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onWindowPointerMove = (e: PointerEvent) => {
     if (!this.pointer) return;
-    // update pointer position regardless of active tool
-    this.pointer.dragOffset = {
-      x: e.clientX - this.pointer.origin.x,
-      y: e.clientY - this.pointer.origin.y,
+
+    /** if pointer exists update its drag and previousDrag */
+    this.pointer.drag = {
+      occurred: true,
+      previousOffset: this.pointer.drag.offset,
+      offset: {
+        x: e.clientX - this.pointer.origin.x,
+        y: e.clientY - this.pointer.origin.y,
+      },
+    };
+
+    /** pointer offset from its previous position */
+    const pointerDragChange = {
+      x: this.pointer.drag.offset.x - this.pointer.drag.previousOffset.x,
+      y: this.pointer.drag.offset.y - this.pointer.drag.previousOffset.y,
     };
 
     if (this.state.activeTool === "Hand") {
       this.setState({
         scrollOffset: {
-          x: this.pointer.initialScrollOffset.x + this.pointer.dragOffset.x,
-          y: this.pointer.initialScrollOffset.y + this.pointer.dragOffset.y,
+          x: this.state.scrollOffset.x + pointerDragChange.x,
+          y: this.state.scrollOffset.y + pointerDragChange.y,
         },
       });
       return;
     }
 
     if (this.state.activeTool === "Selection") {
-      const { box: selectionBox } = invertNegativeBoundingBox({
-        ...this.screenOffsetToVirtualOffset(this.pointer.origin),
-        w: this.pointer.dragOffset.x / this.state.zoom,
-        h: this.pointer.dragOffset.y / this.state.zoom,
-      });
+      const draggingElements = this.elementLayer.getElementsBeingDragged();
 
-      this.setState({ selectionHighlight: selectionBox });
-      this.elementLayer.selectElements(
-        this.getAllElementsWithinBox(selectionBox),
-      );
-      return;
+      if (draggingElements.length) {
+        /** if there are elements being dragged update their {x, y} coords  */
+        for (let i = 0; i < draggingElements.length; i += 1) {
+          const element = draggingElements[i];
+          this.elementLayer.mutateElement(element, {
+            x: element.x + pointerDragChange.x / this.state.zoom,
+            y: element.y + pointerDragChange.y / this.state.zoom,
+          });
+        }
+      } else {
+        /** if there are no elements being dragged, pointer drag is handled as a
+         * highlighted selectionBox and all elements within it are selected */
+        const { box: selectionBox } = invertNegativeBoundingBox({
+          ...this.screenOffsetToVirtualOffset(this.pointer.origin),
+          w: this.pointer.drag.offset.x / this.state.zoom,
+          h: this.pointer.drag.offset.y / this.state.zoom,
+        });
+
+        this.setState({ selectionHighlight: selectionBox });
+        this.elementLayer.selectElements(
+          this.getAllElementsWithinBox(selectionBox),
+        );
+      }
     }
 
     // Note: there will never be an element being created when using hand or
@@ -295,8 +384,8 @@ class App extends React.Component<Record<string, never>, AppState> {
           const { box, didFlipX, didFlipY } = invertNegativeBoundingBox({
             ...this.screenOffsetToVirtualOffset(this.pointer.origin),
             // make the size relative to current zoom
-            w: this.pointer.dragOffset.x / this.state.zoom,
-            h: this.pointer.dragOffset.y / this.state.zoom,
+            w: this.pointer.drag.offset.x / this.state.zoom,
+            h: this.pointer.drag.offset.y / this.state.zoom,
           });
 
           this.elementLayer.mutateElement(elementBeingCreated, {

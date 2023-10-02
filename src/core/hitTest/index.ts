@@ -55,3 +55,8 @@ export function hitTestPointAgainstElement(
       return false;
   }
 }
+
+/** Returns true if point is within bounding box */
+export function hitTestPointAgainstBox(point: XYCoords, box: BoundingBox) {
+  return hitTestRect(box, point);
+}

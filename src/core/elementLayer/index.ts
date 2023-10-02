@@ -10,6 +10,7 @@ export default class ElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
   private elementBeingCreated: CanvasElement | null = null;
+  private elementsBeingDragged: CanvasElement[] = [];
   private onChange;
 
   constructor(onChange: (ev: ElementLayerChangeEvent) => void) {
@@ -48,6 +49,21 @@ export default class ElementLayer {
 
     this.onChange();
     return element;
+  }
+
+  /** stores an array of elements being dragged */
+  setElementsBeingDragged(elements: CanvasElement[]) {
+    this.elementsBeingDragged = elements;
+  }
+
+  getElementsBeingDragged() {
+    return this.elementsBeingDragged;
+  }
+
+  /** Empties the array of elements being dragged, indicating that no
+   * elements are currently being dragged. */
+  clearElementsBeingDragged() {
+    this.elementsBeingDragged = [];
   }
 
   getElementBeingCreated() {
