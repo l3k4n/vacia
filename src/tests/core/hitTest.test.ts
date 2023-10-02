@@ -3,22 +3,22 @@ import { describe, test, expect } from "vitest";
 import { createShapeElement } from "../test-utils/elements";
 import {
   hitTestElementAgainstBox,
-  hitTestPointAgainstElement,
+  hitTestCoordsAgainstElement,
 } from "@core/hitTest";
 
 describe("hitTestShape", () => {
   test("point within shape", () => {
-    const point = { x: 5, y: 5 };
+    const coords = { x: 5, y: 5 };
     const element = createShapeElement("rect", { x: 0, y: 0, w: 10, h: 10 });
 
-    expect(hitTestPointAgainstElement(element, point)).toBe(true);
+    expect(hitTestCoordsAgainstElement(element, coords)).toBe(true);
   });
 
   test("point within ellipse bounding box but outside the ellipse", () => {
-    const point = { x: 1, y: 2 };
+    const coords = { x: 1, y: 2 };
     const element = createShapeElement("ellipse", { x: 0, y: 0, w: 20, h: 20 });
 
-    expect(hitTestPointAgainstElement(element, point)).toBe(false);
+    expect(hitTestCoordsAgainstElement(element, coords)).toBe(false);
   });
 });
 

@@ -147,7 +147,7 @@ export function shallowDiff<T extends object, S extends object>(
 export function getSurroundingBoundingBox(boxes: BoundingBox[]): BoundingBox {
   if (boxes.length < 1) return { x: 0, y: 0, w: 0, h: 0 };
 
-  const surroundingBoxPoints = {
+  const surroundingBoxCoords = {
     x1: boxes[0].x,
     y1: boxes[0].y,
     x2: boxes[0].w + boxes[0].x,
@@ -157,16 +157,16 @@ export function getSurroundingBoundingBox(boxes: BoundingBox[]): BoundingBox {
   for (let i = 0; i < boxes.length; i += 1) {
     const { x, y, w, h } = boxes[i];
 
-    surroundingBoxPoints.x1 = Math.min(surroundingBoxPoints.x1, x);
-    surroundingBoxPoints.y1 = Math.min(surroundingBoxPoints.y1, y);
-    surroundingBoxPoints.x2 = Math.max(surroundingBoxPoints.x2, w + x);
-    surroundingBoxPoints.y2 = Math.max(surroundingBoxPoints.y2, h + y);
+    surroundingBoxCoords.x1 = Math.min(surroundingBoxCoords.x1, x);
+    surroundingBoxCoords.y1 = Math.min(surroundingBoxCoords.y1, y);
+    surroundingBoxCoords.x2 = Math.max(surroundingBoxCoords.x2, w + x);
+    surroundingBoxCoords.y2 = Math.max(surroundingBoxCoords.y2, h + y);
   }
 
   return {
-    x: surroundingBoxPoints.x1,
-    y: surroundingBoxPoints.y1,
-    w: surroundingBoxPoints.x2 - surroundingBoxPoints.x1,
-    h: surroundingBoxPoints.y2 - surroundingBoxPoints.y1,
+    x: surroundingBoxCoords.x1,
+    y: surroundingBoxCoords.y1,
+    w: surroundingBoxCoords.x2 - surroundingBoxCoords.x1,
+    h: surroundingBoxCoords.y2 - surroundingBoxCoords.y1,
   };
 }

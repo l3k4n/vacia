@@ -7,8 +7,8 @@ import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
   hitTestElementAgainstBox,
-  hitTestPointAgainstBox,
-  hitTestPointAgainstElement,
+  hitTestCoordsAgainstBox,
+  hitTestCoordsAgainstElement,
 } from "@core/hitTest";
 import renderFrame from "@core/renderer";
 import {
@@ -83,7 +83,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     for (let i = allElements.length - 1; i > -1; i -= 1) {
       const element = allElements[i];
 
-      if (hitTestPointAgainstElement(element, point)) {
+      if (hitTestCoordsAgainstElement(element, point)) {
         hitElement = element;
         break;
       }
@@ -202,7 +202,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           /** Bounding box of all selected elements */
           const selectionBox = getSurroundingBoundingBox(selectedElements);
           /** whether or not pointer clicked inside selectionBox */
-          const pointIsInSelection = hitTestPointAgainstBox(
+          const pointIsInSelection = hitTestCoordsAgainstBox(
             this.pointer.origin,
             selectionBox,
           );

@@ -21,7 +21,7 @@ function hitTestEllipse(box: BoundingBox, coords: XYCoords) {
    */
   const value = (coords.x - cX) ** 2 / rX ** 2 + (coords.y - cY) ** 2 / rY ** 2;
 
-  // If value <= 1, point is in the ellipse.
+  // If value <= 1, coords is in the ellipse.
   return value <= 1;
 }
 
@@ -38,8 +38,8 @@ export function hitTestElementAgainstBox(
   return horizontalBoundsFitsBox && verticalBoundsFitsBox;
 }
 
-/** Returns true if a point is inside the specified element */
-export function hitTestPointAgainstElement(
+/** Returns true if a coords is inside the specified element */
+export function hitTestCoordsAgainstElement(
   element: CanvasElement,
   coords: XYCoords,
 ): boolean {
@@ -56,7 +56,7 @@ export function hitTestPointAgainstElement(
   }
 }
 
-/** Returns true if point is within bounding box */
-export function hitTestPointAgainstBox(point: XYCoords, box: BoundingBox) {
-  return hitTestRect(box, point);
+/** Returns true if coords is within bounding box */
+export function hitTestCoordsAgainstBox(coords: XYCoords, box: BoundingBox) {
+  return hitTestRect(box, coords);
 }
