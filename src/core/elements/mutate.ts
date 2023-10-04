@@ -13,6 +13,10 @@ function ApplyElementSpecificMutation<T extends Writeable<CanvasElement>>(
   if (typeof mutations.w === "number") elem.w = mutations.w;
   if (typeof mutations.h === "number") elem.h = mutations.h;
 
+  if (mutations.styles) elem.styles = mutations.styles;
+
+  if (mutations.transforms) elem.transforms = mutations.transforms;
+
   switch (elem.type) {
     case "freedraw":
       if (mutations.path) elem.path = mutations.path;

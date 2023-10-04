@@ -1,5 +1,6 @@
 import { vi, describe, test, beforeEach, expect } from "vitest";
 import ElementLayer from "@core/elementLayer";
+import { createShapeElement } from "@core/elements";
 import { CanvasElement } from "@core/types";
 
 const mockOnChange = vi.fn();
@@ -13,33 +14,9 @@ describe("ElementLayer", () => {
     elementLayer = new ElementLayer(mockOnChange);
 
     sampleElements = [
-      {
-        type: "shape",
-        shape: "rect",
-        x: 20,
-        y: 20,
-        w: 100,
-        h: 100,
-        transforms: {},
-      },
-      {
-        type: "shape",
-        shape: "ellipse",
-        x: 533,
-        y: 200,
-        w: 100,
-        h: 100,
-        transforms: {},
-      },
-      {
-        type: "shape",
-        shape: "rect",
-        x: 220,
-        y: 435,
-        w: 234,
-        h: 567,
-        transforms: {},
-      },
+      createShapeElement({ shape: "rect", x: 20, y: 20, w: 100, h: 100 }),
+      createShapeElement({ shape: "ellipse", x: 533, y: 200, w: 100, h: 100 }),
+      createShapeElement({ shape: "rect", x: 220, y: 435, w: 234, h: 567 }),
     ];
   });
 

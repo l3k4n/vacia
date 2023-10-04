@@ -5,14 +5,18 @@ export type Point = [number, number];
 export type BoundingBox = XYCoords & { w: number; h: number };
 export type Writeable<T> = { -readonly [K in keyof T]: T[K] };
 
-interface ElementTransforms {
+export interface ElementTransforms {
   // if element is flipped along an axis
   flippedX?: boolean;
   flippedY?: boolean;
 }
+export interface ElementStyles {
+  fill: string;
+}
 
 interface AbstractElement extends BoundingBox {
   /** modifications to make when rendering element (e.g invert, crop) */
+  readonly styles: ElementStyles;
   readonly transforms: ElementTransforms;
 }
 export interface ShapeElement extends AbstractElement {
