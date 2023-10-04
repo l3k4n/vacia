@@ -130,6 +130,15 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
+  private snapVirtualCoordsToGrid({ x, y }: XYCoords) {
+    const { size } = this.state.grid;
+
+    return {
+      x: Math.round(x / size) * size,
+      y: Math.round(y / size) * size,
+    };
+  }
+
   /** Converts a screen position to its corresponding position relative to the
    * scroll offset. */
   private screenOffsetToVirtualOffset(position: XYCoords) {
@@ -181,7 +190,11 @@ class App extends React.Component<Record<string, never>, AppState> {
       const elementBox = {
         w: 0,
         h: 0,
-        ...this.screenOffsetToVirtualOffset({ x: e.clientX, y: e.clientY }),
+        /** convert the pointer position to its virtual poistion then snap it
+         * to the grid */
+        ...this.snapVirtualCoordsToGrid(
+          this.screenOffsetToVirtualOffset(e.nativeEvent),
+        ),
       };
 
       switch (this.state.activeTool) {
@@ -349,12 +362,27 @@ class App extends React.Component<Record<string, never>, AppState> {
       const draggingElements = this.elementLayer.getElementsBeingDragged();
 
       if (draggingElements.length) {
+        const currentDragOffsetSnapped = this.snapVirtualCoordsToGrid(
+          this.screenOffsetToVirtualOffset(this.pointer.drag.offset),
+        );
+        const previousDragOffsetSnapped = this.snapVirtualCoordsToGrid(
+          this.screenOffsetToVirtualOffset(this.pointer.drag.previousOffset),
+        );
+
+        /** pointerDragChange may be less than snapping threshold, so for
+         * snapping to work properly, snap the current and previous drag offsets
+         * individually before getting their difference */
+        const snappedPointerDragChange = {
+          x: currentDragOffsetSnapped.x - previousDragOffsetSnapped.x,
+          y: currentDragOffsetSnapped.y - previousDragOffsetSnapped.y,
+        };
+
         /** if there are elements being dragged update their {x, y} coords  */
         for (let i = 0; i < draggingElements.length; i += 1) {
           const element = draggingElements[i];
           this.elementLayer.mutateElement(element, {
-            x: element.x + pointerDragChange.x / this.state.zoom,
-            y: element.y + pointerDragChange.y / this.state.zoom,
+            x: element.x + snappedPointerDragChange.x,
+            y: element.y + snappedPointerDragChange.y,
           });
         }
       } else {
@@ -380,12 +408,23 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (elementBeingCreated) {
       switch (elementBeingCreated.type) {
         case "shape": {
+          /** size offsets of the element snapped to the grid */
+          const snappedElementSizeOffset = this.snapVirtualCoordsToGrid({
+            x: this.pointer.drag.offset.x / this.state.zoom,
+            y: this.pointer.drag.offset.y / this.state.zoom,
+          });
+
+          /** position of the element snapped to the grid */
+          const snappedElementPosition = this.snapVirtualCoordsToGrid(
+            this.screenOffsetToVirtualOffset(this.pointer.origin),
+          );
+
           // flip x and y axis if element size is negative
           const { box, didFlipX, didFlipY } = invertNegativeBoundingBox({
-            ...this.screenOffsetToVirtualOffset(this.pointer.origin),
-            // make the size relative to current zoom
-            w: this.pointer.drag.offset.x / this.state.zoom,
-            h: this.pointer.drag.offset.y / this.state.zoom,
+            x: snappedElementPosition.x,
+            y: snappedElementPosition.y,
+            w: snappedElementSizeOffset.x,
+            h: snappedElementSizeOffset.y,
           });
 
           this.elementLayer.mutateElement(elementBeingCreated, {
