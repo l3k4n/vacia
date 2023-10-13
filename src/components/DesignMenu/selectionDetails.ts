@@ -24,7 +24,7 @@ function getSelectionDetails(elements: CanvasElement[]): SelectionDetails {
       w: firstElement.w.toString(),
       h: firstElement.h.toString(),
     },
-    fill: "red", // placeholder value
+    fill: firstElement.styles.fill,
   };
 
   for (let i = 0; i < elements.length; i += 1) {
@@ -35,6 +35,8 @@ function getSelectionDetails(elements: CanvasElement[]): SelectionDetails {
     if (element.y.toString() !== props.box.y) props.box.y = "Mixed";
     if (element.w.toString() !== props.box.w) props.box.w = "Mixed";
     if (element.h.toString() !== props.box.h) props.box.h = "Mixed";
+
+    if (element.styles.fill !== props.fill) props.fill = "Mixed";
 
     if (element.type === "shape") {
       metadata.canBeFilled = true;

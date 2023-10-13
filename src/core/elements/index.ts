@@ -1,3 +1,4 @@
+import { DEFAULT_ELEMENT_STYLES, DEFAULT_ELEMENT_TRANSFORMS } from "@constants";
 import {
   CanvasElement,
   ElementStyles,
@@ -14,21 +15,12 @@ type StripElement<T extends CanvasElement> = Omit<
   transforms?: Partial<ElementTransforms>;
 };
 
-const defaultStyles: ElementStyles = {
-  fill: "#ffffffff",
-};
-
-const defaultTransforms: ElementTransforms = {
-  flippedX: false,
-  flippedY: false,
-};
-
 type ShapeOptions = StripElement<ShapeElement>;
 function createShapeElement(options: ShapeOptions): ShapeElement {
   return {
     ...options,
-    styles: { ...defaultStyles, ...options.styles },
-    transforms: { ...defaultTransforms, ...options.transforms },
+    styles: { ...DEFAULT_ELEMENT_STYLES, ...options.styles },
+    transforms: { ...DEFAULT_ELEMENT_TRANSFORMS, ...options.transforms },
     type: "shape",
   };
 }
@@ -37,8 +29,8 @@ type FreedrawOptions = StripElement<FreedrawElement>;
 function createFreedrawElement(options: FreedrawOptions): FreedrawElement {
   return {
     ...options,
-    styles: { ...defaultStyles, ...options.styles },
-    transforms: { ...defaultTransforms, ...options.transforms },
+    styles: { ...DEFAULT_ELEMENT_STYLES, ...options.styles },
+    transforms: { ...DEFAULT_ELEMENT_TRANSFORMS, ...options.transforms },
     type: "freedraw",
   };
 }

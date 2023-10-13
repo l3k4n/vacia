@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import tinycolor from "tinycolor2";
 import { SelectionProps } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
-import { ColorTransformer, EvalMathExpression, clampNumber } from "@core/utils";
-import { useUnmount } from "@hooks/useUnmount";
+import { DEFAULT_ELEMENT_STYLES } from "@constants";
+import { EvalMathExpression, clampNumber } from "@core/utils";
 
 interface MenuSectionProps {
   title: string;
@@ -15,14 +16,6 @@ interface SectionProps<T> {
   disabled?: boolean;
   onChange: (value: T) => void;
 }
-
-const blurTextInputOnEnterKey = (e: React.KeyboardEvent) => {
-  const target = e.target as HTMLElement;
-
-  if (e.key === "Enter" && target.tagName === "INPUT") {
-    (e.target as HTMLElement).blur();
-  }
-};
 
 function MenuSection(props: MenuSectionProps) {
   return (
@@ -60,35 +53,32 @@ export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
   };
 
   const submit = () => {
-    /** Evaluates input string as a number or math expression and returns the
-     * result or the fallback if value is invalid. */
-    const evalInput = (value: string) => {
-      const intValue = +value.replaceAll(" ", "");
-      if (Number.isFinite(intValue)) return intValue.toString();
-      return EvalMathExpression(value);
-    };
-
     const evaluatedValues = {
-      x: (evalInput(x) ?? props.value.x).toString(),
-      y: (evalInput(y) ?? props.value.y).toString(),
-      w: (evalInput(w) ?? props.value.w).toString(),
-      h: (evalInput(h) ?? props.value.h).toString(),
+      x: (EvalMathExpression(x) ?? props.value.x).toString(),
+      y: (EvalMathExpression(y) ?? props.value.y).toString(),
+      w: (EvalMathExpression(w) ?? props.value.w).toString(),
+      h: (EvalMathExpression(h) ?? props.value.h).toString(),
     };
 
     updateInputs(evaluatedValues);
     props.onChange(evaluatedValues);
   };
 
+  const submitOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+      submit();
+    }
+  };
+
   useEffect(() => updateInputs(props.value), [props.value]);
-  useUnmount(submit);
 
   return (
     <MenuSection title="Layout" disabled={props.disabled}>
       <div
         className={"MS_LayoutEditor"}
-        onBlur={submit}
-        // blurs the input and submitting is handled by the onBlur event
-        onKeyDown={blurTextInputOnEnterKey}>
+        // fallback to previous value onBlur
+        onBlur={() => updateInputs(props.value)}
+        onKeyDown={submitOnEnter}>
         <label title="X position" tabIndex={-1}>
           <span>X</span>
           <input value={x} onChange={(e) => setX(e.target.value)} />
@@ -111,67 +101,98 @@ export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
 }
 
 export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
-  const colorTransformer = useMemo(
-    () => new ColorTransformer(props.value),
-    [props.value],
+  const tc = useRef(tinycolor(props.value));
+  const [hexInput, setHexInput] = useState(() =>
+    tc.current.toHexString().toUpperCase(),
   );
+  const [opacityInput, setOpacityInput] = useState(
+    () => `${tc.current.getAlpha() * 100}%`,
+  );
+  const [fullColor, setFullColor] = useState(() => tc.current.toHex8String());
 
-  const [hex, setHex] = useState(colorTransformer.getHex);
-  const [opacity, setOpacity] = useState(colorTransformer.getOpacity);
-  const [fullColor, setFullColor] = useState(colorTransformer.getFullColor);
-
-  const submit = () => {
-    // evaluate opacity as math expression
-    const evaluatedOpacity = EvalMathExpression(opacity, "%");
-    if (evaluatedOpacity !== null) {
-      colorTransformer.setOpacity(`${clampNumber(evaluatedOpacity, 0, 100)}%`);
-    } else {
-      colorTransformer.setOpacity(opacity);
-    }
-
-    colorTransformer.setColor(hex);
-
-    setHex(colorTransformer.getHex());
-    setOpacity(colorTransformer.getOpacity());
-    setFullColor(colorTransformer.getFullColor());
-
-    props.onChange(colorTransformer.getFullColor());
+  const updateInputs = (newTC: tinycolor.Instance) => {
+    setHexInput(newTC.toHexString().toUpperCase());
+    setOpacityInput(`${newTC.getAlpha() * 100}%`);
+    setFullColor(newTC.toHex8String());
   };
 
-  const onBlur = (e: React.FocusEvent) => {
-    if ((e.target as HTMLElement).tagName === "INPUT") {
+  const submit = () => {
+    const newColor = tinycolor(hexInput);
+
+    /** if color is invalid fall back to previous valid color */
+    if (!newColor.isValid()) {
+      updateInputs(tc.current);
+      return;
+    }
+
+    // allow math operations on opacity input
+    const evaluatedOpacity = EvalMathExpression(opacityInput, "%");
+    /** if color does not include alpha (i.e not an 8-char hex string),
+     * then opacity was not overidden by hex, so use previous hex */
+    if (newColor.getFormat() !== "hex8") {
+      if (evaluatedOpacity === null) {
+        /** use previous opacity if opacity is not a valid math expression */
+        newColor.setAlpha(tc.current.getAlpha());
+      } else {
+        /** make the evaluated values a valid `Alpha` value */
+        newColor.setAlpha(clampNumber(evaluatedOpacity, 0, 100) / 100);
+      }
+    }
+
+    tc.current = newColor;
+
+    updateInputs(newColor);
+    props.onChange(newColor.toHex8String().toUpperCase());
+  };
+
+  const submitOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
       submit();
     }
   };
 
-  useEffect(() => {
-    setHex(colorTransformer.getHex());
-    setOpacity(colorTransformer.getOpacity());
-    setFullColor(colorTransformer.getFullColor());
-  }, [colorTransformer]);
+  /** set's the current color to a default value */
+  const replaceMixedColor = () => {
+    tc.current = tinycolor(DEFAULT_ELEMENT_STYLES.fill);
+    updateInputs(tc.current);
+    props.onChange(tc.current.toHex8String().toUpperCase());
+  };
 
-  useUnmount(submit);
+  useEffect(() => {
+    tc.current = tinycolor(props.value);
+    updateInputs(tc.current);
+  }, [props.value]);
 
   return (
     <MenuSection title="Fill" disabled={props.disabled}>
       <div
         className={"MS_ColorPicker"}
-        onBlur={onBlur}
-        onKeyDown={blurTextInputOnEnterKey}>
-        <button
-          className="colorPreview"
-          style={{ backgroundColor: fullColor }}
-        />
-        <input
-          className="hexInput"
-          value={hex}
-          onChange={(e) => setHex(e.target.value)}
-        />
-        <input
-          className="opacityInput"
-          value={opacity}
-          onChange={(e) => setOpacity(e.target.value)}
-        />
+        // fallback to valid color onBlur
+        onBlur={() => updateInputs(tc.current)}
+        onKeyDown={submitOnEnter}>
+        {/* if color is Mixed only show button to replace color */}
+        {props.value === "Mixed" ? (
+          <button className="replaceMixedColor" onClick={replaceMixedColor}>
+            Replace all Mixed Colors
+          </button>
+        ) : (
+          <>
+            <button
+              className="colorPreview"
+              style={{ backgroundColor: fullColor }}
+            />
+            <input
+              className="hexInput"
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+            />
+            <input
+              className="opacityInput"
+              value={opacityInput}
+              onChange={(e) => setOpacityInput(e.target.value)}
+            />
+          </>
+        )}
       </div>
     </MenuSection>
   );

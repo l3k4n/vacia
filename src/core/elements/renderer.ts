@@ -3,7 +3,7 @@ import { CanvasElement, FreedrawElement, ShapeElement } from "@core/types";
 function renderShapeElement(ctx: CanvasRenderingContext2D, elem: ShapeElement) {
   ctx.save();
 
-  ctx.fillStyle = "red";
+  ctx.fillStyle = elem.styles.fill;
   if (elem.shape === "rect") {
     ctx.fillRect(elem.x, elem.y, elem.w, elem.h);
   } else {

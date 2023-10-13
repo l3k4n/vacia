@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import tinycolor from "tinycolor2";
 import { AppState, XYCoords, BoundingBox } from "./types";
 
 /** returns the center position of in screen coords */
@@ -43,10 +42,17 @@ export function invertNegativeBoundingBox(box: BoundingBox): {
 /** evalutes a string as a math expression and returns result or null if string
  * is invalid */
 export function EvalMathExpression(exp: string, units?: string): number | null {
+  if (!exp.length) return null;
+  // eslint-disable-next-line no-param-reassign
+  exp = exp.replaceAll(" ", "");
   if (units) {
     // remove units if preset
     // eslint-disable-next-line no-param-reassign
     exp = exp.replaceAll(units, "");
+  }
+  if (Number.isFinite(+exp)) {
+    // return if value is a number literal
+    return +exp;
   }
   const tokens = exp
     .replaceAll(" ", "")
@@ -82,42 +88,6 @@ export function EvalMathExpression(exp: string, units?: string): number | null {
   }
 
   return null;
-}
-
-/** converts colors between different formats */
-export class ColorTransformer {
-  private tc: ReturnType<typeof tinycolor>;
-  constructor(str: string) {
-    this.tc = tinycolor(str);
-  }
-
-  setColor(color: string) {
-    const newColor = tinycolor(color);
-
-    if (newColor.isValid()) {
-      /** if color does not include alpha (i.e 8 char hex),
-       * use previous alpha */
-      if (newColor.getFormat() !== "hex8") {
-        newColor.setAlpha(this.tc.getAlpha());
-      }
-      this.tc = newColor;
-    }
-
-    return this;
-  }
-
-  setOpacity(opacity: string) {
-    const alpha = +opacity.split("%")[0] / 100;
-    this.tc.setAlpha(alpha);
-
-    return this;
-  }
-
-  getHex = () => this.tc.toHexString().toUpperCase();
-
-  getOpacity = () => `${(this.tc.getAlpha() * 100).toFixed(0)}%`;
-
-  getFullColor = () => this.tc.toHex8String();
 }
 
 /** returns all properties of the target object that are different from the

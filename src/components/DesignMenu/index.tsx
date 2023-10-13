@@ -21,13 +21,9 @@ class DesignMenu extends React.Component<DesignMenuProps> {
   horizontalMenuPosition;
   /** Metadata and shared properties of the current selection. */
   selectionDetails;
-  /** Selection might change before it is updated, so this property keeps track
-   * of the selection prior to the most recent rerender */
-  selectionElementsToApplyChangesTo;
 
   constructor(props: DesignMenuProps) {
     super(props);
-    this.selectionElementsToApplyChangesTo = props.selectedElements;
     this.selectionDetails = getSelectionDetails(props.selectedElements);
     /** put the menu next to the toolbar if at the left or right
      * otherwise put it on the left */
@@ -40,23 +36,17 @@ class DesignMenu extends React.Component<DesignMenuProps> {
   /** using `shouldComponentUpdate` so that by the time the render function is
    * called `selectionDetails` has already been updated */
   shouldComponentUpdate(nextProps: Readonly<DesignMenuProps>) {
-    /** if selection changes while still editing in input, changes might be
-     * applied to the lastest one instead of the previous. To prevent that,
-     * I will hold onto previous elements if selection changes and go back to
-     * the latest if it doesn't */
     if (nextProps.selectedElements !== this.props.selectedElements) {
-      this.selectionDetails = getSelectionDetails(this.props.selectedElements);
-      this.selectionElementsToApplyChangesTo = this.props.selectedElements;
-    } else {
-      this.selectionElementsToApplyChangesTo = nextProps.selectedElements;
+      this.selectionDetails = getSelectionDetails(nextProps.selectedElements);
+      return true;
     }
 
-    return nextProps.selectedElements !== this.props.selectedElements;
+    return false;
   }
 
   onBoundingBoxChange = (box: SelectionProps["box"]) => {
     const { props: selectionProps } = this.selectionDetails;
-    const elements = this.selectionElementsToApplyChangesTo;
+    const elements = this.props.selectedElements;
 
     // get all properties that changed
     const changes = shallowDiff(box, selectionProps.box);
@@ -73,9 +63,10 @@ class DesignMenu extends React.Component<DesignMenuProps> {
   };
 
   onFillChange = (color: string) => {
-    // TODO: handle fill when CanvasElement can change fill
-    const elements = this.selectionElementsToApplyChangesTo;
-    this.props.onChange(elements, {});
+    const elements = this.props.selectedElements;
+    this.props.onChange(elements, {
+      styles: { fill: color },
+    });
   };
 
   render(): React.ReactNode {
