@@ -260,7 +260,10 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
 
         case "Freedraw": {
-          const element = createFreedrawElement({ path: [], ...elementBox });
+          const element = createFreedrawElement({
+            path: [[0, 0]],
+            ...elementBox,
+          });
           this.elementLayer.addElementBeingCreated(element);
           break;
         }
