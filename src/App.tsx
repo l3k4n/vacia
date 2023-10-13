@@ -2,7 +2,7 @@ import React from "react";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
-import { ZOOM_STEP } from "@constants";
+import { ELEMENT_PRECISION, ZOOM_STEP } from "@constants";
 import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
@@ -466,7 +466,12 @@ class App extends React.Component<Record<string, never>, AppState> {
             mutations.y = y;
           }
 
-          mutations.path.push([x, y]);
+          /** Mutating the element will not set the precision of `path`, so i
+           * have to do it manually before mutating the element */
+          mutations.path.push([
+            +x.toFixed(ELEMENT_PRECISION),
+            +y.toFixed(ELEMENT_PRECISION),
+          ]);
 
           // apply mutations
           this.elementLayer.mutateElement(elementBeingCreated, mutations);

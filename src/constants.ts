@@ -13,3 +13,7 @@ export const DEFAULT_ELEMENT_TRANSFORMS: ElementTransforms = {
 export const DEFAULT_ELEMENT_STYLES: ElementStyles = {
   fill: "#ffffffff",
 };
+
+/** The max number of decimal places an element's position values should have.
+ * Position values include x, y, width, height and the in a path[] */
+export const ELEMENT_PRECISION = 2;

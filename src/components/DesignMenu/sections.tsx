@@ -106,13 +106,13 @@ export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
     tc.current.toHexString().toUpperCase(),
   );
   const [opacityInput, setOpacityInput] = useState(
-    () => `${tc.current.getAlpha() * 100}%`,
+    () => `${Math.round(tc.current.getAlpha() * 100)}%`,
   );
   const [fullColor, setFullColor] = useState(() => tc.current.toHex8String());
 
   const updateInputs = (newTC: tinycolor.Instance) => {
     setHexInput(newTC.toHexString().toUpperCase());
-    setOpacityInput(`${newTC.getAlpha() * 100}%`);
+    setOpacityInput(`${Math.round(newTC.getAlpha() * 100)}%`);
     setFullColor(newTC.toHex8String());
   };
 
