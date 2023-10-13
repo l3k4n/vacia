@@ -186,15 +186,17 @@ class App extends React.Component<Record<string, never>, AppState> {
         hit: { element: null, withShiftKey: false, withCtrlKey: false },
       };
 
+      /** pointer coords in virtual space */
+      const virtualPointerCoords = this.screenOffsetToVirtualOffset(
+        e.nativeEvent,
+      );
       // bounding box of the element to be created
       const elementBox = {
         w: 0,
         h: 0,
         /** convert the pointer position to its virtual poistion then snap it
          * to the grid */
-        ...this.snapVirtualCoordsToGrid(
-          this.screenOffsetToVirtualOffset(e.nativeEvent),
-        ),
+        ...this.snapVirtualCoordsToGrid(virtualPointerCoords),
       };
 
       switch (this.state.activeTool) {
@@ -262,7 +264,11 @@ class App extends React.Component<Record<string, never>, AppState> {
         case "Freedraw": {
           const element = createFreedrawElement({
             path: [[0, 0]],
-            ...elementBox,
+            /** not using `elementBox` because freedraw should not be snapped
+             * while it is being drawn drawing */
+            ...virtualPointerCoords,
+            w: 0,
+            h: 0,
           });
           this.elementLayer.addElementBeingCreated(element);
           break;
@@ -383,10 +389,13 @@ class App extends React.Component<Record<string, never>, AppState> {
         /** if there are elements being dragged update their {x, y} coords  */
         for (let i = 0; i < draggingElements.length; i += 1) {
           const element = draggingElements[i];
-          this.elementLayer.mutateElement(element, {
-            x: element.x + snappedPointerDragChange.x,
-            y: element.y + snappedPointerDragChange.y,
-          });
+          this.elementLayer.mutateElement(
+            element,
+            this.snapVirtualCoordsToGrid({
+              x: element.x + snappedPointerDragChange.x,
+              y: element.y + snappedPointerDragChange.y,
+            }),
+          );
         }
       } else {
         /** if there are no elements being dragged, pointer drag is handled as a
@@ -487,12 +496,11 @@ class App extends React.Component<Record<string, never>, AppState> {
           if (dx || dy) {
             mutations.path.forEach((point) => {
               // eslint-disable-next-line no-param-reassign
-              point[0] += dx;
+              point[0] = +(point[0] + dx).toFixed(2);
               // eslint-disable-next-line no-param-reassign
-              point[1] += dy;
+              point[1] = +(point[1] + dy).toFixed(2);
             });
           }
-
           // apply mutations
           this.elementLayer.mutateElement(elementBeingCreated, mutations);
           break;
