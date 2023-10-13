@@ -450,11 +450,16 @@ class App extends React.Component<Record<string, never>, AppState> {
             path: [...elementBeingCreated.path],
           };
 
+          // Change in x and y coordinates if path goes outside bounding box
+          let dx = 0;
+          let dy = 0;
+
           // adjust width and x position if point is outside bounding box
           if (elementBeingCreated.x + elementBeingCreated.w < x) {
             mutations.w = x - elementBeingCreated.x;
           } else if (elementBeingCreated.x > x) {
             mutations.w += elementBeingCreated.x - x;
+            dx = mutations.x - x;
             mutations.x = x;
           }
 
@@ -463,15 +468,27 @@ class App extends React.Component<Record<string, never>, AppState> {
             mutations.h = y - elementBeingCreated.y;
           } else if (elementBeingCreated.y > y) {
             mutations.h += elementBeingCreated.y - y;
+            dy = mutations.y - y;
             mutations.y = y;
           }
 
-          /** Mutating the element will not set the precision of `path`, so i
-           * have to do it manually before mutating the element */
+          /** Mutating the element will not set the precision of `path`, so
+           * round the point coords before adding to path */
           mutations.path.push([
-            +x.toFixed(ELEMENT_PRECISION),
-            +y.toFixed(ELEMENT_PRECISION),
+            // subtract x, y coords to make point relative to element position.
+            +(x - mutations.x).toFixed(ELEMENT_PRECISION),
+            +(y - mutations.y).toFixed(ELEMENT_PRECISION),
           ]);
+
+          /** if there changes to x or y coords to path if there are any */
+          if (dx || dy) {
+            mutations.path.forEach((point) => {
+              // eslint-disable-next-line no-param-reassign
+              point[0] += dx;
+              // eslint-disable-next-line no-param-reassign
+              point[1] += dy;
+            });
+          }
 
           // apply mutations
           this.elementLayer.mutateElement(elementBeingCreated, mutations);

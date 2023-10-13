@@ -30,11 +30,11 @@ function renderFreedrawElement(
   ctx.beginPath();
 
   const startPoint = elem.path[0];
-  ctx.moveTo(startPoint[0], startPoint[1]);
+  ctx.moveTo(startPoint[0] + elem.x, startPoint[1] + elem.y);
 
   for (let i = 1; i < elem.path.length; i += 1) {
     const point = elem.path[i];
-    ctx.lineTo(point[0], point[1]);
+    ctx.lineTo(point[0] + elem.x, point[1] + elem.y);
   }
 
   ctx.stroke();
