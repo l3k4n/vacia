@@ -1,3 +1,4 @@
+import { SELECTION_BOX_PADDING } from "@constants";
 import { BoundingBox, CanvasElement } from "@core/types";
 import { getSurroundingBoundingBox } from "@core/utils";
 
@@ -47,18 +48,25 @@ export default function renderBoundingBoxes(
 
   ctx.save();
 
+  /** padding around selected content */
+  const padding = SELECTION_BOX_PADDING / scale;
+
   ctx.strokeStyle = "blue";
   ctx.lineWidth = 2 / scale;
 
   /** draw bounding box for individual elements */
   for (let i = 0; i < elements.length; i += 1) {
     const { x, y, w, h } = elements[i];
-    ctx.strokeRect(x, y, w, h);
+    ctx.strokeRect(x - padding, y - padding, w + 2 * padding, h + 2 * padding);
   }
 
+  const surroundingBox = getSurroundingBoundingBox(elements);
   drawBoundingBoxWithHandles(ctx, {
     /** bounding box of all selected elements */
-    ...getSurroundingBoundingBox(elements),
+    x: surroundingBox.x - padding,
+    y: surroundingBox.y - padding,
+    w: surroundingBox.w + 2 * padding,
+    h: surroundingBox.h + 2 * padding,
     handleSize: 7,
     scale,
   });
