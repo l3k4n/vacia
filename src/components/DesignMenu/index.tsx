@@ -1,6 +1,9 @@
-import React from "react";
+import React, { CSSProperties } from "react";
 import { LayoutSection, ColorSection } from "./sections";
-import getSelectionDetails, { SelectionProps } from "./selectionDetails";
+import getSelectionDetails, {
+  SelectionMetadata,
+  SelectionProps,
+} from "./selectionDetails";
 import {
   BoundingBox,
   CanvasElement,
@@ -16,37 +19,60 @@ interface DesignMenuProps {
   onChange(elements: CanvasElement[], changes: CanvasElementMutations): void;
 }
 
-class DesignMenu extends React.Component<DesignMenuProps> {
+interface DesignMenuState {
+  elements: CanvasElement[];
+  /** Stores shared properties of the current selection or a `Mixed`. */
+  selectionProps: SelectionProps;
+  /** Stores additional information about the selection, describing its
+   * properties. E.g, whether fill can be applied to the selected elements */
+  selectionMetadata: SelectionMetadata;
   /** styles to change menu position based on the toolbar's position */
-  horizontalMenuPosition;
-  /** Metadata and shared properties of the current selection. */
-  selectionDetails;
+  positionStyles: CSSProperties;
+}
+
+class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
+  /** timeout id of the last deferred state change */
+  pendingTimeout: number | null = null;
 
   constructor(props: DesignMenuProps) {
     super(props);
-    this.selectionDetails = getSelectionDetails(props.selectedElements);
-    /** put the menu next to the toolbar if at the left or right
-     * otherwise put it on the left */
-    this.horizontalMenuPosition =
-      props.toolbarPosition === "right" || props.toolbarPosition === "left"
-        ? { [props.toolbarPosition]: 70 }
-        : { left: 10 };
+
+    const selectionDetails = getSelectionDetails(props.selectedElements);
+    this.state = {
+      elements: props.selectedElements,
+      selectionProps: selectionDetails.props,
+      selectionMetadata: selectionDetails.metadata,
+      positionStyles:
+        props.toolbarPosition === "right" || props.toolbarPosition === "left"
+          ? { [props.toolbarPosition]: 70 }
+          : { left: 10 },
+    };
   }
 
-  /** using `shouldComponentUpdate` so that by the time the render function is
-   * called `selectionDetails` has already been updated */
-  shouldComponentUpdate(nextProps: Readonly<DesignMenuProps>) {
-    if (nextProps.selectedElements !== this.props.selectedElements) {
-      this.selectionDetails = getSelectionDetails(nextProps.selectedElements);
-      return true;
-    }
+  componentDidUpdate(prevProps: Readonly<DesignMenuProps>): void {
+    if (prevProps.selectedElements !== this.props.selectedElements) {
+      if (this.pendingTimeout !== null) {
+        window.clearTimeout(this.pendingTimeout);
+      }
 
-    return false;
+      /** defer updating state because `MenuSections` might need to push their
+       * changes to the current selection */
+      this.pendingTimeout = window.setTimeout(() => {
+        const selectionDetails = getSelectionDetails(
+          this.props.selectedElements,
+        );
+        this.setState({
+          elements: this.props.selectedElements,
+          selectionProps: selectionDetails.props,
+          selectionMetadata: selectionDetails.metadata,
+        });
+      }, 0);
+    }
   }
 
   onBoundingBoxChange = (box: SelectionProps["box"]) => {
-    const { props: selectionProps } = this.selectionDetails;
-    const elements = this.props.selectedElements;
+    const { selectionProps, elements } = this.state;
+    // const elements = this.props.selectedElements;
 
     // get all properties that changed
     const changes = shallowDiff(box, selectionProps.box);
@@ -63,16 +89,16 @@ class DesignMenu extends React.Component<DesignMenuProps> {
   };
 
   onFillChange = (color: string) => {
-    const elements = this.props.selectedElements;
+    const { elements } = this.state;
     this.props.onChange(elements, {
       styles: { fill: color },
     });
   };
 
   render(): React.ReactNode {
-    const { metadata, props: selectionProps } = this.selectionDetails;
+    const { selectionMetadata, selectionProps } = this.state;
     return (
-      <div className="DesignMenu" style={this.horizontalMenuPosition}>
+      <div className="DesignMenu" style={this.state.positionStyles}>
         <LayoutSection
           onChange={this.onBoundingBoxChange}
           value={selectionProps.box}
@@ -80,7 +106,7 @@ class DesignMenu extends React.Component<DesignMenuProps> {
         <ColorSection
           onChange={this.onFillChange}
           value={selectionProps.fill}
-          disabled={!metadata.canBeFilled}
+          disabled={!selectionMetadata.canBeFilled}
         />
       </div>
     );

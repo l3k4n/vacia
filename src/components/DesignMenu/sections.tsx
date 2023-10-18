@@ -4,6 +4,7 @@ import { SelectionProps } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
 import { DEFAULT_ELEMENT_STYLES } from "@constants";
 import { EvalMathExpression, clampNumber } from "@core/utils";
+import { useUnmount } from "@hooks/useUnmount";
 
 interface MenuSectionProps {
   title: string;
@@ -72,12 +73,13 @@ export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
 
   useEffect(() => updateInputs(props.value), [props.value]);
 
+  useUnmount(submit);
+
   return (
     <MenuSection title="Layout" disabled={props.disabled}>
       <div
         className={"MS_LayoutEditor"}
-        // fallback to previous value onBlur
-        onBlur={() => updateInputs(props.value)}
+        onBlur={submit}
         onKeyDown={submitOnEnter}>
         <label title="X position" tabIndex={-1}>
           <span>X</span>
@@ -163,12 +165,13 @@ export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
     updateInputs(tc.current);
   }, [props.value]);
 
+  useUnmount(submit);
+
   return (
     <MenuSection title="Fill" disabled={props.disabled}>
       <div
         className={"MS_ColorPicker"}
-        // fallback to valid color onBlur
-        onBlur={() => updateInputs(tc.current)}
+        onBlur={submit}
         onKeyDown={submitOnEnter}>
         {/* if color is Mixed only show button to replace color */}
         {props.value === "Mixed" ? (
