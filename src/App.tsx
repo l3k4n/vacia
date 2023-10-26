@@ -389,13 +389,17 @@ class App extends React.Component<Record<string, never>, AppState> {
         /** if there are elements being dragged update their {x, y} coords  */
         for (let i = 0; i < draggingElements.length; i += 1) {
           const element = draggingElements[i];
-          this.elementLayer.mutateElement(
-            element,
-            this.snapVirtualCoordsToGrid({
-              x: element.x + snappedPointerDragChange.x,
-              y: element.y + snappedPointerDragChange.y,
-            }),
-          );
+          const newElementPosition = this.snapVirtualCoordsToGrid({
+            x: element.x + snappedPointerDragChange.x,
+            y: element.y + snappedPointerDragChange.y,
+          });
+          /** only mutate if coords changes to reduce rerenders */
+          if (
+            newElementPosition.x !== element.x ||
+            newElementPosition.y !== element.y
+          ) {
+            this.elementLayer.mutateElement(element, newElementPosition);
+          }
         }
       } else {
         /** if there are no elements being dragged, pointer drag is handled as a
