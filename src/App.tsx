@@ -218,7 +218,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           const selectionBox = getSurroundingBoundingBox(selectedElements);
           /** whether or not pointer clicked inside selectionBox */
           const pointIsInSelection = hitTestCoordsAgainstBox(
-            this.pointer.origin,
+            this.screenOffsetToVirtualOffset(this.pointer.origin),
             selectionBox,
           );
 
