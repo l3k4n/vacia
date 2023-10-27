@@ -21,13 +21,13 @@ describe("ElementLayer", () => {
   });
 
   test("should add an element to the elements array", () => {
-    elementLayer.addElementBeingCreated(sampleElements[0]);
+    elementLayer.addCreatingElement(sampleElements[0]);
     expect(elementLayer.getAllElements()).toContain(sampleElements[0]);
-    expect(elementLayer.getElementBeingCreated()).toBe(sampleElements[0]);
+    expect(elementLayer.getCreatingElement()).toBe(sampleElements[0]);
   });
 
   test("should remove an element from the elements array when deleted", () => {
-    elementLayer.addElementBeingCreated(sampleElements[0]);
+    elementLayer.addCreatingElement(sampleElements[0]);
     elementLayer.deleteElement(sampleElements[0]);
 
     expect(elementLayer.getAllElements()).not.toContain(sampleElements[0]);
@@ -37,20 +37,20 @@ describe("ElementLayer", () => {
     elementLayer.selectElements([sampleElements[1]]);
     expect(elementLayer.getSelectedElements()).toContain(sampleElements[1]);
 
-    elementLayer.unSelectElements([sampleElements[1]]);
+    elementLayer.unselectElements([sampleElements[1]]);
     expect(elementLayer.getSelectedElements()).not.toContain(sampleElements[1]);
 
     elementLayer.selectElements([sampleElements[1], sampleElements[2]]);
-    elementLayer.unSelectAllElements();
+    elementLayer.unselectAllElements();
 
     expect(elementLayer.getSelectedElements()).toEqual([]);
   });
 
   test("should finish creating an element", () => {
-    elementLayer.addElementBeingCreated(sampleElements[0]);
+    elementLayer.addCreatingElement(sampleElements[0]);
     elementLayer.finishCreatingElement();
 
-    expect(elementLayer.getElementBeingCreated()).toBeNull();
+    expect(elementLayer.getCreatingElement()).toBeNull();
   });
 
   test("should mutate an element", () => {

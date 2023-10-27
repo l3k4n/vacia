@@ -1,13 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { AppState, XYCoords, BoundingBox } from "./types";
-
-/** returns the center position of in screen coords */
-export function getScreenCenterCoords(state: AppState): XYCoords {
-  return {
-    x: state.width / 2,
-    y: state.height / 2,
-  };
-}
+import { BoundingBox } from "./types";
 
 export function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);

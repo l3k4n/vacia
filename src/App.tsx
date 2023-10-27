@@ -3,6 +3,7 @@ import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { ELEMENT_PRECISION, ZOOM_STEP } from "@constants";
+import getDefaultAppState from "@core/defaultState";
 import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
@@ -21,11 +22,15 @@ import {
   CanvasElementMutations,
 } from "@core/types";
 import {
-  getScreenCenterCoords,
   getSurroundingBoundingBox,
   invertNegativeBoundingBox,
 } from "@core/utils";
-import { getNewZoomState } from "@core/viewport/zoom";
+import {
+  getScreenCenterCoords,
+  getNewZoomState,
+  snapVirtualCoordsToGrid,
+  screenOffsetToVirtualOffset,
+} from "@core/viewport";
 import "@css/App.scss";
 
 declare global {
@@ -41,20 +46,11 @@ declare global {
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: PointerState | null = null;
-  elementLayer = new ElementLayer(this.onElementLayerChange.bind(this));
+  elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
 
   constructor(props: Record<string, never>) {
     super(props);
-    this.state = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      activeTool: "Hand",
-      grid: { type: "line", size: 20 },
-      scrollOffset: { x: 0, y: 0 },
-      zoom: 1,
-      toolbarPosition: "left",
-      selectionHighlight: null,
-    };
+    this.state = getDefaultAppState(window);
     if (import.meta.env.DEV) {
       window.appData = {} as Window["appData"];
       Object.defineProperties(window.appData, {
@@ -130,30 +126,12 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private snapVirtualCoordsToGrid({ x, y }: XYCoords) {
-    const { size } = this.state.grid;
-
-    return {
-      x: Math.round(x / size) * size,
-      y: Math.round(y / size) * size,
-    };
-  }
-
-  /** Converts a screen position to its corresponding position relative to the
-   * scroll offset. */
-  private screenOffsetToVirtualOffset(position: XYCoords) {
-    return {
-      x: (position.x - this.state.scrollOffset.x) / this.state.zoom,
-      y: (position.y - this.state.scrollOffset.y) / this.state.zoom,
-    };
-  }
-
-  // custom events
-  private handleToolChange = (tool: ToolLabel) => {
+  // local event handlers
+  private onToolChange = (tool: ToolLabel) => {
     this.setState({ activeTool: tool });
   };
 
-  private onElementLayerChange(e: ElementLayerChangeEvent) {
+  private onElementLayerUpdate(e: ElementLayerChangeEvent) {
     this.setState({});
   }
 
@@ -166,6 +144,44 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.elementLayer.mutateElement(element, mutations);
     }
   };
+
+  private onElementDrag(pointer: PointerState, elements: CanvasElement[]) {
+    const currentDragOffsetSnapped = snapVirtualCoordsToGrid(
+      screenOffsetToVirtualOffset(pointer.drag.offset, this.state),
+      this.state,
+    );
+    const previousDragOffsetSnapped = snapVirtualCoordsToGrid(
+      screenOffsetToVirtualOffset(pointer.drag.previousOffset, this.state),
+      this.state,
+    );
+
+    /** pointerDragChange may be less than snapping threshold, so for
+     * snapping to work properly, snap the current and previous drag offsets
+     * individually before getting their difference */
+    const snappedPointerDragChange = {
+      x: currentDragOffsetSnapped.x - previousDragOffsetSnapped.x,
+      y: currentDragOffsetSnapped.y - previousDragOffsetSnapped.y,
+    };
+
+    /** if there are elements being dragged update their {x, y} coords  */
+    for (let i = 0; i < elements.length; i += 1) {
+      const element = elements[i];
+      const newElementPosition = snapVirtualCoordsToGrid(
+        {
+          x: element.x + snappedPointerDragChange.x,
+          y: element.y + snappedPointerDragChange.y,
+        },
+        this.state,
+      );
+      /** only mutate element if coords changes (to reduce rerenders). */
+      if (
+        newElementPosition.x !== element.x ||
+        newElementPosition.y !== element.y
+      ) {
+        this.elementLayer.mutateElement(element, newElementPosition);
+      }
+    }
+  }
 
   // event handling
   private addEventListeners = () => {
@@ -187,8 +203,9 @@ class App extends React.Component<Record<string, never>, AppState> {
       };
 
       /** pointer coords in virtual space */
-      const virtualPointerCoords = this.screenOffsetToVirtualOffset(
+      const virtualPointerCoords = screenOffsetToVirtualOffset(
         e.nativeEvent,
+        this.state,
       );
       // bounding box of the element to be created
       const elementBox = {
@@ -196,7 +213,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         h: 0,
         /** convert the pointer position to its virtual poistion then snap it
          * to the grid */
-        ...this.snapVirtualCoordsToGrid(virtualPointerCoords),
+        ...snapVirtualCoordsToGrid(virtualPointerCoords, this.state),
       };
 
       switch (this.state.activeTool) {
@@ -218,18 +235,18 @@ class App extends React.Component<Record<string, never>, AppState> {
           const selectionBox = getSurroundingBoundingBox(selectedElements);
           /** whether or not pointer clicked inside selectionBox */
           const pointIsInSelection = hitTestCoordsAgainstBox(
-            this.screenOffsetToVirtualOffset(this.pointer.origin),
+            screenOffsetToVirtualOffset(this.pointer.origin, this.state),
             selectionBox,
           );
 
           if (pointIsInSelection) {
             /** Add all selected elements to dragging elements if the pointer
              * is within the bounding box of the selected elements. */
-            this.elementLayer.setElementsBeingDragged(selectedElements);
+            this.elementLayer.setDraggingElements(selectedElements);
           } else {
             // If shift key is not pressed, unselect all elements.
             if (!e.shiftKey) {
-              this.elementLayer.unSelectAllElements();
+              this.elementLayer.unselectAllElements();
             }
 
             if (element) {
@@ -237,7 +254,7 @@ class App extends React.Component<Record<string, never>, AppState> {
                * the element to the selection. Note: If shift key was not
                * pressed, it will be the only selected element. */
               this.elementLayer.selectElements([element]);
-              this.elementLayer.setElementsBeingDragged(
+              this.elementLayer.setDraggingElements(
                 // Selection changed, so use the latest selected elements.
                 this.elementLayer.getSelectedElements(),
               );
@@ -251,13 +268,13 @@ class App extends React.Component<Record<string, never>, AppState> {
             shape: "ellipse",
             ...elementBox,
           });
-          this.elementLayer.addElementBeingCreated(element);
+          this.elementLayer.addCreatingElement(element);
           break;
         }
 
         case "Rectangle": {
           const element = createShapeElement({ shape: "rect", ...elementBox });
-          this.elementLayer.addElementBeingCreated(element);
+          this.elementLayer.addCreatingElement(element);
           break;
         }
 
@@ -270,7 +287,7 @@ class App extends React.Component<Record<string, never>, AppState> {
             w: 0,
             h: 0,
           });
-          this.elementLayer.addElementBeingCreated(element);
+          this.elementLayer.addCreatingElement(element);
           break;
         }
 
@@ -311,7 +328,7 @@ class App extends React.Component<Record<string, never>, AppState> {
      * element to selection if shiftKey was pressed */
     if (MultiElementDragOccurred) {
       if (!this.pointer.hit.withShiftKey) {
-        this.elementLayer.unSelectAllElements();
+        this.elementLayer.unselectAllElements();
       }
 
       if (this.pointer.hit.element) {
@@ -320,10 +337,10 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     /** pointer is released so clear elements being dragged */
-    this.elementLayer.clearElementsBeingDragged();
+    this.elementLayer.clearDraggingElement();
     this.pointer = null;
 
-    const elementBeingCreated = this.elementLayer.getElementBeingCreated();
+    const elementBeingCreated = this.elementLayer.getCreatingElement();
 
     /** If a new element was created, delete it if it was large enough
      * otherwise delete it */
@@ -368,44 +385,15 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     if (this.state.activeTool === "Selection") {
-      const draggingElements = this.elementLayer.getElementsBeingDragged();
+      const draggingElements = this.elementLayer.getDraggingElements();
 
       if (draggingElements.length) {
-        const currentDragOffsetSnapped = this.snapVirtualCoordsToGrid(
-          this.screenOffsetToVirtualOffset(this.pointer.drag.offset),
-        );
-        const previousDragOffsetSnapped = this.snapVirtualCoordsToGrid(
-          this.screenOffsetToVirtualOffset(this.pointer.drag.previousOffset),
-        );
-
-        /** pointerDragChange may be less than snapping threshold, so for
-         * snapping to work properly, snap the current and previous drag offsets
-         * individually before getting their difference */
-        const snappedPointerDragChange = {
-          x: currentDragOffsetSnapped.x - previousDragOffsetSnapped.x,
-          y: currentDragOffsetSnapped.y - previousDragOffsetSnapped.y,
-        };
-
-        /** if there are elements being dragged update their {x, y} coords  */
-        for (let i = 0; i < draggingElements.length; i += 1) {
-          const element = draggingElements[i];
-          const newElementPosition = this.snapVirtualCoordsToGrid({
-            x: element.x + snappedPointerDragChange.x,
-            y: element.y + snappedPointerDragChange.y,
-          });
-          /** only mutate if coords changes to reduce rerenders */
-          if (
-            newElementPosition.x !== element.x ||
-            newElementPosition.y !== element.y
-          ) {
-            this.elementLayer.mutateElement(element, newElementPosition);
-          }
-        }
+        this.onElementDrag(this.pointer, draggingElements);
       } else {
         /** if there are no elements being dragged, pointer drag is handled as a
          * highlighted selectionBox and all elements within it are selected */
         const { box: selectionBox } = invertNegativeBoundingBox({
-          ...this.screenOffsetToVirtualOffset(this.pointer.origin),
+          ...screenOffsetToVirtualOffset(this.pointer.origin, this.state),
           w: this.pointer.drag.offset.x / this.state.zoom,
           h: this.pointer.drag.offset.y / this.state.zoom,
         });
@@ -418,21 +406,25 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     // Note: there will never be an element being created when using hand or
-    // selection tool, so handle them outside switch statement below
-    const elementBeingCreated = this.elementLayer.getElementBeingCreated();
+    // selection tool, so handle them outside switch statement
+    const elementBeingCreated = this.elementLayer.getCreatingElement();
 
     if (elementBeingCreated) {
       switch (elementBeingCreated.type) {
         case "shape": {
           /** size offsets of the element snapped to the grid */
-          const snappedElementSizeOffset = this.snapVirtualCoordsToGrid({
-            x: this.pointer.drag.offset.x / this.state.zoom,
-            y: this.pointer.drag.offset.y / this.state.zoom,
-          });
+          const snappedElementSizeOffset = snapVirtualCoordsToGrid(
+            {
+              x: this.pointer.drag.offset.x / this.state.zoom,
+              y: this.pointer.drag.offset.y / this.state.zoom,
+            },
+            this.state,
+          );
 
           /** position of the element snapped to the grid */
-          const snappedElementPosition = this.snapVirtualCoordsToGrid(
-            this.screenOffsetToVirtualOffset(this.pointer.origin),
+          const snappedElementPosition = snapVirtualCoordsToGrid(
+            screenOffsetToVirtualOffset(this.pointer.origin, this.state),
+            this.state,
           );
 
           // flip x and y axis if element size is negative
@@ -456,7 +448,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
 
         case "freedraw": {
-          const { x, y } = this.screenOffsetToVirtualOffset(e);
+          const { x, y } = screenOffsetToVirtualOffset(e, this.state);
 
           const mutations = {
             x: elementBeingCreated.x,
@@ -583,7 +575,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           <ToolBar
             position={this.state.toolbarPosition}
             activeTool={this.state.activeTool}
-            onToolChange={this.handleToolChange}
+            onToolChange={this.onToolChange}
           />
           <QuickActions
             onZoomIn={handleZoomInAction}
