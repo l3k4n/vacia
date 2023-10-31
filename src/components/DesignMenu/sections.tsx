@@ -165,7 +165,7 @@ export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
     updateInputs(tc.current);
   }, [props.value]);
 
-  useUnmount(submit);
+  useUnmount(() => props.value !== "Mixed" && submit());
 
   return (
     <MenuSection title="Fill" disabled={props.disabled}>
