@@ -55,8 +55,8 @@ export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
     props.onChange({
       x: (EvalMathExpression(x) ?? props.value.x).toString(),
       y: (EvalMathExpression(y) ?? props.value.y).toString(),
-      w: (EvalMathExpression(w) ?? props.value.w).toString(),
-      h: (EvalMathExpression(h) ?? props.value.h).toString(),
+      w: Math.abs(EvalMathExpression(w) ?? +props.value.w).toString(),
+      h: Math.abs(EvalMathExpression(h) ?? +props.value.h).toString(),
     });
   };
 

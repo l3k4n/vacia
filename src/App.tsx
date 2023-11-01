@@ -436,7 +436,11 @@ class App extends React.Component<Record<string, never>, AppState> {
           });
 
           this.elementLayer.mutateElement(elementBeingCreated, {
-            ...box,
+            x: box.x,
+            y: box.y,
+            // prevents element from being smaller than one grid tile
+            w: Math.max(box.w, this.state.grid.size),
+            h: Math.max(box.h, this.state.grid.size),
             transforms: {
               ...elementBeingCreated.transforms,
               // set axes that flipped
