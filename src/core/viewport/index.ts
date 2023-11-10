@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import { MAX_ZOOM, MIN_ZOOM } from "@constants";
-import { AppState, XYCoords } from "@core/types";
+import { AppState, BoundingBox, XYCoords } from "@core/types";
 import { clampNumber } from "@core/utils";
 
 /** returns the center position of in screen coords */
@@ -29,6 +29,13 @@ export function screenOffsetToVirtualOffset(
   { scrollOffset, zoom }: AppState,
 ) {
   return { x: (x - scrollOffset.x) / zoom, y: (y - scrollOffset.y) / zoom };
+}
+
+/** snaps all coordinates of a bounding box to closest gridpoint to them */
+export function snapBoxToGrid(box: BoundingBox, state: AppState): BoundingBox {
+  const position = snapVirtualCoordsToGrid(box, state);
+  const size = snapVirtualCoordsToGrid({ x: box.w, y: box.h }, state);
+  return { x: position.x, y: position.y, w: size.x, h: size.y };
 }
 
 /** Calculates scrolloffset and zoom value around a specified anchor point,

@@ -1,4 +1,11 @@
-import { CanvasElement, BoundingBox, XYCoords } from "@core/types";
+import { SELECTION_HANDLE_SIZE } from "@constants";
+import {
+  CanvasElement,
+  BoundingBox,
+  XYCoords,
+  TransformHandleData,
+  AppState,
+} from "@core/types";
 
 function hitTestRect(box: BoundingBox, coords: XYCoords) {
   const { x, y, w, h } = box;
@@ -59,4 +66,30 @@ export function hitTestCoordsAgainstElement(
 /** Returns true if coords is within bounding box */
 export function hitTestCoordsAgainstBox(coords: XYCoords, box: BoundingBox) {
   return hitTestRect(box, coords);
+}
+
+/** returns type of transform handle at coords */
+export function hitTestCoordsAgainstTransformHandles(
+  handles: TransformHandleData[],
+  coords: XYCoords,
+  { zoom: scale }: AppState,
+) {
+  let hitHandle = null;
+  /** Error margin around handle that will be forgiven */
+  const hitThreshold = SELECTION_HANDLE_SIZE / scale;
+
+  for (let i = 0; i < handles.length; i += 1) {
+    const handle = handles[i];
+    const handleBox = {
+      x: handle.x - hitThreshold / 2,
+      y: handle.y - hitThreshold / 2,
+      w: hitThreshold,
+      h: hitThreshold,
+    };
+    if (hitTestRect(handleBox, coords)) {
+      hitHandle = handle.type;
+      break;
+    }
+  }
+  return hitHandle;
 }

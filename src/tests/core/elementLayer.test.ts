@@ -48,7 +48,7 @@ describe("ElementLayer", () => {
 
   test("should finish creating an element", () => {
     elementLayer.addCreatingElement(sampleElements[0]);
-    elementLayer.finishCreatingElement();
+    elementLayer.clearCreatingElement();
 
     expect(elementLayer.getCreatingElement()).toBeNull();
   });

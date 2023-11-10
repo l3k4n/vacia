@@ -7,9 +7,16 @@ import getDefaultAppState from "@core/defaultState";
 import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import {
+  getResizeTransforms,
+  getHandleAnchor,
+  getTransformHandles,
+  getTransformScale,
+} from "@core/elements/transform";
+import {
   hitTestElementAgainstBox,
   hitTestCoordsAgainstBox,
   hitTestCoordsAgainstElement,
+  hitTestCoordsAgainstTransformHandles,
 } from "@core/hitTest";
 import renderFrame from "@core/renderer";
 import {
@@ -20,6 +27,8 @@ import {
   ToolLabel,
   XYCoords,
   CanvasElementMutations,
+  TransformingElement,
+  TransformHandle,
 } from "@core/types";
 import {
   getSurroundingBoundingBox,
@@ -30,6 +39,7 @@ import {
   getNewZoomState,
   snapVirtualCoordsToGrid,
   screenOffsetToVirtualOffset,
+  snapBoxToGrid,
 } from "@core/viewport";
 import "@css/App.scss";
 
@@ -183,6 +193,33 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
+  private onElementTransform(
+    pointer: PointerState,
+    handle: TransformHandle,
+    elements: TransformingElement[],
+  ) {
+    const pointerOffset = {
+      x: pointer.drag.offset.x / this.state.zoom,
+      y: pointer.drag.offset.y / this.state.zoom,
+    };
+    /** initial selection box of all elements being transformed */
+    const selectionBox = getSurroundingBoundingBox(
+      elements.map(({ initialBox }) => initialBox),
+    );
+    const anchor = getHandleAnchor(handle, selectionBox);
+    const scale = getTransformScale(handle, pointerOffset, selectionBox);
+
+    const transformOptions = { scale, anchor };
+    elements.forEach(({ element, initialBox }) => {
+      const mutations = snapBoxToGrid(
+        getResizeTransforms(initialBox, transformOptions),
+        this.state,
+      );
+
+      this.elementLayer.mutateElement(element, mutations);
+    });
+  }
+
   // event handling
   private addEventListeners = () => {
     window.addEventListener("pointermove", this.onWindowPointerMove);
@@ -199,7 +236,12 @@ class App extends React.Component<Record<string, never>, AppState> {
           previousOffset: { x: 0, y: 0 },
           occurred: false,
         },
-        hit: { element: null, withShiftKey: false, withCtrlKey: false },
+        hit: {
+          element: null,
+          transformHandle: null,
+          withShiftKey: false,
+          withCtrlKey: false,
+        },
       };
 
       /** pointer coords in virtual space */
@@ -222,10 +264,9 @@ class App extends React.Component<Record<string, never>, AppState> {
           break;
 
         case "Selection": {
-          const element = this.getFirstElementAtPoint(elementBox);
-
           this.pointer.hit = {
-            element,
+            element: null,
+            transformHandle: null,
             withShiftKey: e.shiftKey,
             withCtrlKey: e.ctrlKey,
           };
@@ -233,33 +274,51 @@ class App extends React.Component<Record<string, never>, AppState> {
           const selectedElements = this.elementLayer.getSelectedElements();
           /** Bounding box of all selected elements */
           const selectionBox = getSurroundingBoundingBox(selectedElements);
-          /** whether or not pointer clicked inside selectionBox */
-          const pointIsInSelection = hitTestCoordsAgainstBox(
-            screenOffsetToVirtualOffset(this.pointer.origin, this.state),
+
+          if (selectedElements.length) {
+            /** transform handles of the boundingbox of the current selection */
+            const handles = getTransformHandles(selectionBox, this.state.zoom);
+            /** type of transform handle that was hit or null if none */
+            const hitHandle = hitTestCoordsAgainstTransformHandles(
+              handles,
+              virtualPointerCoords,
+              this.state,
+            );
+            if (hitHandle) {
+              this.elementLayer.setTransformingElements(selectedElements);
+              this.pointer.hit.transformHandle = hitHandle;
+              return;
+            }
+          }
+
+          /** whether or not pointer clicked within the selectionBox */
+          const isPointerInSelectionBox = hitTestCoordsAgainstBox(
+            virtualPointerCoords,
             selectionBox,
           );
-
-          if (pointIsInSelection) {
+          if (isPointerInSelectionBox) {
             /** Add all selected elements to dragging elements if the pointer
              * is within the bounding box of the selected elements. */
             this.elementLayer.setDraggingElements(selectedElements);
-          } else {
-            // If shift key is not pressed, unselect all elements.
-            if (!e.shiftKey) {
-              this.elementLayer.unselectAllElements();
-            }
-
-            if (element) {
-              /** If an element was hit but it is outside the selectionBox, add
-               * the element to the selection. Note: If shift key was not
-               * pressed, it will be the only selected element. */
-              this.elementLayer.selectElements([element]);
-              this.elementLayer.setDraggingElements(
-                // Selection changed, so use the latest selected elements.
-                this.elementLayer.getSelectedElements(),
-              );
-            }
+            return;
           }
+
+          const element = this.getFirstElementAtPoint(virtualPointerCoords);
+          this.pointer.hit.element = element;
+          // If shift key is not pressed, unselect all elements.
+          if (!e.shiftKey) this.elementLayer.unselectAllElements();
+
+          if (element) {
+            /** Since an element was hit but it is outside the selectionBox, add
+             * the element to the selection. Note: If shift key was not
+             * pressed, it will be the only selected element. */
+            this.elementLayer.selectElements([element]);
+            this.elementLayer.setDraggingElements(
+              // Selection changed, so use the latest selected elements.
+              this.elementLayer.getSelectedElements(),
+            );
+          }
+
           break;
         }
 
@@ -337,7 +396,8 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     /** pointer is released so clear elements being dragged */
-    this.elementLayer.clearDraggingElement();
+    this.elementLayer.clearDraggingElements();
+    this.elementLayer.clearTransformingElements();
     this.pointer = null;
 
     const elementBeingCreated = this.elementLayer.getCreatingElement();
@@ -347,7 +407,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (elementBeingCreated && this.isElementNegligible(elementBeingCreated)) {
       this.elementLayer.deleteElement(elementBeingCreated);
     } else {
-      this.elementLayer.finishCreatingElement();
+      this.elementLayer.clearCreatingElement();
     }
 
     if (this.state.activeTool === "Selection") {
@@ -386,12 +446,18 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     if (this.state.activeTool === "Selection") {
       const draggingElements = this.elementLayer.getDraggingElements();
+      const transformingElements = this.elementLayer.getTransformingElements();
 
-      if (draggingElements.length) {
+      if (this.pointer.hit.transformHandle) {
+        this.onElementTransform(
+          this.pointer,
+          this.pointer.hit.transformHandle,
+          transformingElements,
+        );
+      } else if (draggingElements.length) {
         this.onElementDrag(this.pointer, draggingElements);
       } else {
-        /** if there are no elements being dragged, pointer drag is handled as a
-         * highlighted selectionBox and all elements within it are selected */
+        /** pointer drag is treated as a box selection */
         const { box: selectionBox } = invertNegativeBoundingBox({
           ...screenOffsetToVirtualOffset(this.pointer.origin, this.state),
           w: this.pointer.drag.offset.x / this.state.zoom,
@@ -412,28 +478,14 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (elementBeingCreated) {
       switch (elementBeingCreated.type) {
         case "shape": {
-          /** size offsets of the element snapped to the grid */
-          const snappedElementSizeOffset = snapVirtualCoordsToGrid(
-            {
-              x: this.pointer.drag.offset.x / this.state.zoom,
-              y: this.pointer.drag.offset.y / this.state.zoom,
-            },
-            this.state,
+          /** box created from pointer origin to its current position */
+          const { box, didFlipX, didFlipY } = invertNegativeBoundingBox(
+            snapBoxToGrid({
+              ...screenOffsetToVirtualOffset(this.pointer.origin, this.state),
+              w: this.pointer.drag.offset.x / this.state.zoom,
+              h: this.pointer.drag.offset.y / this.state.zoom,
+            }, this.state),
           );
-
-          /** position of the element snapped to the grid */
-          const snappedElementPosition = snapVirtualCoordsToGrid(
-            screenOffsetToVirtualOffset(this.pointer.origin, this.state),
-            this.state,
-          );
-
-          // flip x and y axis if element size is negative
-          const { box, didFlipX, didFlipY } = invertNegativeBoundingBox({
-            x: snappedElementPosition.x,
-            y: snappedElementPosition.y,
-            w: snappedElementSizeOffset.x,
-            h: snappedElementSizeOffset.y,
-          });
 
           this.elementLayer.mutateElement(elementBeingCreated, {
             x: box.x,
@@ -459,7 +511,8 @@ class App extends React.Component<Record<string, never>, AppState> {
             y: elementBeingCreated.y,
             w: elementBeingCreated.w,
             h: elementBeingCreated.h,
-            path: [...elementBeingCreated.path],
+            // reuse `path` sice it will be destroyed
+            path: elementBeingCreated.path,
           };
 
           // Change in x and y coordinates if path goes outside bounding box

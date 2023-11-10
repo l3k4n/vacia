@@ -55,6 +55,9 @@ export interface AppState {
   selectionHighlight: BoundingBox | null;
 }
 
+export type TransformHandle = "ne" | "nw" | "se" | "sw";
+export type TransformHandleData = XYCoords & { type: TransformHandle };
+
 /* pointer state since the last pointer down */
 export interface PointerState {
   origin: XYCoords;
@@ -71,7 +74,14 @@ export interface PointerState {
   hit: {
     /** element that was clicked when pointer down occurred  */
     element: CanvasElement | null;
+    transformHandle: TransformHandle | null;
     withShiftKey: boolean;
     withCtrlKey: boolean;
   };
+}
+
+/** element and its bounding box before any transforms were applied */
+export interface TransformingElement {
+  element: CanvasElement;
+  initialBox: BoundingBox;
 }

@@ -1,5 +1,9 @@
 import ApplyElementSpecificMutation from "@core/elements/mutate";
-import { CanvasElement, CanvasElementMutations } from "@core/types";
+import {
+  CanvasElement,
+  CanvasElementMutations,
+  TransformingElement,
+} from "@core/types";
 
 export interface ElementLayerChangeEvent {
   elements: CanvasElement[];
@@ -11,6 +15,7 @@ export default class ElementLayer {
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
   private creatingElement: CanvasElement | null = null;
   private draggingElements: CanvasElement[] = [];
+  private transformingElements: TransformingElement[] = [];
   private onChange;
 
   constructor(onChange: (ev: ElementLayerChangeEvent) => void) {
@@ -52,7 +57,7 @@ export default class ElementLayer {
   }
 
   /** removes all internal refs to the element being created */
-  finishCreatingElement() {
+  clearCreatingElement() {
     this.creatingElement = null;
   }
 
@@ -67,8 +72,25 @@ export default class ElementLayer {
 
   /** Empties the array of elements being dragged, indicating that no
    * elements are currently being dragged. */
-  clearDraggingElement() {
+  clearDraggingElements() {
     this.draggingElements = [];
+  }
+
+  setTransformingElements(elements: CanvasElement[]) {
+    elements.forEach((element) => {
+      this.transformingElements.push({
+        element,
+        initialBox: { x: element.x, y: element.y, w: element.w, h: element.h },
+      });
+    });
+  }
+
+  getTransformingElements() {
+    return this.transformingElements;
+  }
+
+  clearTransformingElements() {
+    this.transformingElements.length = 0;
   }
 
   selectElements(elements: CanvasElement[]) {
