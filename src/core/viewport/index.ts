@@ -41,7 +41,8 @@ export function snapBoxToGrid(box: BoundingBox, state: AppState): BoundingBox {
 /** Calculates scrolloffset and zoom value around a specified anchor point,
  * ensuring that the anchor point remains visually in the same position. */
 export function getNewZoomState(
-  { value, anchor }: { value: number; anchor: XYCoords },
+  value: number,
+  anchor: XYCoords,
   state: AppState,
 ) {
   const currentZoom = state.zoom;

@@ -75,9 +75,9 @@ export interface PointerState {
     /** element that was clicked when pointer down occurred  */
     element: CanvasElement | null;
     transformHandle: TransformHandle | null;
-    withShiftKey: boolean;
-    withCtrlKey: boolean;
   };
+  shiftKey: boolean;
+  ctrlKey: boolean;
 }
 
 /** element and its bounding box before any transforms were applied */
