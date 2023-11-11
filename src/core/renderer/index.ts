@@ -1,6 +1,6 @@
-import drawGrid from "./drawGrid";
 import renderBoundingBoxes from "./renderBoundingBoxes";
 import renderBoxHighlight from "./renderBoxHighlight";
+import renderGrid from "./renderGrid";
 import { GRID_COLOR } from "@constants";
 import renderElement from "@core/elements/renderer";
 import { AppState, CanvasElement } from "@core/types";
@@ -22,15 +22,11 @@ export default function renderFrame(config: RenderConfig) {
     ctx.save();
     ctx.scale(scale * state.zoom, scale * state.zoom);
 
-    const normalizedCanvasWidth = canvas.width / scale;
-    const normalizedCanvasHeight = canvas.height / scale;
-
-    drawGrid(ctx, {
-      type: state.grid.type,
-      width: normalizedCanvasWidth / state.zoom,
-      height: normalizedCanvasHeight / state.zoom,
-      gridSize: state.grid.size,
-      strokeColor: GRID_COLOR,
+    renderGrid(ctx, {
+      grid: state.grid,
+      stroke: { color: GRID_COLOR, size: 1 / state.zoom },
+      width: canvas.width / (scale * state.zoom),
+      height: canvas.height / (scale * state.zoom),
       offset: {
         x: (state.scrollOffset.x / state.zoom) % state.grid.size,
         y: (state.scrollOffset.y / state.zoom) % state.grid.size,
@@ -43,16 +39,13 @@ export default function renderFrame(config: RenderConfig) {
       state.scrollOffset.y / state.zoom,
     );
 
-    ctx.fillStyle = "red";
-    ctx.fillRect(0, 0, 300, 150);
-
     for (let i = 0; i < elements.length; i += 1) {
       renderElement(ctx, elements[i]);
     }
 
     // render selection hightlight and selected element bounding boxes
     if (state.selectionHighlight) {
-      renderBoxHighlight(ctx, state.selectionHighlight);
+      renderBoxHighlight(ctx, state.selectionHighlight, state.zoom);
     }
     renderBoundingBoxes(ctx, selectedElements, state.zoom);
 
