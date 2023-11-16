@@ -23,7 +23,11 @@ function drawSelectionBox(ctx: CanvasRenderingContext2D, options: BoxOptions) {
   handles.forEach(({ x, y, type }) => {
     ctx.beginPath();
     const size = handleSize / scale;
-    ctx.rect(x - size * 0.5, y - size * 0.5, size, size);
+    if (type === "rotate") {
+      ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+    } else {
+      ctx.rect(x - size * 0.5, y - size * 0.5, size, size);
+    }
     ctx.stroke();
     ctx.fill();
   });
@@ -48,8 +52,20 @@ export default function renderBoundingBoxes(
 
   /** draw bounding box for individual elements */
   for (let i = 0; i < elements.length; i += 1) {
-    const { x, y, w, h } = elements[i];
-    ctx.strokeRect(x - padding, y - padding, w + 2 * padding, h + 2 * padding);
+    const { x, y, w, h, transforms } = elements[i];
+    ctx.save();
+    const rX = w / 2;
+    const rY = h / 2;
+    const radianAngle = transforms.rotate * (Math.PI / 180);
+    ctx.translate(x + rX, y + rY);
+    ctx.rotate(radianAngle);
+    ctx.strokeRect(
+      -rX - padding,
+      -rY - padding,
+      w + 2 * padding,
+      h + 2 * padding,
+    );
+    ctx.restore();
   }
 
   const surroundingBox = getSurroundingBoundingBox(elements);

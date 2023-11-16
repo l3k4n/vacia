@@ -7,6 +7,7 @@ export type Writeable<T> = { -readonly [K in keyof T]: T[K] };
 
 export interface ElementTransforms {
   // if element is flipped along an axis
+  rotate: number;
   flippedX?: boolean;
   flippedY?: boolean;
 }
@@ -55,7 +56,7 @@ export interface AppState {
   selectionHighlight: BoundingBox | null;
 }
 
-export type TransformHandle = "ne" | "nw" | "se" | "sw";
+export type TransformHandle = "ne" | "nw" | "se" | "sw" | "rotate";
 export type TransformHandleData = XYCoords & { type: TransformHandle };
 
 /* pointer state since the last pointer down */
@@ -83,5 +84,5 @@ export interface PointerState {
 /** element and its bounding box before any transforms were applied */
 export interface TransformingElement {
   element: CanvasElement;
-  initialBox: BoundingBox;
+  initialBox: BoundingBox & { rotate: number };
 }

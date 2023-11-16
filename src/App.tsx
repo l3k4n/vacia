@@ -8,10 +8,12 @@ import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import { isElementNegligible } from "@core/elements/negligible";
 import {
-  getResizeTransforms,
-  getHandleAnchor,
+  getResizeMutations,
+  getTransformHandleAnchor,
   getTransformHandles,
-  getTransformScale,
+  getResizeScale,
+  getRotateMutations,
+  getRotateAngle,
 } from "@core/elements/transform";
 import {
   hitTestElementAgainstBox,
@@ -219,26 +221,36 @@ class App extends React.Component<Record<string, never>, AppState> {
     handle: TransformHandle,
     elements: TransformingElement[],
   ) {
-    const pointerOffset = {
-      x: pointer.drag.offset.x / this.state.zoom,
-      y: pointer.drag.offset.y / this.state.zoom,
-    };
     /** initial selection box of all elements being transformed */
     const selectionBox = getSurroundingBoundingBox(
       elements.map(({ initialBox }) => initialBox),
     );
-    const anchor = getHandleAnchor(handle, selectionBox);
-    const scale = getTransformScale(handle, pointerOffset, selectionBox);
+    const anchor = getTransformHandleAnchor(handle, selectionBox);
 
-    const transformOptions = { scale, anchor };
-    elements.forEach(({ element, initialBox }) => {
-      const mutations = snapBoxToGrid(
-        getResizeTransforms(initialBox, transformOptions),
-        this.state,
-      );
-
-      this.elementLayer.mutateElement(element, mutations);
-    });
+    if (handle === "rotate") {
+      const pointerPosition = {
+        x: pointer.origin.x + pointer.drag.offset.x,
+        y: pointer.origin.y + pointer.drag.offset.y,
+      };
+      const angle = getRotateAngle(pointerPosition, anchor);
+      elements.forEach((tElement) => {
+        const mutations = getRotateMutations(tElement, anchor, angle);
+        this.elementLayer.mutateElement(tElement.element, mutations);
+      });
+    } else {
+      const pointerOffset = {
+        x: pointer.drag.offset.x / this.state.zoom,
+        y: pointer.drag.offset.y / this.state.zoom,
+      };
+      const scale = getResizeScale(handle, pointerOffset, selectionBox);
+      elements.forEach(({ element, initialBox }) => {
+        const mutations = snapBoxToGrid(
+          getResizeMutations(initialBox, scale, anchor),
+          this.state,
+        );
+        this.elementLayer.mutateElement(element, mutations);
+      });
+    }
   }
 
   private onElementCreation(pointer: PointerState, element: CanvasElement) {

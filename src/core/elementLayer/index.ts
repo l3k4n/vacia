@@ -80,7 +80,13 @@ export default class ElementLayer {
     elements.forEach((element) => {
       this.transformingElements.push({
         element,
-        initialBox: { x: element.x, y: element.y, w: element.w, h: element.h },
+        initialBox: {
+          x: element.x,
+          y: element.y,
+          w: element.w,
+          h: element.h,
+          rotate: element.transforms.rotate,
+        },
       });
     });
   }
