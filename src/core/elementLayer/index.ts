@@ -1,4 +1,4 @@
-import ApplyElementSpecificMutation from "@core/elements/mutate";
+import normalizeElement from "@core/elements/normalize";
 import {
   CanvasElement,
   CanvasElementMutations,
@@ -85,7 +85,7 @@ export default class ElementLayer {
           y: element.y,
           w: element.w,
           h: element.h,
-          rotate: element.transforms.rotate,
+          rotate: element.rotate,
         },
       });
     });
@@ -128,7 +128,8 @@ export default class ElementLayer {
   }
 
   mutateElement(element: CanvasElement, mutations: CanvasElementMutations) {
-    ApplyElementSpecificMutation(element, mutations);
+    Object.assign(element, mutations);
+    normalizeElement(element);
     this.onChange();
   }
 }

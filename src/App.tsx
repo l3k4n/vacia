@@ -274,12 +274,8 @@ class App extends React.Component<Record<string, never>, AppState> {
           // prevents element from being smaller than one grid tile
           w: Math.max(box.w, this.state.grid.size),
           h: Math.max(box.h, this.state.grid.size),
-          transforms: {
-            ...element.transforms,
-            // set axes that flipped
-            flippedX: didFlipX,
-            flippedY: didFlipY,
-          },
+          flippedX: didFlipX,
+          flippedY: didFlipY,
         });
         break;
       }

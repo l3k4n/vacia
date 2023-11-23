@@ -90,9 +90,7 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
 
   onFillChange = (color: string) => {
     const { elements } = this.state;
-    this.props.onChange(elements, {
-      styles: { fill: color },
-    });
+    this.props.onChange(elements, { fill: color });
   };
 
   render(): React.ReactNode {

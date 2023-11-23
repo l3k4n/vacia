@@ -6,9 +6,9 @@ function renderShapeElement(ctx: CanvasRenderingContext2D, elem: ShapeElement) {
   const rX = elem.w / 2;
   const rY = elem.h / 2;
   ctx.translate(elem.x + rX, elem.y + rY);
-  ctx.rotate((elem.transforms.rotate * Math.PI) / 180);
+  ctx.rotate((elem.rotate * Math.PI) / 180);
 
-  ctx.fillStyle = elem.styles.fill;
+  ctx.fillStyle = elem.fill;
   if (elem.shape === "rect") {
     ctx.fillRect(-rX, -rY, elem.w, elem.h);
   } else {
@@ -30,7 +30,7 @@ function renderFreedrawElement(
 
   ctx.save();
   ctx.translate(elem.x + rX, elem.y + rY);
-  ctx.rotate((elem.transforms.rotate * Math.PI) / 180);
+  ctx.rotate((elem.rotate * Math.PI) / 180);
   ctx.beginPath();
 
   const startPoint = elem.path[0];

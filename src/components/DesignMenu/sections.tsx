@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import tinycolor from "tinycolor2";
 import { SelectionProps } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
-import { DEFAULT_ELEMENT_STYLES } from "@constants";
+import { GENERIC_ELEMENT_PROPS } from "@constants";
 import { EvalMathExpression, clampNumber } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
 
@@ -152,7 +152,7 @@ export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
 
   if (props.value === "Mixed") {
     /** set's the color back to its default value */
-    const replaceMixedColor = () => props.onChange(DEFAULT_ELEMENT_STYLES.fill);
+    const replaceMixedColor = () => props.onChange(GENERIC_ELEMENT_PROPS.fill);
     return (
       <MenuSection title="Fill" disabled={props.disabled}>
         <div className={"MS_ColorPicker"}>

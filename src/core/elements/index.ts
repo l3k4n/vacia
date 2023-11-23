@@ -1,36 +1,31 @@
-import { DEFAULT_ELEMENT_STYLES, DEFAULT_ELEMENT_TRANSFORMS } from "@constants";
+import { GENERIC_ELEMENT_PROPS } from "@constants";
 import {
+  BoundingBox,
   CanvasElement,
-  ElementStyles,
-  ElementTransforms,
   FreedrawElement,
   ShapeElement,
 } from "@core/types";
 
-type StripElement<T extends CanvasElement> = Omit<
-  T,
-  "type" | "transforms" | "styles"
-> & {
-  styles?: Partial<ElementStyles>;
-  transforms?: Partial<ElementTransforms>;
-};
+type StripElement<T extends CanvasElement, S extends keyof T> = Partial<
+  Omit<T, "type">
+> &
+  BoundingBox &
+  Pick<T, S>;
 
-type ShapeOptions = StripElement<ShapeElement>;
+type ShapeOptions = StripElement<ShapeElement, "shape">;
 function createShapeElement(options: ShapeOptions): ShapeElement {
   return {
+    ...GENERIC_ELEMENT_PROPS,
     ...options,
-    styles: { ...DEFAULT_ELEMENT_STYLES, ...options.styles },
-    transforms: { ...DEFAULT_ELEMENT_TRANSFORMS, ...options.transforms },
     type: "shape",
   };
 }
 
-type FreedrawOptions = StripElement<FreedrawElement>;
+type FreedrawOptions = StripElement<FreedrawElement, "path">;
 function createFreedrawElement(options: FreedrawOptions): FreedrawElement {
   return {
+    ...GENERIC_ELEMENT_PROPS,
     ...options,
-    styles: { ...DEFAULT_ELEMENT_STYLES, ...options.styles },
-    transforms: { ...DEFAULT_ELEMENT_TRANSFORMS, ...options.transforms },
     type: "freedraw",
   };
 }

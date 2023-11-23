@@ -129,15 +129,12 @@ export function getRotateMutations(
   const offset = rotatePointAroundAnchor(
     center,
     selectionBoxCenter,
-    elementAngle - degreesToRadians(element.transforms.rotate),
+    elementAngle - degreesToRadians(element.rotate),
   );
 
   return {
     x: element.x + offset.x - center[0],
     y: element.y + offset.y - center[1],
-    transforms: {
-      ...element.transforms,
-      rotate: normalizeDegrees(radiansToDegrees(elementAngle)),
-    },
+    rotate: normalizeDegrees(radiansToDegrees(elementAngle)),
   };
 }

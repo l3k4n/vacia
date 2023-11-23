@@ -52,11 +52,11 @@ export default function renderBoundingBoxes(
 
   /** draw bounding box for individual elements */
   for (let i = 0; i < elements.length; i += 1) {
-    const { x, y, w, h, transforms } = elements[i];
+    const { x, y, w, h, rotate } = elements[i];
     ctx.save();
     const rX = w / 2;
     const rY = h / 2;
-    const radianAngle = transforms.rotate * (Math.PI / 180);
+    const radianAngle = rotate * (Math.PI / 180);
     ctx.translate(x + rX, y + rY);
     ctx.rotate(radianAngle);
     ctx.strokeRect(

@@ -3,22 +3,14 @@ import { DrawingTools, ControlTools } from "./tools";
 export type XYCoords = { x: number; y: number };
 export type Point = [number, number];
 export type BoundingBox = XYCoords & { w: number; h: number };
-export type Writeable<T> = { -readonly [K in keyof T]: T[K] };
-
-export interface ElementTransforms {
-  // if element is flipped along an axis
-  rotate: number;
-  flippedX?: boolean;
-  flippedY?: boolean;
-}
-export interface ElementStyles {
-  fill: string;
-}
+export type RotatedBoundingBox = BoundingBox & { rotate: number };
+export type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 interface AbstractElement extends BoundingBox {
-  /** modifications to make when rendering element (e.g invert, crop) */
-  readonly styles: ElementStyles;
-  readonly transforms: ElementTransforms;
+  fill: string;
+  rotate: number;
+  flippedX: boolean;
+  flippedY: boolean;
 }
 export interface ShapeElement extends AbstractElement {
   type: "shape";
@@ -84,5 +76,5 @@ export interface PointerState {
 /** element and its bounding box before any transforms were applied */
 export interface TransformingElement {
   element: CanvasElement;
-  initialBox: BoundingBox & { rotate: number };
+  initialBox: RotatedBoundingBox;
 }
