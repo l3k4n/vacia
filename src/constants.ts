@@ -17,5 +17,6 @@ export const ELEMENT_PRECISION = 2; // d.p (decimal places)
 
 export const SELECTION_PADDING = 3; // px
 export const SELECTION_HANDLE_SIZE = 8; // px
+export const SELECTION_LINE_DASH_SIZE = 3; // px
 export const SELECTION_ROTATE_HANDLE_OFFSET = 15; // px
 export const ROTATION_SNAP_THRESHOLD = Math.PI / 12; // radians

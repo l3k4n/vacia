@@ -8,12 +8,9 @@ import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
 import { createFreedrawElement, createShapeElement } from "@core/elements";
 import { isElementNegligible } from "@core/elements/negligible";
 import {
-  getResizeMutations,
-  getTransformHandleAnchor,
   getTransformHandles,
-  getResizeScale,
-  getRotateMutations,
-  getRotateAngle,
+  getSelectionTransformData,
+  getTransformedElementMutations,
 } from "@core/elements/transform";
 import {
   hitTestElementAgainstBox,
@@ -113,11 +110,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     return hitElements;
-  }
-
-  private getTransformHandleAtCoords(box: BoundingBox, coords: XYCoords) {
-    const handles = getTransformHandles(box, this.state.zoom);
-    return hitTestCoordsAgainstTransformHandles(handles, coords, this.state);
   }
 
   private createElementFromTool(
@@ -225,32 +217,27 @@ class App extends React.Component<Record<string, never>, AppState> {
     const selectionBox = getSurroundingBoundingBox(
       elements.map(({ initialBox }) => initialBox),
     );
-    const anchor = getTransformHandleAnchor(handle, selectionBox);
-
-    if (handle === "rotate") {
-      const pointerPosition = {
+    const pointerPosition = screenOffsetToVirtualOffset(
+      {
         x: pointer.origin.x + pointer.drag.offset.x,
         y: pointer.origin.y + pointer.drag.offset.y,
-      };
-      const angle = getRotateAngle(pointerPosition, anchor);
-      elements.forEach((tElement) => {
-        const mutations = getRotateMutations(tElement, anchor, angle);
-        this.elementLayer.mutateElement(tElement.element, mutations);
-      });
-    } else {
-      const pointerOffset = {
-        x: pointer.drag.offset.x / this.state.zoom,
-        y: pointer.drag.offset.y / this.state.zoom,
-      };
-      const scale = getResizeScale(handle, pointerOffset, selectionBox);
-      elements.forEach(({ element, initialBox }) => {
-        const mutations = snapBoxToGrid(
-          getResizeMutations(initialBox, scale, anchor),
-          this.state,
-        );
-        this.elementLayer.mutateElement(element, mutations);
-      });
-    }
+      },
+      this.state,
+    );
+    const transformData = getSelectionTransformData(
+      snapVirtualCoordsToGrid(pointerPosition, this.state),
+      handle,
+      selectionBox,
+      // lock aspect ratio when there is more than one element
+      elements.length > 1,
+    );
+
+    elements.forEach((transformingElement) => {
+      this.elementLayer.mutateElement(
+        transformingElement.element,
+        getTransformedElementMutations(transformingElement, transformData),
+      );
+    });
   }
 
   private onElementCreation(pointer: PointerState, element: CanvasElement) {
@@ -350,9 +337,14 @@ class App extends React.Component<Record<string, never>, AppState> {
       if (this.state.activeTool === "Selection") {
         const selectedElements = this.elementLayer.getSelectedElements();
         const selectionBox = getSurroundingBoundingBox(selectedElements);
-        const hitHandle = this.getTransformHandleAtCoords(
+        const transformHandles = getTransformHandles(
           selectionBox,
+          this.state.zoom,
+        );
+        const hitHandle = hitTestCoordsAgainstTransformHandles(
+          transformHandles,
           virtualPointerCoords,
+          this.state,
         );
         const isPointerInSelectionBox = hitTestCoordsAgainstBox(
           virtualPointerCoords,

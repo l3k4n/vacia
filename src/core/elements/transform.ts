@@ -4,63 +4,36 @@
  */
 
 import {
-  ELEMENT_PRECISION,
   ROTATION_SNAP_THRESHOLD,
   SELECTION_PADDING,
   SELECTION_ROTATE_HANDLE_OFFSET,
 } from "@constants";
 import {
-  BoundingBox,
+  CanvasElementMutations,
   Point,
+  RotatedBoundingBox,
   TransformHandle,
   TransformHandleData,
   TransformingElement,
   XYCoords,
 } from "@core/types";
+import { rotatePointAroundAnchor } from "@core/utils";
 
 type TransformAnchor = Point;
-
-const radiansToDegrees = (rad: number) => rad * (180 / Math.PI);
-const degreesToRadians = (deg: number) => deg * (Math.PI / 180);
-const normalizeDegrees = (deg: number) => {
-  const value = +(deg % 360).toFixed(ELEMENT_PRECISION);
-  return value < 0 ? 360 + value : value;
-};
-
-function rotatePointAroundAnchor(point: Point, anchor: Point, angle: number) {
-  const [x1, y1] = point;
-  const [x2, y2] = anchor;
-  return {
-    x: Math.cos(angle) * (x1 - x2) - Math.sin(angle) * (y1 - y2) + x2,
-    y: Math.sin(angle) * (x1 - x2) + Math.cos(angle) * (y1 - y2) + y2,
-  };
+interface TransformData {
+  angle: number;
+  anchor: TransformAnchor;
+  scale: Point;
+  handle: TransformHandle;
+  transformingMultipleElements: boolean;
 }
 
-export function getTransformHandles(box: BoundingBox, scale: number) {
-  const padding = SELECTION_PADDING / scale;
-  const x1 = box.x - padding;
-  const x2 = box.x + box.w + padding;
-  const y1 = box.y - padding;
-  const y2 = box.y + box.h + padding;
-  const w = box.w + padding * 2;
-  const rotateOffset = SELECTION_ROTATE_HANDLE_OFFSET / scale;
-  const handles: TransformHandleData[] = [
-    { x: x1, y: y1, type: "nw" },
-    { x: x2, y: y1, type: "ne" },
-    { x: x1, y: y2, type: "sw" },
-    { x: x2, y: y2, type: "se" },
-    { x: x1 + w / 2, y: y1 - rotateOffset, type: "rotate" },
-  ];
-
-  return handles;
-}
-
-export function getTransformHandleAnchor(
+function getTransformHandleAnchor(
   handle: TransformHandle,
-  selectionBox: BoundingBox,
-): Point {
-  const { x, y, w, h } = selectionBox;
-  const anchors: Record<TransformHandle, [number, number]> = {
+  initialSelectionBox: RotatedBoundingBox,
+): TransformAnchor {
+  const { x, y, w, h } = initialSelectionBox;
+  const anchors: Record<TransformHandle, TransformAnchor> = {
     se: [x, y],
     sw: [x + w, y],
     ne: [x, y + h],
@@ -70,71 +43,229 @@ export function getTransformHandleAnchor(
   return anchors[handle];
 }
 
-export function getResizeScale(
+function getResizeScale(
+  pointer: XYCoords,
+  [anchorX, anchorY]: TransformAnchor,
+  initialSelectionBox: RotatedBoundingBox,
   handle: TransformHandle,
-  pointerOffset: XYCoords,
-  selectionBox: BoundingBox,
 ): Point {
-  // -1 means the axis is being dragged. (e.g `nw` is on both x and y axes,
-  // hence direction is -1)
-  const directionX = handle === "nw" || handle === "sw" ? -1 : 1;
-  const directionY = handle === "nw" || handle === "ne" ? -1 : 1;
+  const flipConditions = {
+    ne: [pointer.x < anchorX, pointer.y > anchorY],
+    se: [pointer.x < anchorX, pointer.y < anchorY],
+    sw: [pointer.x > anchorX, pointer.y < anchorY],
+    nw: [pointer.x > anchorX, pointer.y > anchorY],
+    rotate: [false, false], // axis can not flip while rotating
+  };
+  const flipX = flipConditions[handle][0] ? -1 : 1;
+  const flipY = flipConditions[handle][1] ? -1 : 1;
 
-  const scaleX = 1 + (pointerOffset.x * directionX) / selectionBox.w;
-  const scaleY = 1 + (pointerOffset.y * directionY) / selectionBox.h;
-  return [scaleX, scaleY];
+  return [
+    (Math.abs(pointer.x - anchorX) * flipX) / initialSelectionBox.w || 0,
+    (Math.abs(pointer.y - anchorY) * flipY) / initialSelectionBox.h || 0,
+  ];
 }
 
-export function getRotateAngle({ x, y }: XYCoords, [x2, y2]: TransformAnchor) {
-  const threshold = ROTATION_SNAP_THRESHOLD;
-  let angle = Math.atan2(y - y2, x - x2) + Math.PI / 2;
-  angle = Math.round(angle / threshold) * threshold;
-  return angle;
-}
-
-export function getResizeMutations(
-  elementBox: BoundingBox,
-  [scaleX, scaleY]: Point,
-  [anchorX, anchorY]: Point,
+function getRotateAngle(
+  pointer: XYCoords,
+  [anchorX, anchorY]: TransformAnchor,
 ) {
-  const didFlipX = elementBox.w * scaleX <= 0;
-  const didFlipY = elementBox.h * scaleY <= 0;
-  const flipX = didFlipX ? -1 : 1;
-  const flipY = didFlipY ? -1 : 1;
-  const absScaleX = Math.abs(scaleX);
-  const absScaleY = Math.abs(scaleY);
+  const threshold = ROTATION_SNAP_THRESHOLD;
+  const angle =
+    Math.atan2(pointer.y - anchorY, pointer.x - anchorX) + (5 * Math.PI) / 2;
 
-  const w = elementBox.w * absScaleX;
-  const h = elementBox.h * absScaleY;
-  const shiftX = didFlipX ? w : 0;
-  const shiftY = didFlipY ? h : 0;
-  const offsetX = elementBox.x - anchorX;
-  const offsetY = elementBox.y - anchorY;
-  /** offset should be elemX - oppositeSideofBoundingBox */
-  const x = anchorX + flipX * (absScaleX * offsetX + shiftX);
-  const y = anchorY + flipY * (absScaleY * offsetY + shiftY);
+  return Math.round(angle / threshold) * threshold;
+}
+
+function getResizeMutations(
+  { initialBox }: TransformingElement,
+  transformData: TransformData,
+): CanvasElementMutations {
+  const [anchorX, anchorY] = transformData.anchor;
+  const [scaleX, scaleY] = transformData.scale;
+  const scale = Math.max(Math.abs(scaleX), Math.abs(scaleY));
+
+  const w = initialBox.w * scale;
+  const h = initialBox.h * scale;
+  const flipX = scaleX < 0 ? -1 : 1;
+  const flipY = scaleY < 0 ? -1 : 1;
+  const shiftX = scaleX < 0 ? w : 0;
+  const shiftY = scaleY < 0 ? h : 0;
+  const offsetX = initialBox.x - anchorX;
+  const offsetY = initialBox.y - anchorY;
+
+  const x = anchorX + flipX * (scale * offsetX + shiftX);
+  const y = anchorY + flipY * (scale * offsetY + shiftY);
 
   return { x, y, w, h };
 }
 
-export function getRotateMutations(
+function getSingleSelectionResizeMutations(
+  { initialBox }: TransformingElement,
+  transformData: TransformData,
+): CanvasElementMutations {
+  const [scaleX, scaleY] = transformData.scale;
+  const newWidth = initialBox.w * scaleX;
+  const newHeight = initialBox.h * scaleY;
+
+  // x or y may be NaN if size is 0
+  if (newWidth && newHeight) {
+    const initialElementCoords = {
+      x1: initialBox.x,
+      y1: initialBox.y,
+      x2: initialBox.x + initialBox.w,
+      y2: initialBox.y + initialBox.h,
+      center: [
+        initialBox.x + initialBox.w / 2,
+        initialBox.y + initialBox.h / 2,
+      ] as Point,
+    };
+
+    const position = { x: initialElementCoords.x1, y: initialElementCoords.y1 };
+    switch (transformData.handle) {
+      case "nw":
+        position.x = initialElementCoords.x2 - Math.abs(newWidth);
+        position.y = initialElementCoords.y2 - Math.abs(newHeight);
+        break;
+      case "ne":
+        position.x = initialElementCoords.x1;
+        position.y = initialElementCoords.y2 - Math.abs(newHeight);
+        break;
+      case "sw":
+        position.x = initialElementCoords.x2 - Math.abs(newWidth);
+        position.y = initialElementCoords.y1;
+        break;
+      default:
+    }
+
+    // amount to shift position by when axis flips
+    const shiftX = Math.abs(Math.min(newWidth, 0));
+    const shiftY = Math.abs(Math.min(newHeight, 0));
+
+    position.x += shiftX * (transformData.handle.includes("e") ? -1 : 1);
+    position.y += shiftY * (transformData.handle.includes("s") ? -1 : 1);
+
+    const center: Point = [
+      position.x + Math.abs(newWidth) / 2,
+      position.y + Math.abs(newHeight) / 2,
+    ];
+    const rotatedPosition = rotatePointAroundAnchor(
+      [position.x, position.y],
+      initialElementCoords.center,
+      initialBox.rotate,
+    );
+    const rotatedCenter = rotatePointAroundAnchor(
+      center,
+      initialElementCoords.center,
+      initialBox.rotate,
+    );
+    const normalizedPosition = rotatePointAroundAnchor(
+      [rotatedPosition.x, rotatedPosition.y],
+      [rotatedCenter.x, rotatedCenter.y],
+      -initialBox.rotate,
+    );
+
+    return {
+      x: normalizedPosition.x,
+      y: normalizedPosition.y,
+      w: Math.abs(newWidth),
+      h: Math.abs(newHeight),
+    };
+  }
+
+  return {};
+}
+
+function getRotateMutations(
   { element, initialBox }: TransformingElement,
-  selectionBoxCenter: TransformAnchor,
-  draggedRadianAngle: number,
-) {
-  const elementAngle = draggedRadianAngle + degreesToRadians(initialBox.rotate);
-  /** center of element */
+  transformData: TransformData,
+): CanvasElementMutations {
+  const elementAngle = transformData.angle + initialBox.rotate;
   const center: Point = [element.x + element.w / 2, element.y + element.h / 2];
   /** rotate the element using its center as an anchor and return the offset */
   const offset = rotatePointAroundAnchor(
     center,
-    selectionBoxCenter,
-    elementAngle - degreesToRadians(element.rotate),
+    transformData.anchor,
+    elementAngle - element.rotate,
   );
 
   return {
     x: element.x + offset.x - center[0],
     y: element.y + offset.y - center[1],
-    rotate: normalizeDegrees(radiansToDegrees(elementAngle)),
+    rotate: elementAngle,
   };
+}
+
+export function getTransformHandles(box: RotatedBoundingBox, scale: number) {
+  const padding = SELECTION_PADDING / scale;
+  const x1 = box.x - padding;
+  const x2 = box.x + box.w + padding;
+  const y1 = box.y - padding;
+  const y2 = box.y + box.h + padding;
+  const w = box.w + padding * 2;
+  const rotateHandleOffset = SELECTION_ROTATE_HANDLE_OFFSET / scale;
+  const handles: TransformHandleData[] = [
+    { x: x1, y: y1, type: "nw" },
+    { x: x2, y: y1, type: "ne" },
+    { x: x1, y: y2, type: "sw" },
+    { x: x2, y: y2, type: "se" },
+    { x: x1 + w / 2, y: y1 - rotateHandleOffset, type: "rotate" },
+  ];
+  if (box.rotate) {
+    const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
+    handles.forEach((handle) => {
+      Object.assign(
+        handle,
+        rotatePointAroundAnchor([handle.x, handle.y], center, box.rotate),
+      );
+    });
+  }
+
+  return handles;
+}
+
+export function getSelectionTransformData(
+  pointerCoords: XYCoords,
+  handle: TransformHandle,
+  initialSelectionBox: RotatedBoundingBox,
+  multipleElements: boolean,
+): TransformData {
+  const anchor = getTransformHandleAnchor(handle, initialSelectionBox);
+  const center: Point = [
+    initialSelectionBox.x + initialSelectionBox.w / 2,
+    initialSelectionBox.y + initialSelectionBox.h / 2,
+  ];
+  /** since transforms are calculated by reversing rotation to get a normal
+   * bounding box, pointer also has to be rotated backwards to ensure it hits
+   * the transform handle at its unrotated point. */
+  const normalizedPointer = rotatePointAroundAnchor(
+    [pointerCoords.x, pointerCoords.y],
+    center,
+    -initialSelectionBox.rotate,
+  );
+  return {
+    anchor,
+    handle,
+    transformingMultipleElements: multipleElements,
+    angle: getRotateAngle(normalizedPointer, anchor),
+    scale: getResizeScale(
+      normalizedPointer,
+      anchor,
+      initialSelectionBox,
+      handle,
+    ),
+  };
+}
+
+export function getTransformedElementMutations(
+  element: TransformingElement,
+  transformData: TransformData,
+): CanvasElementMutations {
+  if (transformData.handle === "rotate") {
+    return getRotateMutations(element, transformData);
+  }
+  if (transformData.transformingMultipleElements) {
+    return getResizeMutations(element, transformData);
+  }
+
+  return getSingleSelectionResizeMutations(element, transformData);
 }

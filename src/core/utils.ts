@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { BoundingBox } from "./types";
+import { BoundingBox, Point, RotatedBoundingBox, XYCoords } from "./types";
 
 export function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -106,29 +106,58 @@ export function shallowDiff<T extends object, S extends object>(
   return diff as Partial<S>;
 }
 
-export function getSurroundingBoundingBox(boxes: BoundingBox[]): BoundingBox {
-  if (boxes.length < 1) return { x: 0, y: 0, w: 0, h: 0 };
-
-  const surroundingBoxCoords = {
-    x1: boxes[0].x,
-    y1: boxes[0].y,
-    x2: boxes[0].w + boxes[0].x,
-    y2: boxes[0].h + boxes[0].y,
+export function rotatePointAroundAnchor(
+  point: Point,
+  anchor: Point,
+  angle: number,
+): XYCoords {
+  const [x1, y1] = point;
+  const [x2, y2] = anchor;
+  return {
+    x: Math.cos(angle) * (x1 - x2) - Math.sin(angle) * (y1 - y2) + x2,
+    y: Math.sin(angle) * (x1 - x2) + Math.cos(angle) * (y1 - y2) + y2,
   };
+}
+
+/** returns the rotated coords of a bounding box in a clockwise direction
+ * starting from the top-left */
+export function getRotatedBoxCoords(box: RotatedBoundingBox): XYCoords[] {
+  const x1 = box.x;
+  const x2 = x1 + box.w;
+  const y1 = box.y;
+  const y2 = y1 + box.h;
+  const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
+
+  return [
+    rotatePointAroundAnchor([x1, y1], center, box.rotate), // nw
+    rotatePointAroundAnchor([x2, y1], center, box.rotate), // ne
+    rotatePointAroundAnchor([x1, y2], center, box.rotate), // sw
+    rotatePointAroundAnchor([x2, y2], center, box.rotate), // se
+  ];
+}
+
+export function getSurroundingBoundingBox(
+  boxes: RotatedBoundingBox[],
+): RotatedBoundingBox {
+  if (boxes.length < 1) return { x: 0, y: 0, w: 0, h: 0, rotate: 0 };
+  if (boxes.length === 1) {
+    // if there is a single box return its bounds
+    const { x, y, w, h, rotate } = boxes[0];
+    return { x, y, w, h, rotate };
+  }
+  let x1 = Infinity;
+  let y1 = Infinity;
+  let x2 = -Infinity;
+  let y2 = -Infinity;
 
   for (let i = 0; i < boxes.length; i += 1) {
-    const { x, y, w, h } = boxes[i];
+    const [nw, ne, sw, se] = getRotatedBoxCoords(boxes[i]);
 
-    surroundingBoxCoords.x1 = Math.min(surroundingBoxCoords.x1, x);
-    surroundingBoxCoords.y1 = Math.min(surroundingBoxCoords.y1, y);
-    surroundingBoxCoords.x2 = Math.max(surroundingBoxCoords.x2, w + x);
-    surroundingBoxCoords.y2 = Math.max(surroundingBoxCoords.y2, h + y);
+    x1 = Math.min(x1, nw.x, ne.x, se.x, sw.x);
+    y1 = Math.min(y1, nw.y, ne.y, se.y, sw.y);
+    x2 = Math.max(x2, nw.x, ne.x, se.x, sw.x);
+    y2 = Math.max(y2, nw.y, ne.y, se.y, sw.y);
   }
 
-  return {
-    x: surroundingBoxCoords.x1,
-    y: surroundingBoxCoords.y1,
-    w: surroundingBoxCoords.x2 - surroundingBoxCoords.x1,
-    h: surroundingBoxCoords.y2 - surroundingBoxCoords.y1,
-  };
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1, rotate: 0 };
 }
