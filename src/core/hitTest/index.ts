@@ -7,7 +7,7 @@ import {
   AppState,
   RotatedBoundingBox,
 } from "@core/types";
-import { rotatePointAroundAnchor } from "@core/utils";
+import { getRotatedBoxCoords, rotatePointAroundAnchor } from "@core/utils";
 
 function hitTestRect(box: BoundingBox, coords: XYCoords) {
   const { x, y, w, h } = box;
@@ -39,12 +39,12 @@ export function hitTestElementAgainstUnrotatedBox(
   element: CanvasElement,
   box: BoundingBox,
 ): boolean {
-  const horizontalBoundsFitsBox =
-    element.x >= box.x && element.x + element.w <= box.x + box.w;
-  const verticalBoundsFitsBox =
-    element.y >= box.y && element.y + element.h <= box.y + box.h;
+  const elementCoords = getRotatedBoxCoords(element);
 
-  return horizontalBoundsFitsBox && verticalBoundsFitsBox;
+  for (let i = 0; i < elementCoords.length; i += 1) {
+    if (!hitTestRect(box, elementCoords[i])) return false;
+  }
+  return true;
 }
 
 /** Returns true if a coords is inside the specified element */
