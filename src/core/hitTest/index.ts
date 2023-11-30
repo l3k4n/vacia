@@ -35,7 +35,7 @@ function hitTestEllipse(box: BoundingBox, coords: XYCoords) {
 }
 
 /** Returns true if element is completely contained within the bounding box */
-export function hitTestElementAgainstBox(
+export function hitTestElementAgainstUnrotatedBox(
   element: CanvasElement,
   box: BoundingBox,
 ): boolean {

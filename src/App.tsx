@@ -13,7 +13,7 @@ import {
   getTransformedElementMutations,
 } from "@core/elements/transform";
 import {
-  hitTestElementAgainstBox,
+  hitTestElementAgainstUnrotatedBox,
   hitTestCoordsAgainstUnrotatedBox,
   hitTestCoordsAgainstElement,
   hitTestCoordsAgainstTransformHandles,
@@ -104,7 +104,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     for (let i = 0; i < allElements.length; i += 1) {
       const element = allElements[i];
 
-      if (hitTestElementAgainstBox(element, box)) {
+      if (hitTestElementAgainstUnrotatedBox(element, box)) {
         hitElements.push(element);
       }
     }
