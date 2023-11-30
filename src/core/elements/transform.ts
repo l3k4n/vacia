@@ -5,7 +5,6 @@
 
 import {
   ROTATION_SNAP_THRESHOLD,
-  SELECTION_PADDING,
   SELECTION_ROTATE_HANDLE_OFFSET,
 } from "@constants";
 import {
@@ -199,19 +198,18 @@ function getRotateMutations(
 }
 
 export function getTransformHandles(box: RotatedBoundingBox, scale: number) {
-  const padding = SELECTION_PADDING / scale;
-  const x1 = box.x - padding;
-  const x2 = box.x + box.w + padding;
-  const y1 = box.y - padding;
-  const y2 = box.y + box.h + padding;
-  const w = box.w + padding * 2;
+  const x1 = box.x;
+  const x2 = box.x + box.w;
+  const y1 = box.y;
+  const y2 = box.y + box.h;
+  const cx = box.w / 2;
   const rotateHandleOffset = SELECTION_ROTATE_HANDLE_OFFSET / scale;
   const handles: TransformHandleData[] = [
     { x: x1, y: y1, type: "nw" },
     { x: x2, y: y1, type: "ne" },
     { x: x1, y: y2, type: "sw" },
     { x: x2, y: y2, type: "se" },
-    { x: x1 + w / 2, y: y1 - rotateHandleOffset, type: "rotate" },
+    { x: x1 + cx, y: y1 - rotateHandleOffset, type: "rotate" },
   ];
   if (box.rotate) {
     handles.forEach((handle) => {

@@ -15,7 +15,6 @@ export const GENERIC_ELEMENT_PROPS = {
  * Position values include x, y, width, height and the in a path[] */
 export const ELEMENT_PRECISION = 2; // d.p (decimal places)
 
-export const SELECTION_PADDING = 3; // px
 export const SELECTION_HANDLE_SIZE = 8; // px
 export const SELECTION_LINE_DASH_SIZE = 3; // px
 export const SELECTION_ROTATE_HANDLE_OFFSET = 15; // px

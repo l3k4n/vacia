@@ -1,8 +1,4 @@
-import {
-  SELECTION_HANDLE_SIZE,
-  SELECTION_LINE_DASH_SIZE,
-  SELECTION_PADDING,
-} from "@constants";
+import { SELECTION_HANDLE_SIZE, SELECTION_LINE_DASH_SIZE } from "@constants";
 import { getTransformHandles } from "@core/elements/transform";
 import { BoundingBox, CanvasElement, TransformHandleData } from "@core/types";
 import { getSurroundingBoundingBox } from "@core/utils";
@@ -11,16 +7,10 @@ function drawSurroundingBox(
   ctx: CanvasRenderingContext2D,
   box: BoundingBox,
   dashSize: number,
-  padding: number,
 ) {
   ctx.save();
   ctx.setLineDash([dashSize, dashSize]);
-  ctx.strokeRect(
-    box.x - padding,
-    box.y - padding,
-    box.w + 2 * padding,
-    box.h + 2 * padding,
-  );
+  ctx.strokeRect(box.x, box.y, box.w, box.h);
   ctx.setLineDash([0, 0]);
   ctx.restore();
 }
@@ -56,7 +46,6 @@ export default function renderBoundingBoxes(
   ctx.strokeStyle = "blue";
   ctx.fillStyle = "#fff";
 
-  const padding = SELECTION_PADDING / scale;
   const lineDashSize = SELECTION_LINE_DASH_SIZE / scale;
   const handleSize = SELECTION_HANDLE_SIZE / scale;
 
@@ -68,12 +57,7 @@ export default function renderBoundingBoxes(
     const rY = h / 2;
     ctx.translate(x + rX, y + rY);
     ctx.rotate(rotate);
-    ctx.strokeRect(
-      -rX - padding,
-      -rY - padding,
-      w + 2 * padding,
-      h + 2 * padding,
-    );
+    ctx.strokeRect(-rX, -rY, w, h);
     ctx.restore();
   }
 
@@ -81,7 +65,7 @@ export default function renderBoundingBoxes(
   const transformHandles = getTransformHandles(surroundingBox, scale);
 
   if (elements.length > 1) {
-    drawSurroundingBox(ctx, surroundingBox, lineDashSize, padding);
+    drawSurroundingBox(ctx, surroundingBox, lineDashSize);
   }
   drawSelectionHandles(ctx, transformHandles, handleSize);
 
