@@ -1,71 +1,47 @@
-import { fireEvent } from "@testing-library/react";
-import { act } from "react-dom/test-utils";
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, beforeEach } from "vitest";
 import { renderApp } from "./test-utils/renderApp";
+import { pointerDrag, scrollWheel } from "./test-utils/simulateEvent";
+import { selectTool } from "./test-utils/tools";
 
 describe("Movement around canvas", () => {
+  let canvas: HTMLCanvasElement;
+  beforeEach(() => {
+    canvas = renderApp().canvas as HTMLCanvasElement;
+  });
+
   test("panning", () => {
-    const { canvas } = renderApp();
-
-    act(() => window.appData.setState({ activeTool: "Hand" }));
-
-    fireEvent.pointerDown(canvas, { clientX: 0, clientY: 0, buttons: 1 });
-    fireEvent.pointerMove(canvas, { clientX: 30, clientY: 30 });
-    fireEvent.pointerUp(canvas);
-
+    selectTool("Hand");
+    pointerDrag(
+      canvas,
+      { clientX: 0, clientY: 0 },
+      { clientX: 30, clientY: 30 },
+    );
     expect(window.appData.state.scrollOffset).toMatchObject({ x: 30, y: 30 });
   });
 
   test("zooming", () => {
-    const { canvas } = renderApp();
-
-    fireEvent.wheel(canvas, {
-      ctrlKey: true,
-      clientX: 0,
-      clientY: 0,
-      deltaY: -125,
-    });
-    fireEvent.wheel(canvas, {
-      ctrlKey: true,
-      clientX: 0,
-      clientY: 0,
-      deltaY: -125,
-    });
+    scrollWheel(canvas, -2, { ctrlKey: true, clientX: 30, clientY: 30 });
     expect(window.appData.state.zoom.toFixed(2)).toBe("1.20");
 
-    fireEvent.wheel(canvas, {
-      ctrlKey: true,
-      clientX: 0,
-      clientY: 0,
-      deltaY: 125,
-    });
-    fireEvent.wheel(canvas, {
-      ctrlKey: true,
-      clientX: 0,
-      clientY: 0,
-      deltaY: 125,
-    });
+    scrollWheel(canvas, 2, { ctrlKey: true, clientX: 30, clientY: 30 });
     expect(window.appData.state.zoom.toFixed(2)).toBe("1.00");
   });
 
   test("only pan if Hand tool is active", () => {
-    const { canvas } = renderApp();
-
-    const panToBottomLeft = () => {
-      fireEvent.pointerDown(canvas, { clientX: 0, clientY: 0, buttons: 1 });
-      fireEvent.pointerMove(canvas, { clientX: 30, clientY: 30 });
-      fireEvent.pointerUp(canvas);
-    };
-
-    act(() => window.appData.setState({ activeTool: "Freedraw" }));
-
-    panToBottomLeft();
-
+    selectTool("Freedraw");
+    pointerDrag(
+      canvas,
+      { clientX: 0, clientY: 0 },
+      { clientX: 69, clientY: 420 },
+    );
     expect(window.appData.state.scrollOffset).toMatchObject({ x: 0, y: 0 });
 
-    act(() => window.appData.setState({ activeTool: "Hand" }));
-    panToBottomLeft();
-
-    expect(window.appData.state.scrollOffset).toMatchObject({ x: 30, y: 30 });
+    selectTool("Hand");
+    pointerDrag(
+      canvas,
+      { clientX: 0, clientY: 0 },
+      { clientX: 69, clientY: 420 },
+    );
+    expect(window.appData.state.scrollOffset).toMatchObject({ x: 69, y: 420 });
   });
 });
