@@ -114,10 +114,8 @@ function getSingleSelectionResizeMutations(
       y1: initialBox.y,
       x2: initialBox.x + initialBox.w,
       y2: initialBox.y + initialBox.h,
-      center: [
-        initialBox.x + initialBox.w / 2,
-        initialBox.y + initialBox.h / 2,
-      ] as Point,
+      cx: initialBox.x + initialBox.w / 2,
+      cy: initialBox.y + initialBox.h / 2,
     };
 
     const position = { x: initialElementCoords.x1, y: initialElementCoords.y1 };
@@ -144,23 +142,25 @@ function getSingleSelectionResizeMutations(
     position.x += shiftX * (transformData.handle.includes("e") ? -1 : 1);
     position.y += shiftY * (transformData.handle.includes("s") ? -1 : 1);
 
-    const center: Point = [
-      position.x + Math.abs(newWidth) / 2,
-      position.y + Math.abs(newHeight) / 2,
-    ];
     const rotatedPosition = rotatePointAroundAnchor(
-      [position.x, position.y],
-      initialElementCoords.center,
+      position.x,
+      position.y,
+      initialElementCoords.cx,
+      initialElementCoords.cy,
       initialBox.rotate,
     );
     const rotatedCenter = rotatePointAroundAnchor(
-      center,
-      initialElementCoords.center,
+      position.x + Math.abs(newWidth) / 2,
+      position.y + Math.abs(newHeight) / 2,
+      initialElementCoords.cx,
+      initialElementCoords.cy,
       initialBox.rotate,
     );
     const normalizedPosition = rotatePointAroundAnchor(
-      [rotatedPosition.x, rotatedPosition.y],
-      [rotatedCenter.x, rotatedCenter.y],
+      rotatedPosition.x,
+      rotatedPosition.y,
+      rotatedCenter.x,
+      rotatedCenter.y,
       -initialBox.rotate,
     );
 
@@ -180,17 +180,20 @@ function getRotateMutations(
   transformData: TransformData,
 ): CanvasElementMutations {
   const elementAngle = transformData.angle + initialBox.rotate;
-  const center: Point = [element.x + element.w / 2, element.y + element.h / 2];
+  const cx = element.x + element.w / 2;
+  const cy = element.y + element.h / 2;
   /** rotate the element using its center as an anchor and return the offset */
   const offset = rotatePointAroundAnchor(
-    center,
-    transformData.anchor,
+    cx,
+    cy,
+    transformData.anchor[0],
+    transformData.anchor[1],
     elementAngle - element.rotate,
   );
 
   return {
-    x: element.x + offset.x - center[0],
-    y: element.y + offset.y - center[1],
+    x: element.x + offset.x - cx,
+    y: element.y + offset.y - cy,
     rotate: elementAngle,
   };
 }
@@ -211,11 +214,16 @@ export function getTransformHandles(box: RotatedBoundingBox, scale: number) {
     { x: x1 + w / 2, y: y1 - rotateHandleOffset, type: "rotate" },
   ];
   if (box.rotate) {
-    const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
     handles.forEach((handle) => {
       Object.assign(
         handle,
-        rotatePointAroundAnchor([handle.x, handle.y], center, box.rotate),
+        rotatePointAroundAnchor(
+          handle.x,
+          handle.y,
+          (x1 + x2) / 2,
+          (y1 + y2) / 2,
+          box.rotate,
+        ),
       );
     });
   }
@@ -230,16 +238,14 @@ export function getSelectionTransformData(
   multipleElements: boolean,
 ): TransformData {
   const anchor = getTransformHandleAnchor(handle, initialSelectionBox);
-  const center: Point = [
-    initialSelectionBox.x + initialSelectionBox.w / 2,
-    initialSelectionBox.y + initialSelectionBox.h / 2,
-  ];
   /** since transforms are calculated by reversing rotation to get a normal
    * bounding box, pointer also has to be rotated backwards to ensure it hits
    * the transform handle at its unrotated point. */
   const normalizedPointer = rotatePointAroundAnchor(
-    [pointerCoords.x, pointerCoords.y],
-    center,
+    pointerCoords.x,
+    pointerCoords.y,
+    initialSelectionBox.x + initialSelectionBox.w / 2,
+    initialSelectionBox.y + initialSelectionBox.h / 2,
     -initialSelectionBox.rotate,
   );
   return {

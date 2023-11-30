@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { BoundingBox, Point, RotatedBoundingBox, XYCoords } from "./types";
+import { BoundingBox, RotatedBoundingBox, XYCoords } from "./types";
 
 export function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -105,14 +105,13 @@ export function shallowDiff<T extends object, S extends object>(
 
   return diff as Partial<S>;
 }
-
 export function rotatePointAroundAnchor(
-  point: Point,
-  anchor: Point,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
   angle: number,
 ): XYCoords {
-  const [x1, y1] = point;
-  const [x2, y2] = anchor;
   return {
     x: Math.cos(angle) * (x1 - x2) - Math.sin(angle) * (y1 - y2) + x2,
     y: Math.sin(angle) * (x1 - x2) + Math.cos(angle) * (y1 - y2) + y2,
@@ -126,13 +125,14 @@ export function getRotatedBoxCoords(box: RotatedBoundingBox): XYCoords[] {
   const x2 = x1 + box.w;
   const y1 = box.y;
   const y2 = y1 + box.h;
-  const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
+  const cx = (x1 + x2) / 2;
+  const cy = (y1 + y2) / 2;
 
   return [
-    rotatePointAroundAnchor([x1, y1], center, box.rotate), // nw
-    rotatePointAroundAnchor([x2, y1], center, box.rotate), // ne
-    rotatePointAroundAnchor([x1, y2], center, box.rotate), // sw
-    rotatePointAroundAnchor([x2, y2], center, box.rotate), // se
+    rotatePointAroundAnchor(x1, y1, cx, cy, box.rotate), // nw
+    rotatePointAroundAnchor(x2, y1, cx, cy, box.rotate), // ne
+    rotatePointAroundAnchor(x1, y2, cx, cy, box.rotate), // sw
+    rotatePointAroundAnchor(x2, y2, cx, cy, box.rotate), // se
   ];
 }
 

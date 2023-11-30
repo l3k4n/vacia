@@ -5,7 +5,9 @@ import {
   XYCoords,
   TransformHandleData,
   AppState,
+  RotatedBoundingBox,
 } from "@core/types";
+import { rotatePointAroundAnchor } from "@core/utils";
 
 function hitTestRect(box: BoundingBox, coords: XYCoords) {
   const { x, y, w, h } = box;
@@ -50,22 +52,40 @@ export function hitTestCoordsAgainstElement(
   element: CanvasElement,
   coords: XYCoords,
 ): boolean {
+  const rotatedCoords = rotatePointAroundAnchor(
+    coords.x,
+    coords.y,
+    element.x + element.w / 2,
+    element.y + element.h / 2,
+    -element.rotate,
+  );
+
   switch (element.type) {
     case "shape":
-      if (element.shape === "rect") return hitTestRect(element, coords);
-      return hitTestEllipse(element, coords);
+      if (element.shape === "rect") return hitTestRect(element, rotatedCoords);
+      return hitTestEllipse(element, rotatedCoords);
 
     case "freedraw":
-      return hitTestRect(element, coords);
+      return hitTestRect(element, rotatedCoords);
 
     default:
       return false;
   }
 }
 
-/** Returns true if coords is within bounding box */
-export function hitTestCoordsAgainstBox(coords: XYCoords, box: BoundingBox) {
-  return hitTestRect(box, coords);
+/** Returns true if coords is within bounding box while ignoring rotation */
+export function hitTestCoordsAgainstUnrotatedBox(
+  coords: XYCoords,
+  box: RotatedBoundingBox,
+) {
+  const rotatedCoords = rotatePointAroundAnchor(
+    coords.x,
+    coords.y,
+    box.x + box.w / 2,
+    box.y + box.h / 2,
+    -box.rotate,
+  );
+  return hitTestRect(box, rotatedCoords);
 }
 
 /** returns type of transform handle at coords */

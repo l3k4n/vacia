@@ -14,7 +14,7 @@ import {
 } from "@core/elements/transform";
 import {
   hitTestElementAgainstBox,
-  hitTestCoordsAgainstBox,
+  hitTestCoordsAgainstUnrotatedBox,
   hitTestCoordsAgainstElement,
   hitTestCoordsAgainstTransformHandles,
 } from "@core/hitTest";
@@ -82,14 +82,14 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
-  private getFirstElementAtCoords(point: XYCoords) {
+  private getFirstElementAtCoords(coords: XYCoords) {
     const allElements = this.elementLayer.getAllElements();
     let hitElement: CanvasElement | null = null;
 
     for (let i = allElements.length - 1; i > -1; i -= 1) {
       const element = allElements[i];
 
-      if (hitTestCoordsAgainstElement(element, point)) {
+      if (hitTestCoordsAgainstElement(element, coords)) {
         hitElement = element;
         break;
       }
@@ -346,7 +346,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           virtualPointerCoords,
           this.state,
         );
-        const isPointerInSelectionBox = hitTestCoordsAgainstBox(
+        const isPointerInSelectionBox = hitTestCoordsAgainstUnrotatedBox(
           virtualPointerCoords,
           selectionBox,
         );
