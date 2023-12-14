@@ -1,16 +1,15 @@
 import React, { CSSProperties } from "react";
 import { LayoutSection, ColorSection } from "./sections";
 import getSelectionDetails, {
+  MIXED_VALUE,
   SelectionMetadata,
   SelectionProps,
 } from "./selectionDetails";
 import {
-  BoundingBox,
   CanvasElement,
   CanvasElementMutations,
   ToolbarPosition,
 } from "@core/types";
-import { shallowDiff } from "@core/utils";
 import "./style.scss";
 
 interface DesignMenuProps {
@@ -55,8 +54,8 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
         window.clearTimeout(this.pendingTimeout);
       }
 
-      /** defer updating state because `MenuSections` might need to push their
-       * changes to the current selection */
+      /** defer updating state because some events (e.g onblur) will occur after
+       * state change otherwise */
       this.pendingTimeout = window.setTimeout(() => {
         const selectionDetails = getSelectionDetails(
           this.props.selectedElements,
@@ -70,40 +69,35 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
     }
   }
 
-  onBoundingBoxChange = (box: SelectionProps["box"]) => {
-    const { selectionProps, elements } = this.state;
-    // const elements = this.props.selectedElements;
+  onChange = (changes: Partial<SelectionProps>) => {
+    const changesToApply: Partial<Record<keyof SelectionProps, unknown>> = {};
+    const keys = Object.keys(changes) as (keyof SelectionProps)[];
+    let shouldApplyChanges = false;
 
-    // get all properties that changed
-    const changes = shallowDiff(box, selectionProps.box);
-    const normalizedChanges = {} as Partial<BoundingBox>;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    Object.keys(changes).forEach((key: keyof BoundingBox) => {
-      /** cast all changes that aren't 'Mixed' to number */
+    for (let i = 0; i < keys.length; i += 1) {
+      const key = keys[i];
       const value = changes[key];
-      if (value !== "Mixed") normalizedChanges[key] = +value!;
-    });
-    // Note: normalizedChanges now holds all changes that can be applied
-    this.props.onChange(elements, normalizedChanges);
-  };
+      const previousValue = this.state.selectionProps[key];
 
-  onFillChange = (color: string) => {
-    const { elements } = this.state;
-    this.props.onChange(elements, { fill: color });
+      if (value !== MIXED_VALUE && value !== previousValue) {
+        changesToApply[key] = changes[key];
+        shouldApplyChanges = true;
+      }
+    }
+
+    if (shouldApplyChanges) {
+      this.props.onChange(this.state.elements, changesToApply);
+    }
   };
 
   render(): React.ReactNode {
     const { selectionMetadata, selectionProps } = this.state;
     return (
       <div className="DesignMenu" style={this.state.positionStyles}>
-        <LayoutSection
-          onChange={this.onBoundingBoxChange}
-          value={selectionProps.box}
-        />
+        <LayoutSection onChange={this.onChange} value={selectionProps} />
         <ColorSection
-          onChange={this.onFillChange}
-          value={selectionProps.fill}
+          onChange={this.onChange}
+          value={selectionProps}
           disabled={!selectionMetadata.canBeFilled}
         />
       </div>

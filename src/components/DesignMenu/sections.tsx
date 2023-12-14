@@ -1,26 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import tinycolor from "tinycolor2";
-import { SelectionProps } from "./selectionDetails";
+import { evalMathExpr } from "./matheval";
+import { Mixed, MIXED_VALUE, SelectionProps } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
 import { GENERIC_ELEMENT_PROPS } from "@constants";
-import { EvalMathExpression, clampNumber } from "@core/utils";
+import { BoundingBox } from "@core/types";
+import { clampNumber } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
 
-interface MenuSectionProps {
-  title: string;
+interface SectionProps {
+  value: SelectionProps;
   disabled?: boolean;
-  children?: JSX.Element;
+  onChange: (value: Partial<SelectionProps>) => void;
 }
 
-interface SectionProps<T> {
-  value: T;
-  disabled?: boolean;
-  onChange: (value: T) => void;
-}
-
-type ColorComponents = { hex: string; opacity: string };
-
-function MenuSection(props: MenuSectionProps) {
+function MenuSection(
+  props: React.PropsWithChildren<{ title: string; disabled?: boolean }>,
+) {
   return (
     <div
       className={`DesignMenuSection ${
@@ -42,121 +38,136 @@ function MenuSection(props: MenuSectionProps) {
   );
 }
 
-export function LayoutSection(props: SectionProps<SelectionProps["box"]>) {
-  const [boundingBox, setBoundingbox] = useState(props.value);
-  const { x, y, w, h } = boundingBox;
+export function LayoutSection({ value, onChange, disabled }: SectionProps) {
+  const [x, setX] = useState(value.x.toString());
+  const [y, setY] = useState(value.y.toString());
+  const [w, setW] = useState(value.w.toString());
+  const [h, setH] = useState(value.h.toString());
 
-  const updateBox = (obj: Partial<typeof boundingBox>) => {
-    setBoundingbox({ ...boundingBox, ...obj });
+  const updateFields = (data: Mixed<BoundingBox>) => {
+    setX(data.x.toString());
+    setY(data.y.toString());
+    setW(data.w.toString());
+    setH(data.h.toString());
   };
 
-  const submit = () => {
-    /** since state is updated when props changes no need to manually do it */
-    props.onChange({
-      x: (EvalMathExpression(x) ?? props.value.x).toString(),
-      y: (EvalMathExpression(y) ?? props.value.y).toString(),
-      w: Math.abs(EvalMathExpression(w) ?? +props.value.w).toString(),
-      h: Math.abs(EvalMathExpression(h) ?? +props.value.h).toString(),
-    });
+  const pushChanges = () => {
+    const changes = {
+      x: evalMathExpr(x) ?? value.x,
+      y: evalMathExpr(y) ?? value.y,
+      w: evalMathExpr(w) ?? value.w,
+      h: evalMathExpr(h) ?? value.h,
+    };
+
+    updateFields(changes);
+    onChange(changes);
   };
 
-  const submitOnEnter = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
-      submit();
-    }
-  };
-
-  useEffect(() => setBoundingbox(props.value), [props.value]);
-  useUnmount(submit);
+  useEffect(() => updateFields(value), [value]);
+  useUnmount(pushChanges);
 
   return (
-    <MenuSection title="Layout" disabled={props.disabled}>
+    <MenuSection title="Layout" disabled={disabled}>
       <div
         className={"MS_LayoutEditor"}
-        onBlur={submit}
-        onKeyDown={submitOnEnter}>
-        <label title="X position" tabIndex={-1}>
+        onBlur={pushChanges}
+        onKeyDown={(e) => e.key === "Enter" && pushChanges()}>
+        <label tabIndex={-1}>
           <span>X</span>
-          <input value={x} onChange={(e) => updateBox({ x: e.target.value })} />
+          <input value={x} onChange={(e) => setX(e.target.value)} />
         </label>
-        <label title="Y position" tabIndex={-1}>
+        <label tabIndex={-1}>
           <span>Y</span>
-          <input value={y} onChange={(e) => updateBox({ y: e.target.value })} />
+          <input value={y} onChange={(e) => setY(e.target.value)} />
         </label>
-        <label title="Width" tabIndex={-1}>
+        <label tabIndex={-1}>
           <span>W</span>
-          <input value={w} onChange={(e) => updateBox({ w: e.target.value })} />
+          <input value={w} onChange={(e) => setW(e.target.value)} />
         </label>
-        <label title="Height" tabIndex={-1}>
+        <label tabIndex={-1}>
           <span>H</span>
-          <input value={h} onChange={(e) => updateBox({ h: e.target.value })} />
+          <input value={h} onChange={(e) => setH(e.target.value)} />
         </label>
       </div>
     </MenuSection>
   );
 }
 
-/** tinycolor helper functions */
-const tcUtils = {
-  getComponents: (tc: tinycolor.Instance) => ({
-    hex: tc.toHexString().toUpperCase(),
-    opacity: `${Math.round(tc.getAlpha() * 100)}%`,
-  }),
+const getHex = (tc: tinycolor.Instance) => tc.toHexString().toUpperCase();
+const getOpacity = (tc: tinycolor.Instance) =>
+  `${Math.round(tc.getAlpha() * 100)}%`;
 
-  getColor: (components: ColorComponents, tcFallback: tinycolor.Instance) => {
-    let tc = tinycolor(components.hex);
+export function ColorSection(props: SectionProps) {
+  const [tc, setTc] = useState(() => tinycolor(props.value.fill.toString()));
+  const [rawHex, setRawHex] = useState(getHex(tc));
+  const [rawOpacity, setRawOpacity] = useState(getOpacity(tc));
 
-    /** use previous tc instance if current input is invalid */
-    if (!tc.isValid()) tc = tcFallback;
+  const parseColorString = (value: string) => {
+    if (value === "Mixed") return MIXED_VALUE;
+    return value;
+  };
 
-    /** update opacity if it is not specified in hex value */
-    if (tc.getFormat() !== "hex8") {
-      const evaluatedOpacity = EvalMathExpression(components.opacity, "%");
-      if (evaluatedOpacity !== null) {
-        /** make the evaluated value a valid `Alpha` value */
-        tc.setAlpha(clampNumber(evaluatedOpacity, 0, 100) / 100);
+  type ColorComponents = { hex: string; opacity: string };
+  const pushChanges = (color: Partial<Mixed<ColorComponents>>) => {
+    let newTc = tc;
+    let didColorChange = false;
+
+    if (typeof color.opacity === "string") {
+      const evaluatedOpacity = evalMathExpr(color.opacity.replaceAll("%", ""));
+      const newAlpha = evaluatedOpacity
+        ? clampNumber(evaluatedOpacity, 0, 100) / 100
+        : tc.getAlpha();
+
+      if (newAlpha !== tc.getAlpha()) {
+        didColorChange = true;
+        newTc.setAlpha(newAlpha);
       }
     }
 
-    return { tc, color: tc.toHex8String().toUpperCase() };
-  },
-};
+    if (
+      typeof color.hex === "string" &&
+      color.hex.toUpperCase() !== getHex(tc)
+    ) {
+      const previousAlpha = newTc.getAlpha();
+      newTc = tinycolor(color.hex);
+      didColorChange = newTc.isValid();
 
-export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
-  const tc = useRef(tinycolor(props.value));
-  const [color, setColor] = useState(() => tcUtils.getComponents(tc.current));
-  const updateColor = (input: Partial<typeof color>) => {
-    setColor({ ...color, ...input });
-  };
+      if (newTc.isValid() && tc.getFormat() === "hex") {
+        // if hex also has alpha value, overwrite the current opacity
+        newTc.setAlpha(previousAlpha);
+      }
+    }
 
-  const submit = () => {
-    const newColor = tcUtils.getColor(color, tc.current);
-
-    tc.current = newColor.tc;
-    setColor(tcUtils.getComponents(newColor.tc));
-    props.onChange(newColor.color);
-  };
-  const submitOnEnter = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
-      submit();
+    if (didColorChange) {
+      props.onChange({ fill: newTc.toHex8String().toUpperCase() });
+      setTc(newTc);
+      setRawHex(getHex(newTc));
+      setRawOpacity(getOpacity(newTc));
+    } else {
+      // update inputs even if color is invalid
+      setRawHex(getHex(tc));
+      setRawOpacity(getOpacity(tc));
     }
   };
 
-  useEffect(() => {
-    tc.current = tinycolor(props.value);
-    updateColor(tcUtils.getComponents(tc.current));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.value]);
+  const resetColors = () => {
+    props.onChange({ fill: GENERIC_ELEMENT_PROPS.fill });
+  };
 
-  useUnmount(() => props.value !== "Mixed" && submit());
+  useUnmount(() => {
+    if (props.value.fill !== MIXED_VALUE) {
+      pushChanges({
+        hex: parseColorString(rawHex),
+        opacity: parseColorString(rawOpacity),
+      });
+    }
+  });
 
-  if (props.value === "Mixed") {
-    /** set's the color back to its default value */
-    const replaceMixedColor = () => props.onChange(GENERIC_ELEMENT_PROPS.fill);
+  if (props.value.fill === MIXED_VALUE) {
     return (
       <MenuSection title="Fill" disabled={props.disabled}>
         <div className={"MS_ColorPicker"}>
-          <button className="replaceMixedColor" onClick={replaceMixedColor}>
+          <button className="replaceMixedColor" onClick={resetColors}>
             Replace all Mixed Colors
           </button>
         </div>
@@ -166,23 +177,33 @@ export function ColorSection(props: SectionProps<SelectionProps["fill"]>) {
 
   return (
     <MenuSection title="Fill" disabled={props.disabled}>
-      <div
-        className={"MS_ColorPicker"}
-        onBlur={submit}
-        onKeyDown={submitOnEnter}>
+      <div className={"MS_ColorPicker"}>
         <button
           className="colorPreview"
-          style={{ backgroundColor: props.value }}
+          style={{ backgroundColor: props.value.fill.toString() }}
         />
         <input
           className="hexInput"
-          value={color.hex}
-          onChange={(e) => updateColor({ hex: e.target.value })}
+          value={rawHex}
+          onChange={(e) => setRawHex(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              pushChanges({ hex: parseColorString(rawHex) });
+            }
+          }}
+          onBlur={(e) => pushChanges({ hex: parseColorString(e.target.value) })}
         />
         <input
           className="opacityInput"
-          value={color.opacity}
-          onChange={(e) => updateColor({ opacity: e.target.value })}
+          value={rawOpacity}
+          onChange={(e) => setRawOpacity(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter")
+              pushChanges({ opacity: parseColorString(rawOpacity) });
+          }}
+          onBlur={(e) =>
+            pushChanges({ opacity: parseColorString(e.target.value) })
+          }
         />
       </div>
     </MenuSection>
