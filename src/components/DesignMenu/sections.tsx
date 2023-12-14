@@ -59,6 +59,9 @@ export function LayoutSection({ value, onChange, disabled }: SectionProps) {
       h: evalMathExpr(h) ?? value.h,
     };
 
+    if (typeof changes.w === "number") changes.w = Math.max(1, changes.w);
+    if (typeof changes.h === "number") changes.h = Math.max(1, changes.h);
+
     updateFields(changes);
     onChange(changes);
   };
