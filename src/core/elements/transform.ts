@@ -103,8 +103,8 @@ function getResizeMutations(
 
   const w = initialElement.w * scale;
   const h = initialElement.h * scale;
-  const flipX = Math.sign(scaleX);
-  const flipY = Math.sign(scaleY);
+  const flipX = scaleX < 0 ? -1 : 1;
+  const flipY = scaleY < 0 ? -1 : 1;
   const shiftX = scaleX < 0 ? w : 0;
   const shiftY = scaleY < 0 ? h : 0;
   const offsetX = initialElement.x - anchorX;
