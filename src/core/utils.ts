@@ -1,8 +1,18 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import { BoundingBox, RotatedBoundingBox, XYCoords } from "./types";
+import { BoundingBox, Point, RotatedBoundingBox, XYCoords } from "./types";
+import { PATH_JOIN_THRESHOLD } from "@constants";
 
 export function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+/** returns a boolean indicating if the first and last
+ * points of a path are close together */
+export function isPathClosed(path: Point[]) {
+  if (path.length < 3) return true;
+  const [startX, startY] = path[0];
+  const [endX, endY] = path[path.length - 1];
+
+  return Math.hypot(endX - startX, endY - startY) <= PATH_JOIN_THRESHOLD;
 }
 
 /** Inverts a the width or height of a bounding box if they are negative and
