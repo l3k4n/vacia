@@ -1,13 +1,12 @@
 import React, { CSSProperties } from "react";
 import { LayoutSection, ColorSection } from "./sections";
-import getSelectionDetails, {
-  MIXED_VALUE,
-  SelectionMetadata,
-  SelectionProps,
-} from "./selectionDetails";
+import getSelectionDetails, { MIXED_VALUE } from "./selectionDetails";
 import {
   CanvasElement,
   CanvasElementMutations,
+  SelectionMetadata,
+  SelectionProps,
+  SectionComponent,
   ToolbarPosition,
 } from "@core/types";
 import "./style.scss";
@@ -32,6 +31,7 @@ interface DesignMenuState {
 class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
   /** timeout id of the last deferred state change */
   pendingTimeout: number | null = null;
+  sectionComponents: SectionComponent[] = [LayoutSection, ColorSection];
 
   constructor(props: DesignMenuProps) {
     super(props);
@@ -94,12 +94,14 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
     const { selectionMetadata, selectionProps } = this.state;
     return (
       <div className="DesignMenu" style={this.state.positionStyles}>
-        <LayoutSection onChange={this.onChange} value={selectionProps} />
-        <ColorSection
-          onChange={this.onChange}
-          value={selectionProps}
-          disabled={!selectionMetadata.canBeFilled}
-        />
+        {this.sectionComponents.map((Section, i) => (
+          <Section
+            key={i}
+            onChange={this.onChange}
+            value={selectionProps}
+            metadata={selectionMetadata}
+          />
+        ))}
       </div>
     );
   }

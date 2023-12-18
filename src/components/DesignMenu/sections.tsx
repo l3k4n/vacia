@@ -1,18 +1,12 @@
 import { useEffect, useState } from "react";
 import tinycolor from "tinycolor2";
 import { evalMathExpr } from "./matheval";
-import { Mixed, MIXED_VALUE, SelectionProps } from "./selectionDetails";
+import { MIXED_VALUE } from "./selectionDetails";
 import { ProhibitedIcon } from "@assets/icons";
 import { GENERIC_ELEMENT_PROPS } from "@constants";
-import { BoundingBox } from "@core/types";
+import { BoundingBox, Mixed, SectionProps } from "@core/types";
 import { clampNumber } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
-
-interface SectionProps {
-  value: SelectionProps;
-  disabled?: boolean;
-  onChange: (value: Partial<SelectionProps>) => void;
-}
 
 function MenuSection(
   props: React.PropsWithChildren<{ title: string; disabled?: boolean }>,
@@ -38,7 +32,7 @@ function MenuSection(
   );
 }
 
-export function LayoutSection({ value, onChange, disabled }: SectionProps) {
+export function LayoutSection({ value, onChange }: SectionProps) {
   const [x, setX] = useState(value.x.toString());
   const [y, setY] = useState(value.y.toString());
   const [w, setW] = useState(value.w.toString());
@@ -70,7 +64,7 @@ export function LayoutSection({ value, onChange, disabled }: SectionProps) {
   useUnmount(pushChanges);
 
   return (
-    <MenuSection title="Layout" disabled={disabled}>
+    <MenuSection title="Layout">
       <div
         className={"MS_LayoutEditor"}
         onBlur={pushChanges}
@@ -166,9 +160,10 @@ export function ColorSection(props: SectionProps) {
     }
   });
 
+  const disabled = props.metadata.selectedTypes.has("freedraw");
   if (props.value.fill === MIXED_VALUE) {
     return (
-      <MenuSection title="Fill" disabled={props.disabled}>
+      <MenuSection title="Fill" disabled={disabled}>
         <div className={"MS_ColorPicker"}>
           <button className="replaceMixedColor" onClick={resetColors}>
             Replace all Mixed Colors
@@ -179,7 +174,7 @@ export function ColorSection(props: SectionProps) {
   }
 
   return (
-    <MenuSection title="Fill" disabled={props.disabled}>
+    <MenuSection title="Fill" disabled={disabled}>
       <div className={"MS_ColorPicker"}>
         <button
           className="colorPreview"

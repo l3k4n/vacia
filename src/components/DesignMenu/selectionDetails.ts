@@ -1,20 +1,22 @@
-import { BoundingBox, CanvasElement } from "@core/types";
+import {
+  CanvasElement,
+  Mutable,
+  SelectionMetadata,
+  SelectionProps,
+} from "@core/types";
 
 export const MIXED_VALUE = Object.freeze({
   [Symbol("mixed")]: 1,
   toString: () => "Mixed",
 });
-export type Mixed<T> = { [K in keyof T]: T[K] | typeof MIXED_VALUE };
-
-export type SelectionProps = Mixed<BoundingBox & { fill: string }>;
-export interface SelectionMetadata {
-  canBeFilled: boolean;
-}
 
 function getSelectionDetails(elements: CanvasElement[]) {
-  const metadata = { canBeFilled: false };
+  const metadata: Mutable<SelectionMetadata> = {
+    selectedTypes: new Set(),
+    multipleElements: elements.length > 1,
+  };
+  const props: Mutable<SelectionProps> = { ...elements[0] };
 
-  const props: SelectionProps = { ...elements[0] };
   props.fill = (props.fill as string).toUpperCase();
 
   for (let i = 0; i < elements.length; i += 1) {
@@ -27,9 +29,7 @@ function getSelectionDetails(elements: CanvasElement[]) {
 
     if (element.fill.toUpperCase() !== props.fill) props.fill = MIXED_VALUE;
 
-    if (element.type === "shape") {
-      metadata.canBeFilled = true;
-    }
+    metadata.selectedTypes.add(element.type);
   }
 
   return { metadata, props };
