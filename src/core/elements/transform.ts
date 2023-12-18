@@ -27,6 +27,24 @@ interface TransformData {
   transformingMultipleElements: boolean;
 }
 
+export function rescalePath(
+  path: Point[],
+  scaleX: number,
+  scaleY: number,
+  shiftX: number,
+  shiftY: number,
+) {
+  if (scaleX === 1 && scaleY === 1) return path;
+
+  const scaledPath: Point[] = [];
+  for (let i = 0; i < path.length; i += 1) {
+    const [x, y] = path[i];
+    scaledPath.push([x * scaleX + shiftX, y * scaleY + shiftY]);
+  }
+
+  return scaledPath;
+}
+
 function getTransformHandleAnchor(
   handle: TransformHandle,
   initialSelectionBox: RotatedBoundingBox,
@@ -76,45 +94,56 @@ function getRotateAngle(
 }
 
 function getResizeMutations(
-  { initialBox }: TransformingElement,
+  { initialElement }: TransformingElement,
   transformData: TransformData,
 ): CanvasElementMutations {
   const [anchorX, anchorY] = transformData.anchor;
   const [scaleX, scaleY] = transformData.scale;
   const scale = Math.max(Math.abs(scaleX), Math.abs(scaleY));
 
-  const w = initialBox.w * scale;
-  const h = initialBox.h * scale;
-  const flipX = scaleX < 0 ? -1 : 1;
-  const flipY = scaleY < 0 ? -1 : 1;
+  const w = initialElement.w * scale;
+  const h = initialElement.h * scale;
+  const flipX = Math.sign(scaleX);
+  const flipY = Math.sign(scaleY);
   const shiftX = scaleX < 0 ? w : 0;
   const shiftY = scaleY < 0 ? h : 0;
-  const offsetX = initialBox.x - anchorX;
-  const offsetY = initialBox.y - anchorY;
+  const offsetX = initialElement.x - anchorX;
+  const offsetY = initialElement.y - anchorY;
 
   const x = anchorX + flipX * (scale * offsetX + shiftX);
   const y = anchorY + flipY * (scale * offsetY + shiftY);
 
-  return { x, y, w, h };
+  let path: Point[] | undefined;
+  if (initialElement.type === "freedraw") {
+    path = rescalePath(
+      initialElement.path,
+      scale * flipX,
+      scale * flipY,
+      shiftX,
+      shiftY,
+    );
+  }
+
+  return { x, y, w, h, path };
 }
 
 function getSingleSelectionResizeMutations(
-  { initialBox }: TransformingElement,
+  { initialElement }: TransformingElement,
   transformData: TransformData,
 ): CanvasElementMutations {
   const [scaleX, scaleY] = transformData.scale;
-  const newWidth = initialBox.w * scaleX;
-  const newHeight = initialBox.h * scaleY;
+  const newWidth = initialElement.w * scaleX;
+  const newHeight = initialElement.h * scaleY;
 
   // x or y may be NaN if size is 0
   if (newWidth && newHeight) {
     const initialElementCoords = {
-      x1: initialBox.x,
-      y1: initialBox.y,
-      x2: initialBox.x + initialBox.w,
-      y2: initialBox.y + initialBox.h,
-      cx: initialBox.x + initialBox.w / 2,
-      cy: initialBox.y + initialBox.h / 2,
+      x1: initialElement.x,
+      y1: initialElement.y,
+      x2: initialElement.x + initialElement.w,
+      y2: initialElement.y + initialElement.h,
+      cx: initialElement.x + initialElement.w / 2,
+      cy: initialElement.y + initialElement.h / 2,
     };
 
     const position = { x: initialElementCoords.x1, y: initialElementCoords.y1 };
@@ -146,21 +175,21 @@ function getSingleSelectionResizeMutations(
       position.y,
       initialElementCoords.cx,
       initialElementCoords.cy,
-      initialBox.rotate,
+      initialElement.rotate,
     );
     const rotatedCenter = rotatePointAroundAnchor(
       position.x + Math.abs(newWidth) / 2,
       position.y + Math.abs(newHeight) / 2,
       initialElementCoords.cx,
       initialElementCoords.cy,
-      initialBox.rotate,
+      initialElement.rotate,
     );
     const normalizedPosition = rotatePointAroundAnchor(
       rotatedPosition.x,
       rotatedPosition.y,
       rotatedCenter.x,
       rotatedCenter.y,
-      -initialBox.rotate,
+      -initialElement.rotate,
     );
 
     return {
@@ -168,6 +197,10 @@ function getSingleSelectionResizeMutations(
       y: normalizedPosition.y,
       w: Math.abs(newWidth),
       h: Math.abs(newHeight),
+      path:
+        initialElement.type === "freedraw"
+          ? rescalePath(initialElement.path, scaleX, scaleY, shiftX, shiftY)
+          : undefined, // undefined is ignored when mutating elements,
     };
   }
 
@@ -175,10 +208,10 @@ function getSingleSelectionResizeMutations(
 }
 
 function getRotateMutations(
-  { element, initialBox }: TransformingElement,
+  { element, initialElement }: TransformingElement,
   transformData: TransformData,
 ): CanvasElementMutations {
-  const elementAngle = transformData.angle + initialBox.rotate;
+  const elementAngle = transformData.angle + initialElement.rotate;
   const cx = element.x + element.w / 2;
   const cy = element.y + element.h / 2;
   /** rotate the element using its center as an anchor and return the offset */

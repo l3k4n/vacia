@@ -47,7 +47,7 @@ describe("Transform element", () => {
     });
     const transformData = getTestData([element], "se", { x: 10, y: 10 });
     const mutations = getTransformedElementMutations(
-      { element, initialBox: element },
+      { element, initialElement: element },
       transformData,
     );
 
@@ -69,7 +69,7 @@ describe("Transform element", () => {
     elements.forEach((element, i) => {
       const expected = expectedMutations[i];
       const { x, y, w, h } = getTransformedElementMutations(
-        { element, initialBox: element },
+        { element, initialElement: element },
         transformData,
       );
       expect(x).toBeCloseTo(expected.x, 2);
@@ -93,7 +93,7 @@ describe("Transform element", () => {
     };
     const transformData = getTestData([element], "rotate", rightSideOfElement);
     const { x, y, rotate } = getTransformedElementMutations(
-      { element, initialBox: element },
+      { element, initialElement: element },
       transformData,
     ) as RotatedBoundingBox;
 
@@ -116,7 +116,7 @@ describe("Transform element", () => {
     elements.forEach((element, i) => {
       const expected = expectedMutations[i];
       const { x, y, rotate } = getTransformedElementMutations(
-        { element, initialBox: element },
+        { element, initialElement: element },
         transformData,
       );
 

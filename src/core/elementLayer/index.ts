@@ -4,6 +4,7 @@ import {
   CanvasElementMutations,
   TransformingElement,
 } from "@core/types";
+import { assignWithoutUndefined, deepClone } from "@core/utils";
 
 export interface ElementLayerChangeEvent {
   elements: CanvasElement[];
@@ -78,16 +79,8 @@ export default class ElementLayer {
 
   setTransformingElements(elements: CanvasElement[]) {
     elements.forEach((element) => {
-      this.transformingElements.push({
-        element,
-        initialBox: {
-          x: element.x,
-          y: element.y,
-          w: element.w,
-          h: element.h,
-          rotate: element.rotate,
-        },
-      });
+      const initialElement = deepClone(element);
+      this.transformingElements.push({ element, initialElement });
     });
   }
 
@@ -128,8 +121,8 @@ export default class ElementLayer {
   }
 
   mutateElement(element: CanvasElement, mutations: CanvasElementMutations) {
-    Object.assign(element, mutations);
-    normalizeElement(element);
+    assignWithoutUndefined(element, mutations);
+    normalizeElement(element); // rounding bouding box, etc.
     this.onChange();
   }
 }

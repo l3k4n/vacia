@@ -76,5 +76,5 @@ export interface PointerState {
 /** element and its bounding box before any transforms were applied */
 export interface TransformingElement {
   element: CanvasElement;
-  initialBox: RotatedBoundingBox;
+  initialElement: CanvasElement;
 }

@@ -11,6 +11,7 @@ import {
   getTransformHandles,
   getSelectionTransformData,
   getTransformedElementMutations,
+  rescalePath,
 } from "@core/elements/transform";
 import {
   hitTestElementAgainstUnrotatedBox,
@@ -166,6 +167,17 @@ class App extends React.Component<Record<string, never>, AppState> {
   ) => {
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
+      if (element.type === "freedraw") {
+        let scaleX = (mutations.w ?? element.w) / element.w;
+        let scaleY = (mutations.h ?? element.h) / element.h;
+
+        if (!Number.isFinite(scaleX)) scaleX = 1;
+        if (!Number.isFinite(scaleY)) scaleY = 1;
+        if (scaleX !== 1 || scaleY !== 1) {
+          // eslint-disable-next-line no-param-reassign
+          mutations.path = rescalePath(element.path, scaleX, scaleY, 0, 0);
+        }
+      }
       this.elementLayer.mutateElement(element, mutations);
     }
   };
@@ -215,7 +227,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   ) {
     /** initial selection box of all elements being transformed */
     const selectionBox = getSurroundingBoundingBox(
-      elements.map(({ initialBox }) => initialBox),
+      elements.map(({ initialElement }) => initialElement),
     );
     const pointerPosition = screenOffsetToVirtualOffset(
       {

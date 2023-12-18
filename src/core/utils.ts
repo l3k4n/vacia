@@ -97,3 +97,41 @@ export function getSurroundingBoundingBox(
 
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1, rotate: 0 };
 }
+
+export function deepClone<T extends object>(obj: T): T {
+  const clone = (Array.isArray(obj) ? [] : {}) as T;
+
+  const keys = Object.keys(obj);
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i] as keyof T;
+
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
+      if (typeof value === "object") {
+        clone[key] = deepClone(value as object) as T[keyof T];
+      } else {
+        clone[key] = value;
+      }
+    }
+  }
+
+  return clone;
+}
+
+export function assignWithoutUndefined<T extends object, S extends object>(
+  target: T,
+  source: S,
+) {
+  const keys = Object.keys(source);
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    const value = source[key as keyof S];
+    if (Object.hasOwn(source, key) && value !== undefined) {
+      type kT = keyof T;
+      // eslint-disable-next-line no-param-reassign
+      target[key as kT] = value as T[kT];
+    }
+  }
+
+  return target;
+}
