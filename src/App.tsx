@@ -40,7 +40,6 @@ import {
   getNewZoomState,
   snapVirtualCoordsToGrid,
   screenOffsetToVirtualOffset,
-  snapBoxToGrid,
 } from "@core/viewport";
 import "@css/App.scss";
 
@@ -182,34 +181,53 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private onElementDrag(pointer: PointerState, elements: CanvasElement[]) {
-    const currentDragOffsetSnapped = snapVirtualCoordsToGrid(
-      screenOffsetToVirtualOffset(pointer.drag.offset, this.state),
+  private onElementDrag(
+    e: PointerEvent,
+    pointer: PointerState,
+    elements: CanvasElement[],
+  ) {
+    const offset = screenOffsetToVirtualOffset(pointer.drag.offset, this.state);
+    const previousOffset = screenOffsetToVirtualOffset(
+      pointer.drag.previousOffset,
       this.state,
     );
-    const previousDragOffsetSnapped = snapVirtualCoordsToGrid(
-      screenOffsetToVirtualOffset(pointer.drag.previousOffset, this.state),
-      this.state,
-    );
-
-    /** pointerDragChange may be less than snapping threshold, so for
-     * snapping to work properly, snap the current and previous drag offsets
-     * individually before getting their difference */
-    const snappedPointerDragChange = {
-      x: currentDragOffsetSnapped.x - previousDragOffsetSnapped.x,
-      y: currentDragOffsetSnapped.y - previousDragOffsetSnapped.y,
+    const dragChange = {
+      x: offset.x - previousOffset.x,
+      y: offset.y - previousOffset.y,
     };
+
+    if (!e.ctrlKey) {
+      const currentDragOffsetSnapped = snapVirtualCoordsToGrid(
+        offset,
+        this.state,
+      );
+      const previousDragOffsetSnapped = snapVirtualCoordsToGrid(
+        previousOffset,
+        this.state,
+      );
+
+      /** pointerDragChange may be less than snapping threshold, so for
+       * snapping to work properly, snap the current and previous drag offsets
+       * individually before getting their difference */
+      Object.assign(dragChange, {
+        x: currentDragOffsetSnapped.x - previousDragOffsetSnapped.x,
+        y: currentDragOffsetSnapped.y - previousDragOffsetSnapped.y,
+      });
+    }
 
     /** if there are elements being dragged update their {x, y} coords  */
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
-      const newElementPosition = snapVirtualCoordsToGrid(
-        {
-          x: element.x + snappedPointerDragChange.x,
-          y: element.y + snappedPointerDragChange.y,
-        },
-        this.state,
-      );
+      const newElementPosition = {
+        x: element.x + dragChange.x,
+        y: element.y + dragChange.y,
+      };
+      if (!e.ctrlKey) {
+        Object.assign(
+          newElementPosition,
+          snapVirtualCoordsToGrid(newElementPosition, this.state),
+        );
+      }
       /** only mutate element if coords changes (to reduce rerenders). */
       if (
         newElementPosition.x !== element.x ||
@@ -221,6 +239,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   private onElementTransform(
+    e: PointerEvent,
     pointer: PointerState,
     handle: TransformHandle,
     elements: TransformingElement[],
@@ -236,12 +255,19 @@ class App extends React.Component<Record<string, never>, AppState> {
       },
       this.state,
     );
+    if (!e.ctrlKey) {
+      Object.assign(
+        pointerPosition,
+        snapVirtualCoordsToGrid(pointerPosition, this.state),
+      );
+    }
     const transformData = getSelectionTransformData(
-      snapVirtualCoordsToGrid(pointerPosition, this.state),
+      pointerPosition,
       handle,
       selectionBox,
       // lock aspect ratio when there is more than one element
       elements.length > 1,
+      !e.ctrlKey,
     );
 
     elements.forEach((transformingElement) => {
@@ -252,29 +278,45 @@ class App extends React.Component<Record<string, never>, AppState> {
     });
   }
 
-  private onElementCreation(pointer: PointerState, element: CanvasElement) {
+  private onElementCreation(
+    e: PointerEvent,
+    pointer: PointerState,
+    element: CanvasElement,
+  ) {
     switch (element.type) {
       case "shape": {
-        /** box created from pointer origin to its current position */
-        const { box, didFlipX, didFlipY } = invertNegativeBoundingBox(
-          snapBoxToGrid(
-            {
-              ...screenOffsetToVirtualOffset(pointer.origin, this.state),
-              w: pointer.drag.offset.x / this.state.zoom,
-              h: pointer.drag.offset.y / this.state.zoom,
-            },
-            this.state,
-          ),
-        );
+        const elementBox = {
+          ...screenOffsetToVirtualOffset(pointer.origin, this.state),
+          w: pointer.drag.offset.x / this.state.zoom,
+          h: pointer.drag.offset.y / this.state.zoom,
+        };
 
+        // when the position should be snapped
+        if (!pointer.ctrlKey) {
+          const position = snapVirtualCoordsToGrid(elementBox, this.state);
+          Object.assign(elementBox, position);
+        }
+
+        // when the size should be snapped
+        if (!e.ctrlKey) {
+          const fallbackSize = this.state.grid.size;
+          // absolute position of the w and h coords
+          const sizeCoords = snapVirtualCoordsToGrid(
+            { x: elementBox.x + elementBox.w, y: elementBox.y + elementBox.h },
+            this.state,
+          );
+
+          // use calculated size or fallback to prevent 0 values
+          elementBox.w = sizeCoords.x - elementBox.x || fallbackSize;
+          elementBox.h = sizeCoords.y - elementBox.y || fallbackSize;
+        }
+
+        /** box created from pointer origin to its current position */
+        const normalizedBox = invertNegativeBoundingBox(elementBox);
         this.elementLayer.mutateElement(element, {
-          x: box.x,
-          y: box.y,
-          // prevents element from being smaller than one grid tile
-          w: Math.max(box.w, this.state.grid.size),
-          h: Math.max(box.h, this.state.grid.size),
-          flippedX: didFlipX,
-          flippedY: didFlipY,
+          ...normalizedBox.box,
+          flippedX: normalizedBox.didFlipX,
+          flippedY: normalizedBox.didFlipY,
         });
         break;
       }
@@ -472,12 +514,13 @@ class App extends React.Component<Record<string, never>, AppState> {
 
       if (this.pointer.hit.transformHandle) {
         this.onElementTransform(
+          e,
           this.pointer,
           this.pointer.hit.transformHandle,
           transformingElements,
         );
       } else if (draggingElements.length) {
-        this.onElementDrag(this.pointer, draggingElements);
+        this.onElementDrag(e, this.pointer, draggingElements);
       } else {
         /** pointer drag is treated as a box selection */
         const { box: selectionBox } = invertNegativeBoundingBox({
@@ -496,7 +539,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     const elementBeingCreated = this.elementLayer.getCreatingElement();
 
     if (elementBeingCreated) {
-      this.onElementCreation(this.pointer, elementBeingCreated);
+      this.onElementCreation(e, this.pointer, elementBeingCreated);
     }
   };
 

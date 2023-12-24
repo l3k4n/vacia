@@ -24,6 +24,7 @@ interface TransformData {
   anchor: TransformAnchor;
   scale: Point;
   handle: TransformHandle;
+  snapRotationAngle: boolean;
   transformingMultipleElements: boolean;
 }
 
@@ -85,12 +86,16 @@ function getResizeScale(
 function getRotateAngle(
   pointer: XYCoords,
   [anchorX, anchorY]: TransformAnchor,
+  shouldSnap: boolean,
 ) {
   const threshold = ROTATION_SNAP_THRESHOLD;
-  const angle =
+  let angle =
     Math.atan2(pointer.y - anchorY, pointer.x - anchorX) + (5 * Math.PI) / 2;
+  if (shouldSnap) {
+    angle = Math.round(angle / threshold) * threshold;
+  }
 
-  return Math.round(angle / threshold) * threshold;
+  return angle;
 }
 
 function getResizeMutations(
@@ -267,6 +272,7 @@ export function getSelectionTransformData(
   handle: TransformHandle,
   initialSelectionBox: RotatedBoundingBox,
   multipleElements: boolean,
+  snapRotationAngle: boolean,
 ): TransformData {
   const anchor = getTransformHandleAnchor(handle, initialSelectionBox);
   /** since transforms are calculated by reversing rotation to get a normal
@@ -282,8 +288,9 @@ export function getSelectionTransformData(
   return {
     anchor,
     handle,
+    snapRotationAngle,
     transformingMultipleElements: multipleElements,
-    angle: getRotateAngle(normalizedPointer, anchor),
+    angle: getRotateAngle(normalizedPointer, anchor, snapRotationAngle),
     scale: getResizeScale(
       normalizedPointer,
       anchor,
