@@ -222,7 +222,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         x: element.x + dragChange.x,
         y: element.y + dragChange.y,
       };
-      if (!e.ctrlKey) {
+      if (!e.ctrlKey && elements.length === 1) {
         Object.assign(
           newElementPosition,
           snapVirtualCoordsToGrid(newElementPosition, this.state),
