@@ -7,6 +7,7 @@ export { ReactComponent as PenIcon } from "./pen.svg";
 export { ReactComponent as RectIcon } from "./rect.svg";
 export { ReactComponent as RedoIcon } from "./redo.svg";
 export { ReactComponent as SelectIcon } from "./select.svg";
+export { ReactComponent as TextIcon } from "./text.svg";
 export { ReactComponent as UndoIcon } from "./undo.svg";
 export { ReactComponent as ZoomInIcon } from "./zoomin.svg";
 export { ReactComponent as ZoomOutIcon } from "./zoomout.svg";

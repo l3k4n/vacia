@@ -1,4 +1,9 @@
-import { CanvasElement, FreedrawElement, ShapeElement } from "@core/types";
+import {
+  CanvasElement,
+  FreedrawElement,
+  ShapeElement,
+  TextElement,
+} from "@core/types";
 
 function renderShapeElement(ctx: CanvasRenderingContext2D, elem: ShapeElement) {
   ctx.save();
@@ -45,6 +50,21 @@ function renderFreedrawElement(
   ctx.restore();
 }
 
+function renderTextElement(ctx: CanvasRenderingContext2D, elem: TextElement) {
+  const rX = elem.w / 2;
+  const rY = elem.h / 2;
+
+  ctx.save();
+  ctx.translate(elem.x + rX, elem.y + rY);
+  ctx.rotate(elem.rotate);
+  ctx.beginPath();
+  ctx.fillStyle = elem.fill;
+  ctx.textBaseline = "top";
+
+  ctx.fillText(elem.text, -rX, -rY);
+  ctx.restore();
+}
+
 function renderElement(ctx: CanvasRenderingContext2D, elem: CanvasElement) {
   switch (elem.type) {
     case "shape":
@@ -52,6 +72,9 @@ function renderElement(ctx: CanvasRenderingContext2D, elem: CanvasElement) {
       break;
     case "freedraw":
       renderFreedrawElement(ctx, elem);
+      break;
+    case "text":
+      renderTextElement(ctx, elem);
       break;
     default:
       break;

@@ -4,6 +4,7 @@ import {
   PenIcon,
   RectIcon,
   SelectIcon,
+  TextIcon,
 } from "@assets/icons";
 
 // is an object to allow dynamic positions when rendering
@@ -30,5 +31,9 @@ export const DrawingTools = [
   {
     icon: PenIcon,
     label: "Freedraw",
+  },
+  {
+    icon: TextIcon,
+    label: "Text",
   },
 ] as const;

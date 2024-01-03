@@ -4,6 +4,7 @@ import {
   CanvasElement,
   FreedrawElement,
   ShapeElement,
+  TextElement,
 } from "@core/types";
 
 type StripElement<T extends CanvasElement, S extends keyof T> = Partial<
@@ -30,4 +31,13 @@ function createFreedrawElement(options: FreedrawOptions): FreedrawElement {
   };
 }
 
-export { createShapeElement, createFreedrawElement };
+type TextOptions = StripElement<TextElement, "text">;
+function createTextElement(options: TextOptions): TextElement {
+  return {
+    ...GENERIC_ELEMENT_PROPS,
+    ...options,
+    type: "text",
+  };
+}
+
+export { createShapeElement, createFreedrawElement, createTextElement };

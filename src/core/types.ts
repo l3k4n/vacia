@@ -20,7 +20,14 @@ export interface FreedrawElement extends AbstractElement {
   type: "freedraw";
   path: Point[];
 }
-export type CanvasElement = Readonly<ShapeElement | FreedrawElement>;
+export interface TextElement extends AbstractElement {
+  type: "text";
+  text: string;
+}
+
+export type CanvasElement = Readonly<
+  ShapeElement | FreedrawElement | TextElement
+>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CanvasElementMutations = { [key: string]: any };

@@ -2,10 +2,15 @@ import React from "react";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
+import WysiwygEditor from "@components/WysiwygEditor";
 import { ELEMENT_PRECISION, ZOOM_STEP } from "@constants";
 import { createAppState, createPointerState } from "@core/createState";
 import ElementLayer, { ElementLayerChangeEvent } from "@core/elementLayer";
-import { createFreedrawElement, createShapeElement } from "@core/elements";
+import {
+  createFreedrawElement,
+  createShapeElement,
+  createTextElement,
+} from "@core/elements";
 import { isElementNegligible } from "@core/elements/negligible";
 import {
   getTransformHandles,
@@ -19,6 +24,7 @@ import {
   hitTestCoordsAgainstElement,
   hitTestCoordsAgainstTransformHandles,
 } from "@core/hitTest";
+import { OverlayManager } from "@core/overlayManager";
 import renderFrame from "@core/renderer";
 import {
   AppState,
@@ -30,6 +36,7 @@ import {
   CanvasElementMutations,
   TransformingElement,
   TransformHandle,
+  TextElement,
 } from "@core/types";
 import {
   getSurroundingBoundingBox,
@@ -40,6 +47,7 @@ import {
   getNewZoomState,
   snapVirtualCoordsToGrid,
   screenOffsetToVirtualOffset,
+  virtualOffsetToScreenOffset,
 } from "@core/viewport";
 import "@css/App.scss";
 
@@ -57,6 +65,11 @@ class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: PointerState | null = null;
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
+  overlays = new OverlayManager(
+    { WysiwygEditor },
+    (coords) => virtualOffsetToScreenOffset(coords, this.state),
+    () => this.setState({}),
+  );
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -122,6 +135,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       ? position
       : snapVirtualCoordsToGrid(position, this.state);
     const box = { ...elementPosition, w: 0, h: 0 };
+    const unsnappedBox = { ...position, w: 0, h: 0 };
     switch (tool) {
       case "Ellipse":
         element = createShapeElement({ shape: "ellipse", ...box });
@@ -130,18 +144,40 @@ class App extends React.Component<Record<string, never>, AppState> {
         element = createShapeElement({ shape: "rect", ...box });
         break;
       case "Freedraw":
-        element = createFreedrawElement({
-          path: [[0, 0]],
-          // freedraw should not be snapped to use original position
-          ...position,
-          w: 0,
-          h: 0,
-        });
+        element = createFreedrawElement({ path: [[0, 0]], ...unsnappedBox });
         break;
+      case "Text": {
+        element = createTextElement({ text: "", ...unsnappedBox });
+        this.editTextElement(element);
+        break;
+      }
       default:
     }
 
     return element;
+  }
+
+  private editTextElement(element: TextElement) {
+    const onSubmit = (text: string) => {
+      this.elementLayer.mutateElement(element, { text });
+      this.overlays.close("WysiwygEditor");
+    };
+
+    const onMount = () => {
+      const editor: HTMLTextAreaElement | null =
+        document.querySelector(".WysiwygEditor");
+
+      if (editor) {
+        editor.focus();
+        editor.select();
+      }
+    };
+
+    this.overlays.open("WysiwygEditor", {
+      onMount,
+      virtualCoords: { x: element.x, y: element.y },
+      props: { value: element.text, onSubmit },
+    });
   }
 
   // setup functions
@@ -597,6 +633,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           />
         )}
         <div className="tools">
+          {this.overlays.render()}
           <ToolBar
             position={this.state.toolbarPosition}
             activeTool={this.state.activeTool}
