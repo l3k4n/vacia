@@ -151,6 +151,16 @@ export function ColorSection(props: SectionProps) {
     props.onChange({ fill: GENERIC_ELEMENT_PROPS.fill });
   };
 
+  useEffect(() => {
+    const previousValue = tc.getOriginalInput() as string;
+    if(previousValue.toUpperCase() === props.value.fill) return;
+
+    const newTc =  tinycolor(props.value.fill.toString());
+    setTc(newTc);
+    setRawHex(getHex(newTc));
+    setRawOpacity(getOpacity(newTc));
+  }, [props.value.fill])
+
   useUnmount(() => {
     if (props.value.fill !== MIXED_VALUE) {
       pushChanges({
