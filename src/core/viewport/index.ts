@@ -35,7 +35,7 @@ export function virtualOffsetToScreenOffset(
   { x, y }: XYCoords,
   { scrollOffset, zoom }: AppState,
 ) {
-  return { x: x * zoom + scrollOffset.x, y: y * zoom };
+  return { x: x * zoom + scrollOffset.x, y: y * zoom + scrollOffset.y };
 }
 
 /** snaps all coordinates of a bounding box to closest gridpoint to them */
