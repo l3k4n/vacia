@@ -11,6 +11,10 @@ import {
   createShapeElement,
   createTextElement,
 } from "@core/elements";
+import {
+  getTextDimensionsForElement,
+  getTextElementCssStyles,
+} from "@core/elements/miscellaneous";
 import { isElementNegligible } from "@core/elements/negligible";
 import {
   getTransformHandles,
@@ -158,12 +162,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   private editTextElement(element: TextElement) {
-    const onSubmit = (text: string) => {
-      this.elementLayer.mutateElement(element, { text });
-      this.overlays.close("WysiwygEditor");
-    };
-
-    const onMount = () => {
+    const focusEditor = () => {
       const editor: HTMLTextAreaElement | null =
         document.querySelector(".WysiwygEditor");
 
@@ -173,10 +172,31 @@ class App extends React.Component<Record<string, never>, AppState> {
       }
     };
 
+    const finishEditing = () => {
+      // delete element if empty
+      if (!element.text) {
+        this.elementLayer.deleteElement(element);
+      } else {
+        const dimensions = getTextDimensionsForElement(element.text, element);
+        this.elementLayer.mutateElement(element, { ...dimensions });
+      }
+    };
+
     this.overlays.open("WysiwygEditor", {
-      onMount,
+      onMount: focusEditor,
+      willUnmount: finishEditing,
       virtualCoords: { x: element.x, y: element.y },
-      props: { value: element.text, onSubmit },
+      props: {
+        initialValue: element.text,
+        styles: getTextElementCssStyles(element),
+        onChange: (text) => this.elementLayer.mutateElement(element, { text }),
+        onSubmit: (text) => {
+          // the element should already have the latest `text`, but update
+          // it just incase some wierd change occurs prior to submitting
+          this.elementLayer.mutateElement(element, { text });
+          this.overlays.close("WysiwygEditor");
+        },
+      },
     });
   }
 
@@ -416,6 +436,8 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
+    this.overlays.closeAll();
+
     if (e.buttons === 1) {
       this.pointer = createPointerState(e.nativeEvent);
       /** pointer coords in virtual space */

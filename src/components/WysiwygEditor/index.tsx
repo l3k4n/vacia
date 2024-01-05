@@ -1,25 +1,24 @@
 import { useState } from "react";
 
 interface WysiwygProps {
-  value: string;
+  initialValue: string;
   onSubmit(value: string): void;
+  onChange(value: string): void;
+  styles: React.CSSProperties;
 }
 
-const styles = { background: "none", border: "none", color: "red" };
-
 export default function WysiwygEditor(props: WysiwygProps) {
-  const [value, setValue] = useState(props.value);
+  const [value, setValue] = useState(props.initialValue);
   return (
     <textarea
       className="WysiwygEditor"
-      style={styles}
+      style={props.styles}
       value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={({ key }) => {
-        if (key === "Escape") {
-          props.onSubmit(value);
-        }
+      onChange={(e) => {
+        setValue(e.target.value);
+        props.onChange(e.target.value);
       }}
+      onBlur={() => props.onSubmit(value)}
     />
   );
 }

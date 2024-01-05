@@ -11,6 +11,7 @@ interface OverlayParams<T extends ComponentMap> {
   virtualCoords: XYCoords;
   props: React.ComponentProps<T[keyof T]>;
   onMount?: () => void;
+  willUnmount?: () => void;
 }
 
 interface ActiveOverlay<T extends ComponentMap> extends OverlayParams<T> {
@@ -46,9 +47,10 @@ export class OverlayManager<T extends ComponentMap> {
 
   open(id: keyof T, data: OverlayParams<T>) {
     const component = this.overlayComponents[id];
+    if (!component) return;
 
-    // return if `id` is invalid or overlay is already open
-    if (!component || this.getActiveOverlay(id)) return;
+    // close and reopwn to simulate remounting
+    this.close(id);
 
     // changing `key` will result in component remounting
     const key = createOverlayKey();
@@ -65,10 +67,13 @@ export class OverlayManager<T extends ComponentMap> {
     if (index === -1) return;
 
     this.activeOverlays.splice(index, 1);
+    overlay.willUnmount?.();
     this.onChange();
   }
 
   closeAll() {
+    // call unmont hook if it exists before removing overlays
+    this.activeOverlays.forEach(({ willUnmount }) => willUnmount?.());
     this.activeOverlays.length = 0;
     this.onChange();
   }
