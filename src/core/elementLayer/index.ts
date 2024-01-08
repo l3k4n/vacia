@@ -1,4 +1,4 @@
-import normalizeElement from "@core/elements/normalize";
+import { normalizeElement } from "@core/elements/miscellaneous";
 import {
   CanvasElement,
   CanvasElementMutations,
@@ -15,6 +15,7 @@ export default class ElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
   private creatingElement: CanvasElement | null = null;
+  private editingElement: CanvasElement | null = null;
   private draggingElements: CanvasElement[] = [];
   private transformingElements: TransformingElement[] = [];
   private onChange;
@@ -90,6 +91,18 @@ export default class ElementLayer {
 
   clearTransformingElements() {
     this.transformingElements.length = 0;
+  }
+
+  setEditingElement(element: CanvasElement) {
+    this.editingElement = element;
+  }
+
+  getEditingElement() {
+    return this.editingElement;
+  }
+
+  clearEditingElement() {
+    this.editingElement = null;
   }
 
   selectElements(elements: CanvasElement[]) {

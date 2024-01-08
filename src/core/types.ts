@@ -22,6 +22,8 @@ export interface FreedrawElement extends AbstractElement {
 }
 export interface TextElement extends AbstractElement {
   type: "text";
+  fontSize: number;
+  fontFamily: string;
   text: string;
 }
 

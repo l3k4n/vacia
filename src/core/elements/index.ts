@@ -1,4 +1,4 @@
-import { GENERIC_ELEMENT_PROPS } from "@constants";
+import { DEFAULT_ELEMENT_FONT_PROPS, GENERIC_ELEMENT_PROPS } from "@constants";
 import {
   BoundingBox,
   CanvasElement,
@@ -35,6 +35,7 @@ type TextOptions = StripElement<TextElement, "text">;
 function createTextElement(options: TextOptions): TextElement {
   return {
     ...GENERIC_ELEMENT_PROPS,
+    ...DEFAULT_ELEMENT_FONT_PROPS,
     ...options,
     type: "text",
   };

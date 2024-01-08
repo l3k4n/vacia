@@ -59,9 +59,13 @@ function renderTextElement(ctx: CanvasRenderingContext2D, elem: TextElement) {
   ctx.rotate(elem.rotate);
   ctx.beginPath();
   ctx.fillStyle = elem.fill;
+  ctx.font = `${elem.fontSize}px ${elem.fontFamily}`;
   ctx.textBaseline = "top";
 
-  ctx.fillText(elem.text, -rX, -rY);
+  const lines = elem.text.split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    ctx.fillText(lines[i], -rX, -rY + i * elem.fontSize);
+  }
   ctx.restore();
 }
 

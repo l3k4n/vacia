@@ -11,6 +11,11 @@ export const GENERIC_ELEMENT_PROPS = {
   fill: "#ffffffff",
 };
 
+export const DEFAULT_ELEMENT_FONT_PROPS = {
+  fontSize: 14, // px
+  fontFamily: "Arial",
+};
+
 /** The max number of decimal places an element's position values should have.
  * Position values include x, y, width, height and the in a path[] */
 export const ELEMENT_PRECISION = 2; // d.p (decimal places)

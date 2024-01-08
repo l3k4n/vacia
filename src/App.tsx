@@ -14,8 +14,8 @@ import {
 import {
   getTextDimensionsForElement,
   getTextElementCssStyles,
+  isElementNegligible,
 } from "@core/elements/miscellaneous";
-import { isElementNegligible } from "@core/elements/negligible";
 import {
   getTransformHandles,
   getSelectionTransformData,
@@ -28,7 +28,6 @@ import {
   hitTestCoordsAgainstElement,
   hitTestCoordsAgainstTransformHandles,
 } from "@core/hitTest";
-import { OverlayManager } from "@core/overlayManager";
 import renderFrame from "@core/renderer";
 import {
   AppState,
@@ -40,7 +39,6 @@ import {
   CanvasElementMutations,
   TransformingElement,
   TransformHandle,
-  TextElement,
 } from "@core/types";
 import {
   getSurroundingBoundingBox,
@@ -69,11 +67,6 @@ class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: PointerState | null = null;
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
-  overlays = new OverlayManager(
-    { WysiwygEditor },
-    (coords) => virtualOffsetToScreenOffset(coords, this.state),
-    () => this.setState({}),
-  );
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -152,52 +145,13 @@ class App extends React.Component<Record<string, never>, AppState> {
         break;
       case "Text": {
         element = createTextElement({ text: "", ...unsnappedBox });
-        this.editTextElement(element);
+        this.elementLayer.setEditingElement(element);
         break;
       }
       default:
     }
 
     return element;
-  }
-
-  private editTextElement(element: TextElement) {
-    const focusEditor = () => {
-      const editor: HTMLTextAreaElement | null =
-        document.querySelector(".WysiwygEditor");
-
-      if (editor) {
-        editor.focus();
-        editor.select();
-      }
-    };
-
-    const finishEditing = () => {
-      // delete element if empty
-      if (!element.text) {
-        this.elementLayer.deleteElement(element);
-      } else {
-        const dimensions = getTextDimensionsForElement(element.text, element);
-        this.elementLayer.mutateElement(element, { ...dimensions });
-      }
-    };
-
-    this.overlays.open("WysiwygEditor", {
-      onMount: focusEditor,
-      willUnmount: finishEditing,
-      virtualCoords: { x: element.x, y: element.y },
-      props: {
-        initialValue: element.text,
-        styles: getTextElementCssStyles(element),
-        onChange: (text) => this.elementLayer.mutateElement(element, { text }),
-        onSubmit: (text) => {
-          // the element should already have the latest `text`, but update
-          // it just incase some wierd change occurs prior to submitting
-          this.elementLayer.mutateElement(element, { text });
-          this.overlays.close("WysiwygEditor");
-        },
-      },
-    });
   }
 
   // setup functions
@@ -436,8 +390,6 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
-    this.overlays.closeAll();
-
     if (e.buttons === 1) {
       this.pointer = createPointerState(e.nativeEvent);
       /** pointer coords in virtual space */
@@ -618,6 +570,33 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   // rendering
+  renderWysiwygEditor() {
+    const editingElement = this.elementLayer.getEditingElement();
+
+    return (
+      <div className="overlays">
+        {editingElement?.type === "text" && (
+          <WysiwygEditor
+            coords={virtualOffsetToScreenOffset(editingElement, this.state)}
+            initialValue={editingElement.text}
+            styles={getTextElementCssStyles(editingElement)}
+            onChange={(text) => {
+              // recalculate element size since text changed
+              const newSize = getTextDimensionsForElement(text, editingElement);
+              const mutations = { ...newSize, text };
+              this.elementLayer.mutateElement(editingElement, mutations);
+            }}
+            onSubmit={(text) => {
+              console.log("submit called");
+              this.elementLayer.mutateElement(editingElement, { text });
+              this.elementLayer.clearEditingElement();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   render() {
     const canvasWidth = this.state.width;
     const canvasHeight = this.state.height;
@@ -654,8 +633,8 @@ class App extends React.Component<Record<string, never>, AppState> {
             onChange={this.onDesignMenuUpdate}
           />
         )}
+        {this.renderWysiwygEditor()}
         <div className="tools">
-          {this.overlays.render()}
           <ToolBar
             position={this.state.toolbarPosition}
             activeTool={this.state.activeTool}
