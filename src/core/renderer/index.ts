@@ -11,6 +11,7 @@ interface RenderConfig {
   scale: number;
   elements: CanvasElement[];
   selectedElements: CanvasElement[];
+  hideBoundingBoxes?: boolean;
 }
 
 export default function renderFrame(config: RenderConfig) {
@@ -47,7 +48,9 @@ export default function renderFrame(config: RenderConfig) {
     if (state.selectionHighlight) {
       renderBoxHighlight(ctx, state.selectionHighlight, state.zoom);
     }
-    renderBoundingBoxes(ctx, selectedElements, state.zoom);
+    if (!config.hideBoundingBoxes) {
+      renderBoundingBoxes(ctx, selectedElements, state.zoom);
+    }
 
     ctx.restore();
   });

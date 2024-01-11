@@ -407,7 +407,7 @@ class App extends React.Component<Record<string, never>, AppState> {
             this.setState({ usermode: USERMODE.DRAGGING });
             this.transformingElements = createTransformingElements(
               this.elementLayer.getSelectedElements(),
-            ); 
+            );
           } else {
             // this else block represents when pointer hits nothing
             if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
@@ -563,12 +563,14 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   componentDidUpdate() {
+    const modesToHideBoundingBox = [USERMODE.CREATING, USERMODE.ROTATING];
     renderFrame({
       canvas: this.canvas!,
       state: this.state,
       scale: window.devicePixelRatio,
       elements: this.elementLayer.getAllElements(),
       selectedElements: this.elementLayer.getSelectedElements(),
+      hideBoundingBoxes: modesToHideBoundingBox.includes(this.state.usermode),
     });
   }
 
