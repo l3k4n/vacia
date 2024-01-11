@@ -26,3 +26,11 @@ export const SELECTION_ROTATE_HANDLE_OFFSET = 15; // px
 export const ROTATION_SNAP_THRESHOLD = Math.PI / 12; // radians
 
 export const PATH_JOIN_THRESHOLD = 5; // px
+
+export const enum USERMODE {
+  IDLE = "idle",
+  DRAGGING = "dragging",
+  ROTATING = "rotating",
+  RESIZING = "resizing",
+  CREATING = "creating",
+}

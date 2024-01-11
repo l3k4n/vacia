@@ -1,3 +1,4 @@
+import { USERMODE } from "@constants";
 import { DrawingTools, ControlTools } from "./tools";
 
 export type XYCoords = { x: number; y: number };
@@ -55,6 +56,7 @@ export interface AppState {
   toolbarPosition: ToolbarPosition;
   /** bounding box (in virtual coords) to highlight when drag selecting */
   selectionHighlight: BoundingBox | null;
+  usermode: USERMODE;
 }
 
 export type TransformHandle = "ne" | "nw" | "se" | "sw" | "rotate";

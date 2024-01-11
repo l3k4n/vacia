@@ -1,4 +1,5 @@
 import { AppState, PointerState } from "./types";
+import { USERMODE } from "@constants";
 
 export function createAppState(): AppState {
   return {
@@ -10,6 +11,7 @@ export function createAppState(): AppState {
     zoom: 1,
     toolbarPosition: "left",
     selectionHighlight: null,
+    usermode: USERMODE.IDLE,
   };
 }
 

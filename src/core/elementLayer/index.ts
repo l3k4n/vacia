@@ -1,32 +1,19 @@
 import { normalizeElement } from "@core/elements/miscellaneous";
-import {
-  CanvasElement,
-  CanvasElementMutations,
-  TransformingElement,
-} from "@core/types";
-import { assignWithoutUndefined, deepClone } from "@core/utils";
-
-export interface ElementLayerChangeEvent {
-  elements: CanvasElement[];
-  selectedElements: CanvasElement[];
-}
+import { CanvasElement, CanvasElementMutations } from "@core/types";
+import { assignWithoutUndefined } from "@core/utils";
 
 export default class ElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
-  private creatingElement: CanvasElement | null = null;
-  private editingElement: CanvasElement | null = null;
-  private draggingElements: CanvasElement[] = [];
-  private transformingElements: TransformingElement[] = [];
   private onChange;
 
-  constructor(onChange: (ev: ElementLayerChangeEvent) => void) {
-    this.onChange = () => {
-      onChange({
-        elements: this.getAllElements(),
-        selectedElements: this.getSelectedElements(),
-      });
-    };
+  constructor(onChange: () => void) {
+    this.onChange = onChange;
+  }
+
+  addElement(element: CanvasElement) {
+    this.elements.push(element);
+    this.onChange();
   }
 
   deleteElement(element: CanvasElement) {
@@ -35,74 +22,8 @@ export default class ElementLayer {
     if (elementIndex > -1) {
       this.elements.splice(elementIndex, 1);
     }
-    if (element === this.creatingElement) {
-      this.creatingElement = null;
-    }
     this.selectedElements.delete(element);
     this.onChange();
-  }
-
-  /** adds an new element and keeps a ref to it (i.e can be used to keep track
-   * of elements that should be persisted even if pointer is cleared) */
-  addCreatingElement(element: CanvasElement) {
-    this.elements.push(element);
-    this.selectedElements.clear();
-    this.selectedElements.add(element);
-    this.creatingElement = element;
-
-    this.onChange();
-    return element;
-  }
-
-  getCreatingElement() {
-    return this.creatingElement;
-  }
-
-  /** removes all internal refs to the element being created */
-  clearCreatingElement() {
-    this.creatingElement = null;
-  }
-
-  /** stores an array of elements being dragged */
-  setDraggingElements(elements: CanvasElement[]) {
-    this.draggingElements = elements;
-  }
-
-  getDraggingElements() {
-    return this.draggingElements;
-  }
-
-  /** Empties the array of elements being dragged, indicating that no
-   * elements are currently being dragged. */
-  clearDraggingElements() {
-    this.draggingElements = [];
-  }
-
-  setTransformingElements(elements: CanvasElement[]) {
-    elements.forEach((element) => {
-      const initialElement = deepClone(element);
-      this.transformingElements.push({ element, initialElement });
-    });
-  }
-
-  getTransformingElements() {
-    return this.transformingElements;
-  }
-
-  clearTransformingElements() {
-    this.transformingElements.length = 0;
-  }
-
-  setEditingElement(element: CanvasElement) {
-    this.editingElement = element;
-  }
-
-  getEditingElement() {
-    return this.editingElement;
-  }
-
-  clearEditingElement() {
-    this.editingElement = null;
   }
 
   selectElements(elements: CanvasElement[]) {

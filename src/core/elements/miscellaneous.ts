@@ -1,12 +1,22 @@
 /* eslint-disable no-param-reassign */
 import { ELEMENT_PRECISION } from "@constants";
-import { AppState, CanvasElement, TextElement, Mutable } from "@core/types";
+import {
+  AppState,
+  CanvasElement,
+  TextElement,
+  Mutable,
+  TransformingElement,
+} from "@core/types";
+import { deepClone } from "@core/utils";
 
 const utilCanvas = document.createElement("canvas");
 
 /* returns the css properties required to make a DOM node visually resemble
- * a Text Element */
+ * a Text Element excluding position */
 export function getTextElementCssStyles(element: TextElement) {
+  // prevent the size from being 0
+  const height = Math.max(element.h, element.fontSize);
+  const width = element.w || height / 3;
   return {
     background: "none",
     border: "none",
@@ -17,10 +27,10 @@ export function getTextElementCssStyles(element: TextElement) {
     display: "inline-block",
     lineHeight: 1,
     resize: "none",
-    transform: `rotate(${element.rotate * 180 / Math.PI}deg)`,
+    transform: `rotate(${(element.rotate * 180) / Math.PI}deg)`,
     overflow: "hidden",
-    width: element.w,
-    height: Math.max(element.h,element.fontSize),
+    width: element.w || height / 3,
+    height,
   } as React.CSSProperties;
 }
 
@@ -52,7 +62,7 @@ export function normalizeElement<T extends Mutable<CanvasElement>>(elem: T): T {
   elem.w = +elem.w.toFixed(ELEMENT_PRECISION);
   elem.h = +elem.h.toFixed(ELEMENT_PRECISION);
 
-  if(elem.type === "text"){
+  if (elem.type === "text") {
     elem.text = elem.text.replaceAll(/\r\n?/g, "\n");
   }
 
@@ -75,4 +85,11 @@ export function isElementNegligible(
     default:
       return false;
   }
+}
+
+export function createTransformingElements(elements: CanvasElement[]) {
+  return elements.map((elem) => ({
+    element: elem,
+    initialElement: deepClone(elem),
+  })) as TransformingElement[];
 }
