@@ -29,7 +29,9 @@ export function getTextElementCssStyles(element: TextElement) {
     resize: "none",
     transform: `rotate(${(element.rotate * 180) / Math.PI}deg)`,
     overflow: "hidden",
-    width: element.w || height / 3,
+    whiteSpace: "pre",
+    boxSizing: "content-box",
+    width,
     height,
   } as React.CSSProperties;
 }
