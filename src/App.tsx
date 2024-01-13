@@ -3,8 +3,14 @@ import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import WysiwygEditor from "@components/WysiwygEditor";
-import { ELEMENT_PRECISION, USERMODE, ZOOM_STEP } from "@constants";
+import {
+  ELEMENT_PRECISION,
+  USERMODE,
+  ZOOM_STEP,
+  DBL_CLICK_TIMEOUT,
+} from "@constants";
 import { createAppState, createPointerState } from "@core/createState";
+import DblClickResolver from "@core/dblclick";
 import ElementLayer from "@core/elementLayer";
 import {
   createFreedrawElement,
@@ -70,6 +76,10 @@ class App extends React.Component<Record<string, never>, AppState> {
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
   editingElement: CanvasElement | null = null;
   transformingElements: TransformingElement[] = [];
+  dblClickResolver = new DblClickResolver({
+    timeout: DBL_CLICK_TIMEOUT,
+    maxPointerOffset: 100,
+  });
 
   constructor(props: Record<string, never>) {
     super(props);
@@ -356,9 +366,12 @@ class App extends React.Component<Record<string, never>, AppState> {
     window.addEventListener("pointermove", this.onWindowPointerMove);
     window.addEventListener("pointerup", this.onWindowPointerUp);
     window.addEventListener("wheel", this.onWindowWheel, { passive: false });
+    this.dblClickResolver.setEventListener(this.onCanvasDblClick.bind(this));
   };
 
   private onCanvasPointerDown = (e: React.PointerEvent) => {
+    this.dblClickResolver.handleEvent(e.nativeEvent);
+
     if (e.buttons === 1) {
       this.pointer = createPointerState(e.nativeEvent);
       /** pointer coords in virtual space */
@@ -432,6 +445,18 @@ class App extends React.Component<Record<string, never>, AppState> {
       }
     }
   };
+
+  private onCanvasDblClick(e: PointerEvent) {
+    // Note: since dblclick ends with pointerup, `this.pointer` will be null
+    if (this.state.activeTool === "Selection") {
+      const virtualPointerCoords = screenOffsetToVirtualOffset(e, this.state);
+
+      const hitElement = this.getFirstElementAtCoords(virtualPointerCoords);
+      if (hitElement?.type === "text") {
+        this.editingElement = hitElement;
+      }
+    }
+  }
 
   private onWindowWheel = (e: WheelEvent) => {
     e.preventDefault();
@@ -657,6 +682,11 @@ class App extends React.Component<Record<string, never>, AppState> {
           style={{ width: canvasWidth, height: canvasHeight }}
           ref={this.setCanvasRef}
           onPointerDown={this.onCanvasPointerDown}
+          // using window events would require checking `event.target`
+          onPointerUp={(e) => this.dblClickResolver.handleEvent(e.nativeEvent)}
+          onPointerMove={(e) =>
+            this.dblClickResolver.handleEvent(e.nativeEvent)
+          }
         />
       </div>
     );

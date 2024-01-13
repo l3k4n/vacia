@@ -159,6 +159,8 @@ export function hitTestCoordsAgainstElement(
       return hitTestOpenPath(relativeCoords, path, threshold);
     }
 
+    case "text": return hitTestRect(element, rotatedCoords)
+
     default:
       return false;
   }

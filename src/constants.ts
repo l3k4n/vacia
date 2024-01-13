@@ -34,3 +34,5 @@ export const enum USERMODE {
   RESIZING = "resizing",
   CREATING = "creating",
 }
+
+export const DBL_CLICK_TIMEOUT = 500; // ms
