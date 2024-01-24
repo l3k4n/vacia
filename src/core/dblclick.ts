@@ -8,7 +8,7 @@ class DblClickResolver {
   private firstClick: ClickData = { pointerUp: null, pointerDown: null };
   private secondClick: ClickData = { pointerUp: null, pointerDown: null };
   private pendingResetTimeout: number | null = null;
-  private listener: (e: PointerEvent) => void;
+  private listener: ((e: PointerEvent) => void) | null = null;
   private config: ResolverConfig;
 
   constructor(config: ResolverConfig) {
@@ -68,7 +68,7 @@ class DblClickResolver {
       this.reset();
     } else {
       // dispatch second pointer down as the double click
-      this.listener(this.secondClick.pointerDown);
+      this.listener?.(this.secondClick.pointerDown);
       this.reset();
     }
   }
@@ -81,12 +81,12 @@ class DblClickResolver {
 
     switch (e.type) {
       case "pointerdown":
-        if (this.isUsersFirstClick()) this.stopResetTimeout();
+        if (this.isUsersFirstClick()) this.startResetTimeout();
         else {
           // reset if second click occured far from the first.
           // this allows double clicking even if user just clicked elsewhere
-          const dx = this.firstClick.pointerDown.x - e.x;
-          const dy = this.firstClick.pointerDown.y - e.y;
+          const dx = this.firstClick.pointerDown!.x - e.x;
+          const dy = this.firstClick.pointerDown!.y - e.y;
           const offset = Math.abs(Math.hypot(dx, dy));
           if (offset > this.config.maxPointerOffset) {
             this.reset();
