@@ -1,4 +1,5 @@
 import React from "react";
+import { ContextMenu } from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
@@ -46,6 +47,7 @@ import {
   CanvasElementMutations,
   TransformingElement,
   TransformHandle,
+  ContextMenuItem,
 } from "@core/types";
 import {
   getSurroundingBoundingBox,
@@ -69,6 +71,13 @@ declare global {
     };
   }
 }
+
+const AppBounds = {
+  x: 0,
+  y: 0,
+  w: window.innerWidth,
+  h: window.innerHeight,
+};
 
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
@@ -446,6 +455,36 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
+  private onCanvasContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const items: ContextMenuItem[] = [];
+
+    const virtualPointerCoords = screenOffsetToVirtualOffset(
+      e.nativeEvent,
+      this.state,
+    );
+    const hitElement = this.getFirstElementAtCoords(virtualPointerCoords);
+
+    if (hitElement) {
+      items.push({
+        type: "button",
+        label: "Delete",
+        exec: () => this.elementLayer.deleteElement(hitElement),
+      });
+    } else {
+      items.push({
+        type: "button",
+        label: "Select All",
+        exec: () => {
+          const elements = this.elementLayer.getAllElements();
+          this.elementLayer.selectElements(elements);
+        },
+      });
+    }
+
+    this.setState({ contextMenu: { x: e.clientX, y: e.clientY, items } });
+  };
+
   private onCanvasDblClick(e: PointerEvent) {
     // Note: since dblclick ends with pointerup, `this.pointer` will be null
     if (this.state.activeTool === "Selection") {
@@ -674,6 +713,16 @@ class App extends React.Component<Record<string, never>, AppState> {
             onZoomIn={handleZoomInAction}
             onZoomOut={handleZoomOutAction}
           />
+          {this.state.contextMenu && (
+            <ContextMenu
+              // use x position as key to ensure remount when postion changes
+              key={this.state.contextMenu.x}
+              items={this.state.contextMenu.items}
+              position={this.state.contextMenu}
+              containerBounds={AppBounds}
+              onClose={() => this.setState({ contextMenu: null })}
+            />
+          )}
         </div>
         <canvas
           data-testid="app-canvas"
@@ -687,6 +736,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           onPointerMove={(e) =>
             this.dblClickResolver.handleEvent(e.nativeEvent)
           }
+          onContextMenu={this.onCanvasContextMenu}
         />
       </div>
     );

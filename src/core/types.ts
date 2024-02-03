@@ -1,11 +1,31 @@
-import { USERMODE } from "@constants";
 import { DrawingTools, ControlTools } from "./tools";
+import { USERMODE } from "@constants";
 
 export type XYCoords = { x: number; y: number };
 export type Point = [number, number];
 export type BoundingBox = XYCoords & { w: number; h: number };
 export type RotatedBoundingBox = BoundingBox & { rotate: number };
 export type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
+export interface ContextMenuSeparator {
+  type: "separator";
+}
+export interface ContextMenuButton {
+  type: "button";
+  label: string;
+  icon?: string | null;
+  binding?: string;
+  exec: () => void;
+}
+export interface ContextMenuDropdown {
+  type: "dropdown";
+  label: string;
+  options: (ContextMenuButton | ContextMenuSeparator)[];
+}
+export type ContextMenuItem =
+  | ContextMenuButton
+  | ContextMenuDropdown
+  | ContextMenuSeparator;
 
 interface AbstractElement extends BoundingBox {
   fill: string;
@@ -57,6 +77,11 @@ export interface AppState {
   /** bounding box (in virtual coords) to highlight when drag selecting */
   selectionHighlight: BoundingBox | null;
   usermode: USERMODE;
+  contextMenu: {
+    x: number;
+    y: number;
+    items: ContextMenuItem[];
+  } | null;
 }
 
 export type TransformHandle = "ne" | "nw" | "se" | "sw" | "rotate";

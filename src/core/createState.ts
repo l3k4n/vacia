@@ -12,6 +12,7 @@ export function createAppState(): AppState {
     toolbarPosition: "left",
     selectionHighlight: null,
     usermode: USERMODE.IDLE,
+    contextMenu: null,
   };
 }
 

@@ -40,7 +40,7 @@
     pointer-events: none;
     opacity: 0;
 
-    &:checked+.ToolButton_type_radio--icon {
+    &:checked + .ToolButton_type_radio--icon {
       background-color: var(--accent-color-darker);
 
       svg {
