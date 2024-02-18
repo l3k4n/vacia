@@ -10,6 +10,9 @@ import {
   ZOOM_STEP,
   DBL_CLICK_TIMEOUT,
 } from "@constants";
+import { ActionManager } from "@core/actionManager";
+import { CoreActions } from "@core/actionManager/coreActions";
+import { CoreBindings } from "@core/actionManager/coreBindings";
 import { createAppState, createPointerState } from "@core/createState";
 import DblClickResolver from "@core/dblclick";
 import ElementLayer from "@core/elementLayer";
@@ -48,6 +51,7 @@ import {
   TransformingElement,
   TransformHandle,
   ContextMenuItem,
+  AppData,
 } from "@core/types";
 import {
   getSurroundingBoundingBox,
@@ -64,11 +68,7 @@ import "@css/App.scss";
 
 declare global {
   interface Window {
-    appData: {
-      state: AppState;
-      setState: (state: Partial<AppState>) => void;
-      pointer: PointerState | null;
-    };
+    appData: AppData;
   }
 }
 
@@ -85,33 +85,42 @@ class App extends React.Component<Record<string, never>, AppState> {
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
   editingElement: CanvasElement | null = null;
   transformingElements: TransformingElement[] = [];
-  dblClickResolver = new DblClickResolver({
-    timeout: DBL_CLICK_TIMEOUT,
-    maxPointerOffset: 100,
-  });
+  dblClickResolver: DblClickResolver;
+  actionManager: ActionManager;
 
   constructor(props: Record<string, never>) {
     super(props);
     this.state = createAppState();
-    if (import.meta.env.DEV) {
-      window.appData = {} as Window["appData"];
-      Object.defineProperties(window.appData, {
-        state: {
-          configurable: true,
-          get: () => this.state,
-        },
-        setState: {
-          configurable: true,
-          value: (...args: Parameters<typeof this.setState>) => {
-            this.setState(...args);
+
+    const appData = Object.freeze(
+      Object.defineProperties(
+        {},
+        {
+          state: { get: () => this.state },
+          pointer: { get: () => this.pointer },
+          editingElement: { get: () => this.editingElement },
+          transformingElements: { get: () => this.transformingElements },
+          bounds: { get: () => AppBounds },
+          elementLayer: { get: () => this.elementLayer },
+          setState: { get: () => this.setState.bind(this) },
+          setEditingElement: {
+            get: () => (element: CanvasElement | null) => {
+              this.editingElement = element;
+            },
           },
         },
-        pointer: {
-          configurable: true,
-          get: () => this.pointer,
-        },
-      });
-    }
+      ),
+    ) as AppData;
+
+    this.dblClickResolver = new DblClickResolver({
+      timeout: DBL_CLICK_TIMEOUT,
+      maxPointerOffset: 100,
+    });
+    this.actionManager = new ActionManager(appData);
+    this.actionManager.registerActions(CoreActions);
+    this.actionManager.registerBindings(CoreBindings);
+
+    if (import.meta.env.DEV) window.appData = appData;
   }
 
   private getFirstElementAtCoords(coords: XYCoords) {

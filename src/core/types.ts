@@ -115,6 +115,28 @@ export interface TransformingElement {
   initialElement: CanvasElement;
 }
 
+export interface IElementLayer {
+  addElement(element: CanvasElement): void;
+  deleteElement(element: CanvasElement): void;
+  selectElements(elements: CanvasElement[]): void;
+  unselectElements(elements: CanvasElement[]): void;
+  unselectAllElements(): void;
+  getSelectedElements(): CanvasElement[];
+  getAllElements(): CanvasElement[];
+  mutateElement(element: CanvasElement, mutations: object): void;
+}
+
+export interface AppData {
+  readonly state: AppState;
+  readonly editingElement: CanvasElement | null;
+  readonly transformingElements: TransformingElement[];
+  readonly pointer: PointerState | null;
+  readonly elementLayer: IElementLayer;
+  readonly bounds: BoundingBox;
+  setState<K extends keyof AppState>(newState: Pick<AppState, K>): void;
+  setEditingElement(element: CanvasElement): void;
+}
+
 type MixedObject = Readonly<{ [x: symbol]: number; toString: () => string }>;
 export type Mixed<T> = { [K in keyof T]: T[K] | MixedObject };
 export type SelectionProps = Readonly<Mixed<BoundingBox & { fill: string }>>;
@@ -128,3 +150,8 @@ export interface SectionProps {
   onChange: (value: Partial<SelectionProps>) => void;
 }
 export type SectionComponent = (props: SectionProps) => JSX.Element;
+
+export interface Action {
+  label: string;
+  exec(args: AppData): void;
+}

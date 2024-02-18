@@ -1,8 +1,12 @@
 import { normalizeElement } from "@core/elements/miscellaneous";
-import { CanvasElement, CanvasElementMutations } from "@core/types";
+import {
+  CanvasElement,
+  CanvasElementMutations,
+  IElementLayer,
+} from "@core/types";
 import { assignWithoutUndefined } from "@core/utils";
 
-export default class ElementLayer {
+export default class ElementLayer implements IElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
   private onChange;
