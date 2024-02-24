@@ -3,8 +3,7 @@ import { USERMODE } from "@constants";
 
 export function createAppState(): AppState {
   return {
-    width: window.innerWidth,
-    height: window.innerHeight,
+    appBounds: { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight },
     activeTool: "Hand",
     grid: { type: "line", size: 20 },
     scrollOffset: { x: 0, y: 0 },

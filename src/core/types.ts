@@ -66,8 +66,7 @@ export type ToolLabel = DrawingToolLabel | ControlToolLabel;
 export type ToolbarPosition = "top" | "left" | "right" | "bottom";
 
 export interface AppState {
-  width: number;
-  height: number;
+  appBounds: BoundingBox;
   activeTool: ToolLabel;
   grid: { type: "line" | "none"; size: number };
   /** canvas offset from { x: 0, y: 0 } */
@@ -137,7 +136,6 @@ export interface AppData {
   readonly transformingElements: TransformingElement[];
   readonly pointer: PointerState | null;
   readonly elementLayer: IElementLayer;
-  readonly bounds: BoundingBox;
   setState<K extends keyof AppState>(newState: Pick<AppState, K>): void;
   setEditingElement(element: CanvasElement): void;
 }

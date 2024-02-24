@@ -75,13 +75,6 @@ declare global {
   }
 }
 
-const AppBounds = {
-  x: 0,
-  y: 0,
-  w: window.innerWidth,
-  h: window.innerHeight,
-};
-
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
   pointer: PointerState | null = null;
@@ -103,7 +96,6 @@ class App extends React.Component<Record<string, never>, AppState> {
           pointer: { get: () => this.pointer },
           editingElement: { get: () => this.editingElement },
           transformingElements: { get: () => this.transformingElements },
-          bounds: { get: () => AppBounds },
           elementLayer: { get: () => this.elementLayer },
           setState: { get: () => this.setState.bind(this) },
           setEditingElement: {
@@ -713,8 +705,8 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   render() {
-    const canvasWidth = this.state.width;
-    const canvasHeight = this.state.height;
+    const canvasWidth = this.state.appBounds.w;
+    const canvasHeight = this.state.appBounds.h;
     const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
     const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
 
@@ -765,7 +757,7 @@ class App extends React.Component<Record<string, never>, AppState> {
               key={this.state.contextMenu.x}
               items={this.state.contextMenu.items}
               position={this.state.contextMenu}
-              containerBounds={AppBounds}
+              containerBounds={this.state.appBounds}
               onClose={() => this.setState({ contextMenu: null })}
             />
           )}

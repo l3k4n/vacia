@@ -6,8 +6,8 @@ import { clampNumber } from "@core/utils";
 /** returns the center position of in screen coords */
 export function getScreenCenterCoords(state: AppState): XYCoords {
   return {
-    x: state.width / 2,
-    y: state.height / 2,
+    x: state.appBounds.w / 2,
+    y: state.appBounds.h / 2,
   };
 }
 
