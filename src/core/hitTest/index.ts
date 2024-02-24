@@ -3,7 +3,7 @@ import {
   CanvasElement,
   BoundingBox,
   XYCoords,
-  TransformHandleData,
+  TransformHandle,
   AppState,
   RotatedBoundingBox,
   Point,
@@ -159,7 +159,8 @@ export function hitTestCoordsAgainstElement(
       return hitTestOpenPath(relativeCoords, path, threshold);
     }
 
-    case "text": return hitTestRect(element, rotatedCoords)
+    case "text":
+      return hitTestRect(element, rotatedCoords);
 
     default:
       return false;
@@ -183,11 +184,11 @@ export function hitTestCoordsAgainstUnrotatedBox(
 
 /** returns type of transform handle at coords */
 export function hitTestCoordsAgainstTransformHandles(
-  handles: TransformHandleData[],
+  handles: TransformHandle[],
   coords: XYCoords,
   { zoom: scale }: AppState,
 ) {
-  let hitHandle = null;
+  let hitHandle: TransformHandle | null = null;
   /** Error margin around handle that will be forgiven */
   const hitThreshold = SELECTION_HANDLE_SIZE / scale;
 
@@ -200,7 +201,7 @@ export function hitTestCoordsAgainstTransformHandles(
       h: hitThreshold,
     };
     if (hitTestRect(handleBox, coords)) {
-      hitHandle = handle.type;
+      hitHandle = handle;
       break;
     }
   }

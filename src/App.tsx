@@ -9,6 +9,7 @@ import {
   USERMODE,
   ZOOM_STEP,
   DBL_CLICK_TIMEOUT,
+  ROTATION_SNAP_THRESHOLD,
 } from "@constants";
 import { ActionManager } from "@core/actionManager";
 import { CoreActions } from "@core/actionManager/coreActions";
@@ -29,9 +30,11 @@ import {
 } from "@core/elements/miscellaneous";
 import {
   getTransformHandles,
-  getSelectionTransformData,
-  getTransformedElementMutations,
   rescalePath,
+  getRotateMutations,
+  getRotateAngle,
+  getResizeScale,
+  getResizeMutations,
 } from "@core/elements/transform";
 import {
   hitTestElementAgainstUnrotatedBox,
@@ -226,13 +229,11 @@ class App extends React.Component<Record<string, never>, AppState> {
     pointer: PointerState,
     elements: TransformingElement[],
   ) {
-    const dragOffset = { ...pointer.drag.offset };
+    let dragOffset = { ...pointer.drag.offset };
+
     if (!e.ctrlKey) {
       // snap position if ctrl key is not pressed
-      Object.assign(
-        dragOffset,
-        snapVirtualCoordsToGrid(dragOffset, this.state),
-      );
+      dragOffset = snapVirtualCoordsToGrid(dragOffset, this.state);
     }
 
     for (let i = 0; i < elements.length; i += 1) {
@@ -245,42 +246,65 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
-  private onElementTransform(
+  private onElementRotate(
     e: PointerEvent,
     pointer: PointerState,
-    handle: TransformHandle,
     elements: TransformingElement[],
+    handle: TransformHandle,
   ) {
-    /** initial selection box of all elements being transformed */
-    const selectionBox = getSurroundingBoundingBox(
-      elements.map(({ initialElement }) => initialElement),
-    );
-    const pointerPosition = screenOffsetToVirtualOffset(
+    const virtualPointerCoords = screenOffsetToVirtualOffset(
       {
         x: pointer.origin.x + pointer.drag.offset.x,
         y: pointer.origin.y + pointer.drag.offset.y,
       },
       this.state,
     );
+
+    let angle = getRotateAngle(elements, virtualPointerCoords, handle);
+
     if (!e.ctrlKey) {
-      Object.assign(
-        pointerPosition,
-        snapVirtualCoordsToGrid(pointerPosition, this.state),
-      );
+      // snap rotation if ctrl is not pressed
+      const threshold = ROTATION_SNAP_THRESHOLD;
+      angle = Math.round(angle / threshold) * threshold;
     }
-    const transformData = getSelectionTransformData(
-      pointerPosition,
-      handle,
-      selectionBox,
-      // lock aspect ratio when there is more than one element
-      elements.length > 1,
-      !e.ctrlKey,
-    );
 
     elements.forEach((transformingElement) => {
       this.elementLayer.mutateElement(
         transformingElement.element,
-        getTransformedElementMutations(transformingElement, transformData),
+        getRotateMutations(transformingElement, angle, handle),
+      );
+    });
+  }
+
+  private onElementResize(
+    e: PointerEvent,
+    pointer: PointerState,
+    elements: TransformingElement[],
+    handle: TransformHandle,
+  ) {
+    let virtualPointerCoords = screenOffsetToVirtualOffset(
+      {
+        x: pointer.origin.x + pointer.drag.offset.x,
+        y: pointer.origin.y + pointer.drag.offset.y,
+      },
+      this.state,
+    );
+
+    if (!e.ctrlKey) {
+      // snap pointer if ctrl is not pressed (this makes the scale snapped)
+      virtualPointerCoords = snapVirtualCoordsToGrid(
+        virtualPointerCoords,
+        this.state,
+      );
+    }
+
+    const scale = getResizeScale(elements, virtualPointerCoords, handle);
+    const multiElement = elements.length > 1;
+
+    elements.forEach((transformingElement) => {
+      this.elementLayer.mutateElement(
+        transformingElement.element,
+        getResizeMutations(transformingElement, scale, handle, multiElement),
       );
     });
   }
@@ -421,7 +445,10 @@ class App extends React.Component<Record<string, never>, AppState> {
 
           if (hitHandle) {
             const mode =
-              hitHandle === "rotate" ? USERMODE.ROTATING : USERMODE.RESIZING;
+              hitHandle.type === "rotate"
+                ? USERMODE.ROTATING
+                : USERMODE.RESIZING;
+
             this.setState({ usermode: mode });
             this.pointer.hit.transformHandle = hitHandle;
             this.transformingElements =
@@ -601,14 +628,24 @@ class App extends React.Component<Record<string, never>, AppState> {
         this.onElementDrag(e, this.pointer, this.transformingElements);
         break;
 
-      case USERMODE.RESIZING:
       case USERMODE.ROTATING:
-        if (this.pointer.hit.transformHandle) {
-          this.onElementTransform(
+        if (this.pointer.hit.transformHandle?.type === "rotate") {
+          this.onElementRotate(
             e,
             this.pointer,
-            this.pointer.hit.transformHandle,
             this.transformingElements,
+            this.pointer.hit.transformHandle,
+          );
+        }
+        break;
+
+      case USERMODE.RESIZING:
+        if (this.pointer.hit.transformHandle) {
+          this.onElementResize(
+            e,
+            this.pointer,
+            this.transformingElements,
+            this.pointer.hit.transformHandle,
           );
         }
         break;

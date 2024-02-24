@@ -84,8 +84,13 @@ export interface AppState {
   } | null;
 }
 
-export type TransformHandle = "ne" | "nw" | "se" | "sw" | "rotate";
-export type TransformHandleData = XYCoords & { type: TransformHandle };
+export interface TransformHandle {
+  x: number;
+  y: number;
+  type: "ne" | "nw" | "se" | "sw" | "rotate";
+  anchorX: number;
+  anchorY: number;
+}
 
 /* pointer state since the last pointer down */
 export interface PointerState {

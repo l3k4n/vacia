@@ -1,6 +1,6 @@
 import { SELECTION_HANDLE_SIZE, SELECTION_LINE_DASH_SIZE } from "@constants";
 import { getTransformHandles } from "@core/elements/transform";
-import { BoundingBox, CanvasElement, TransformHandleData } from "@core/types";
+import { BoundingBox, CanvasElement, TransformHandle } from "@core/types";
 import { getSurroundingBoundingBox } from "@core/utils";
 
 function drawSurroundingBox(
@@ -17,7 +17,7 @@ function drawSurroundingBox(
 
 function drawSelectionHandles(
   ctx: CanvasRenderingContext2D,
-  handles: TransformHandleData[],
+  handles: TransformHandle[],
   size: number,
 ) {
   handles.forEach(({ x, y, type }) => {
