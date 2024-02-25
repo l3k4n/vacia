@@ -21,3 +21,9 @@
     @error Invalid media $device (expected 'mobile', 'tablet', or 'pc');
   }
 }
+
+@mixin widgetStyles {
+  border: 1px solid var(--widget-border-color);
+  background-color: var(--widget-bg);
+  backdrop-filter: blur(10px) saturate(200%);
+}

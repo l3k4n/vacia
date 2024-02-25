@@ -1,4 +1,8 @@
 .ToolButton {
+  --button-size: 35px;
+  --button-hover-bg: var(--color-grey-80);
+  --icon-size: 15px;
+  --icon-stroke-color: var(--color-grey-50);
   width: var(--button-size);
   height: var(--button-size);
   border: none;
@@ -13,7 +17,7 @@
   justify-content: center;
   align-items: center;
   outline: none;
-  border-radius: var(--widget-border-radius);
+  border-radius: 10px;
 
   svg {
     width: var(--icon-size);

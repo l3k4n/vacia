@@ -1,3 +1,5 @@
+@import "@css/mixins.scss";
+
 @mixin FocusTransition($propertyToAffect) {
   transition: $propertyToAffect 0.1s linear;
 }
@@ -5,16 +7,15 @@
 .DesignMenu {
   position: absolute;
   width: 250px;
-  background-color: rgb(28, 28, 28, 0.9);
   border-radius: 12px;
-  border: 1px solid #272727;
-  backdrop-filter: blur(25px) saturate(200%);
   transform: translate(0, -50%);
   top: 50%;
+  @include widgetStyles;
 
   .DesignMenuSection {
     padding: 15px 20px;
-    border-bottom: 1px solid #272727;
+    // border-bottom: 1px solid #272727;
+    border-bottom: 1px solid var(--widget-border-color);
     font-family: "Inter", sans-serif;
 
     &_hidden {
@@ -58,11 +59,10 @@
       transition: 0.2s ease-in-out;
       margin-top: 5px;
 
-      >* {
+      > * {
         overflow: hidden;
       }
     }
-
   }
 
   .MS_ {
@@ -123,8 +123,8 @@
         }
       }
 
-      >* {
-        @include FocusTransition(border-color)
+      > * {
+        @include FocusTransition(border-color);
       }
     }
 

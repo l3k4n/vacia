@@ -1,12 +1,14 @@
+@import "@css/mixins";
+
 .QuickActionsIsland {
   width: fit-content;
-  padding: calc(var(--toolbar-gap) / 2);
-  border-radius: var(--widget-border-radius);
-  background-color: var(--widget-bg-color);
+  padding: 5px;
+  border-radius: 10px;
   display: grid;
   grid-auto-flow: column;
-  grid-gap: var(--toolbar-gap);
+  grid-gap: 10px;
   position: absolute;
-  right: var(--widget-page-inset);
-  bottom: var(--widget-page-inset);
+  right: 10px;
+  bottom: 10px;
+  @include widgetStyles;
 }
