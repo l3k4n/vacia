@@ -2,8 +2,9 @@ import renderBoundingBoxes from "./renderBoundingBoxes";
 import renderBoxHighlight from "./renderBoxHighlight";
 import renderGrid from "./renderGrid";
 import { GRID_COLOR } from "@constants";
-import renderElement from "@core/elements/renderer";
-import { AppState, CanvasElement } from "@core/types";
+import { ElementHandler } from "@core/elements/handler";
+import { CanvasElement } from "@core/elements/types";
+import { AppState } from "@core/types";
 
 interface RenderConfig {
   state: AppState;
@@ -12,6 +13,7 @@ interface RenderConfig {
   elements: CanvasElement[];
   selectedElements: CanvasElement[];
   hideBoundingBoxes?: boolean;
+  elementHandlers: Map<CanvasElement["type"], ElementHandler<CanvasElement>>;
 }
 
 export default function renderFrame(config: RenderConfig) {
@@ -34,6 +36,11 @@ export default function renderFrame(config: RenderConfig) {
       },
     });
 
+    ctx.fillStyle = "#ff0000";
+    ctx.font = "20px arial";
+    ctx.textBaseline = "top";
+    ctx.fillText(state.usermode.toUpperCase(), 0, 0);
+
     // apply scroll offset
     ctx.translate(
       state.scrollOffset.x / state.zoom,
@@ -41,7 +48,14 @@ export default function renderFrame(config: RenderConfig) {
     );
 
     for (let i = 0; i < elements.length; i += 1) {
-      renderElement(ctx, elements[i]);
+      const element = elements[i];
+      const handler = config.elementHandlers.get(element.type);
+
+      if (handler) {
+        ctx.save();
+        handler.render(element, ctx);
+        ctx.restore();
+      }
     }
 
     // render selection hightlight and selected element bounding boxes

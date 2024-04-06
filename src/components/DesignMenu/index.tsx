@@ -2,19 +2,18 @@ import React, { CSSProperties } from "react";
 import { LayoutSection, ColorSection } from "./sections";
 import getSelectionDetails, { MIXED_VALUE } from "./selectionDetails";
 import {
-  CanvasElement,
-  CanvasElementMutations,
   SelectionMetadata,
   SelectionProps,
   SectionComponent,
   ToolbarPosition,
-} from "@core/types";
+} from "./types";
+import { CanvasElement } from "@core/elements/types";
 import "./style.scss";
 
 interface DesignMenuProps {
   toolbarPosition: ToolbarPosition;
   selectedElements: CanvasElement[];
-  onChange(elements: CanvasElement[], changes: CanvasElementMutations): void;
+  onChange(elements: CanvasElement[], changes: object): void;
 }
 
 interface DesignMenuState {

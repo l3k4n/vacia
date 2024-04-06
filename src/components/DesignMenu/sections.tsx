@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import tinycolor from "tinycolor2";
 import { evalMathExpr } from "./matheval";
 import { MIXED_VALUE } from "./selectionDetails";
+import { SectionProps, Mixed } from "./types";
 import { ProhibitedIcon } from "@assets/icons";
 import { GENERIC_ELEMENT_PROPS } from "@constants";
-import { BoundingBox, Mixed, SectionProps } from "@core/types";
-import { clampNumber } from "@core/utils";
+import { BoundingBox } from "@core/types";
+import { clamp } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
 
 function MenuSection(
@@ -112,7 +113,7 @@ export function ColorSection(props: SectionProps) {
     if (typeof color.opacity === "string") {
       const evaluatedOpacity = evalMathExpr(color.opacity.replaceAll("%", ""));
       const newAlpha = evaluatedOpacity
-        ? clampNumber(evaluatedOpacity, 0, 100) / 100
+        ? clamp(evaluatedOpacity, 0, 100) / 100
         : tc.getAlpha();
 
       if (newAlpha !== tc.getAlpha()) {
@@ -153,13 +154,14 @@ export function ColorSection(props: SectionProps) {
 
   useEffect(() => {
     const previousValue = tc.getOriginalInput() as string;
-    if(previousValue.toUpperCase() === props.value.fill) return;
+    if (previousValue.toUpperCase() === props.value.fill) return;
 
-    const newTc =  tinycolor(props.value.fill.toString());
+    const newTc = tinycolor(props.value.fill.toString());
     setTc(newTc);
     setRawHex(getHex(newTc));
     setRawOpacity(getOpacity(newTc));
-  }, [props.value.fill])
+    // eslint-disable-next-line
+  }, [props.value.fill]);
 
   useUnmount(() => {
     if (props.value.fill !== MIXED_VALUE) {

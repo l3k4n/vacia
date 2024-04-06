@@ -1,12 +1,17 @@
-import { normalizeElement } from "@core/elements/miscellaneous";
-import {
-  CanvasElement,
-  CanvasElementMutations,
-  IElementLayer,
-} from "@core/types";
+import { ELEMENT_PRECISION } from "@constants";
+import { CanvasElement } from "@core/elements/types";
+import { Mutable } from "@core/types";
 import { assignWithoutUndefined } from "@core/utils";
 
-export default class ElementLayer implements IElementLayer {
+function roundElementCoord(element: Mutable<CanvasElement>) {
+  const elem = element;
+  elem.x = +elem.x.toFixed(ELEMENT_PRECISION);
+  elem.y = +elem.y.toFixed(ELEMENT_PRECISION);
+  elem.w = +elem.w.toFixed(ELEMENT_PRECISION);
+  elem.h = +elem.h.toFixed(ELEMENT_PRECISION);
+}
+
+export default class ElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
   private onChange;
@@ -58,9 +63,9 @@ export default class ElementLayer implements IElementLayer {
     return this.elements;
   }
 
-  mutateElement(element: CanvasElement, mutations: CanvasElementMutations) {
+  mutateElement(element: CanvasElement, mutations: object) {
     assignWithoutUndefined(element, mutations);
-    normalizeElement(element); // rounding bouding box, etc.
+    roundElementCoord(element);
     this.onChange();
   }
 }

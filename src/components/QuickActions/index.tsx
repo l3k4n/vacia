@@ -1,35 +1,30 @@
-import { FullScreenIcon, ZoomInIcon, ZoomOutIcon } from "@assets/icons";
 import ToolButton from "@components/ToolButton";
+import { ActionManager } from "@core/actionManager";
 import "./style.scss";
 
-interface QuickActionsProps {
-  onZoomIn(): void;
-  onZoomOut(): void;
+export interface QuickActionType {
+  id: string;
+  label: string;
+  icon: React.FC;
 }
 
-export default function QuickActions(props: QuickActionsProps) {
+interface Props {
+  actions: QuickActionType[];
+  actionManager: ActionManager;
+}
+
+export default function QuickActions(props: Props) {
   return (
     <div className="QuickActionsIsland">
-      <ToolButton
-        type="button"
-        children={<ZoomOutIcon />}
-        label={"zoom out"}
-        onClick={props.onZoomOut}
-        testId="quickaction-zoom-out"
-      />
-      <ToolButton
-        type="button"
-        children={<ZoomInIcon />}
-        label={"zoom in"}
-        onClick={props.onZoomIn}
-        testId="quickaction-zoom-in"
-      />
-      <ToolButton
-        type="button"
-        children={<FullScreenIcon />}
-        label={"fullscreen"}
-        testId="quickaction-fullscreen"
-      />
+      {props.actions.map((action, i) => (
+        <ToolButton
+          key={i}
+          type="button"
+          children={<action.icon />}
+          label={action.label}
+          onClick={() => props.actionManager.execute(action.id)}
+        />
+      ))}
     </div>
   );
 }

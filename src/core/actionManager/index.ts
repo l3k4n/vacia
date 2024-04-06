@@ -1,6 +1,9 @@
 import hotkeys from "hotkeys-js";
 import { allowedKeys } from "./allowedKeys";
-import { AppData, Action } from "@core/types";
+import ElementLayer from "@core/elementLayer";
+import { CanvasElement, TransformingElement } from "@core/elements/types";
+import { CanvasPointer } from "@core/pointer";
+import { AppState } from "@core/types";
 
 const HOTKEYS_CONFIG = { keyup: false, keydown: true };
 const HOTKEYS_IGNORE = ["input", "textarea", "select", "button", "a"];
@@ -8,6 +11,22 @@ const HOTKEYS_FILTER = (e: KeyboardEvent) => {
   const tagname = (e.target as HTMLElement).tagName.toLowerCase();
   return !HOTKEYS_IGNORE.includes(tagname);
 };
+
+export interface ActionManagerAppData {
+  state: () => AppState;
+  creatingElement: () => CanvasElement | null;
+  editingElement: () => CanvasElement | null;
+  transformingElements: () => TransformingElement[];
+  pointer: () => CanvasPointer | null;
+  elementLayer: () => ElementLayer;
+  setState<K extends keyof AppState>(newState: Pick<AppState, K>): void;
+}
+
+export interface Action {
+  label: string;
+  // eslint-disable-next-line
+  exec(args: ActionManagerAppData): void;
+}
 
 type ActionMap = Record<string, Action>;
 type BindingMap = Record<string, string>;
@@ -19,9 +38,9 @@ function validateBinding(binding: string) {
 export class ActionManager {
   private actions: ActionMap = Object.create(null);
   private bindings: BindingMap = Object.create(null);
-  private appData: AppData;
+  private appData: ActionManagerAppData;
 
-  constructor(appData: AppData) {
+  constructor(appData: ActionManagerAppData) {
     this.appData = appData;
     hotkeys.filter = HOTKEYS_FILTER;
   }

@@ -1,13 +1,14 @@
+import { Action, ActionManagerAppData } from ".";
 import { USERMODE, ZOOM_STEP } from "@constants";
-import { Action, AppData } from "@core/types";
-import { getNewZoomState, getScreenCenterCoords } from "@core/viewport";
+import { getNewZoomState, getScreenCenterCoords } from "@core/utils";
 
-const incrementalZoom = ({ state, setState }: AppData, direction: 1 | -1) => {
+function incrementalZoom(app: ActionManagerAppData, direction: 1 | -1) {
+  const state = app.state();
   const value = state.zoom + ZOOM_STEP * direction;
   const centerCoords = getScreenCenterCoords(state);
   const zoomState = getNewZoomState(value, centerCoords, state);
-  setState(zoomState);
-};
+  app.setState(zoomState);
+}
 
 export const CoreActions: Record<string, Action> = {
   "core:ui.zoomIn": {
@@ -21,22 +22,23 @@ export const CoreActions: Record<string, Action> = {
   "core:ui.resetZoom": {
     label: "zoom out",
     exec: ({ state, setState }) => {
-      const centerCoords = getScreenCenterCoords(state);
-      const zoomState = getNewZoomState(1, centerCoords, state);
+      const centerCoords = getScreenCenterCoords(state());
+      const zoomState = getNewZoomState(1, centerCoords, state());
       setState(zoomState);
     },
   },
   "core:elements.deleteSelected": {
     label: "delete",
     exec({ state, elementLayer }) {
-      if (state.usermode !== USERMODE.IDLE) return;
-      const elements = elementLayer.getSelectedElements();
-      elements.forEach((elem) => elementLayer.deleteElement(elem));
+      if (state().usermode !== USERMODE.IDLE) return;
+      const elements = elementLayer().getSelectedElements();
+      elements.forEach((elem) => elementLayer().deleteElement(elem));
     },
   },
   "core:elements.selectAll": {
     label: "select all",
-    exec({ elementLayer }) {
+    exec(app) {
+      const elementLayer = app.elementLayer();
       elementLayer.unselectAllElements();
       const elements = elementLayer.getAllElements();
       elementLayer.selectElements(elements);

@@ -1,9 +1,6 @@
-import {
-  CanvasElement,
-  Mutable,
-  SelectionMetadata,
-  SelectionProps,
-} from "@core/types";
+import { SelectionMetadata, SelectionProps } from "./types";
+import { CanvasElement } from "@core/elements/types";
+import { Mutable } from "@core/types";
 
 export const MIXED_VALUE = Object.freeze({
   [Symbol("mixed")]: 1,

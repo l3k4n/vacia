@@ -1,6 +1,7 @@
 import { SELECTION_HANDLE_SIZE, SELECTION_LINE_DASH_SIZE } from "@constants";
 import { getTransformHandles } from "@core/elements/transform";
-import { BoundingBox, CanvasElement, TransformHandle } from "@core/types";
+import { CanvasElement, TransformHandle } from "@core/elements/types";
+import { BoundingBox } from "@core/types";
 import { getSurroundingBoundingBox } from "@core/utils";
 
 function drawSurroundingBox(

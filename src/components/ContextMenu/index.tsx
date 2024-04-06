@@ -1,26 +1,26 @@
 import { useState } from "react";
-import { Button, Dropdown, Separator } from "./menuItems";
+import {
+  Button,
+  Dropdown,
+  Separator,
+  ContextMenuItem,
+  ContextMenuDropdown,
+} from "./menuItems";
 import DynamicWidget from "@components/DynamicWidget";
 import FocusTrap from "@components/FocusTrap";
-import {
-  BoundingBox,
-  ContextMenuDropdown,
-  ContextMenuItem,
-  XYCoords,
-} from "@core/types";
 import "./style.scss";
 
 interface ContextMenuProps {
   items: ContextMenuItem[];
-  position: XYCoords;
-  containerBounds: BoundingBox;
+  position: { x: number; y: number };
+  containerBounds: { x: number; y: number; w: number; h: number };
   onClose(): void;
 }
 
 interface WidgetProps {
   items: ContextMenuItem[];
-  position: XYCoords;
-  containerBounds: BoundingBox;
+  position: { x: number; y: number };
+  containerBounds: { x: number; y: number; w: number; h: number };
   focusOnMount: boolean;
   onItemClick(e: React.MouseEvent, item: ContextMenuItem): void;
   onItemHover(e: React.MouseEvent, item: ContextMenuItem): void;
@@ -29,7 +29,7 @@ interface WidgetProps {
 
 interface DropdownProps {
   items: ContextMenuItem[];
-  position: XYCoords;
+  position: { x: number; y: number };
   focusOnMount: boolean;
   onClose(): void;
 }
@@ -76,7 +76,7 @@ function ContextMenuWidget(props: WidgetProps) {
   );
 }
 
-export function ContextMenu(props: ContextMenuProps) {
+export default function ContextMenu(props: ContextMenuProps) {
   const [dropdown, setDropdown] = useState<DropdownProps | null>(null);
 
   const openDropdown = (

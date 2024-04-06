@@ -1,7 +1,8 @@
 import ToolButton from "@components/ToolButton";
-import { DrawingTools, ControlTools } from "@core/tools";
-import { ToolLabel, ToolbarPosition } from "@core/types";
+import { DrawingTools, ControlTools, ToolLabel } from "@core/tools";
 import "./style.scss";
+
+export type ToolbarPosition = "top" | "left" | "right" | "bottom";
 
 interface ToolBarProps {
   position: ToolbarPosition;

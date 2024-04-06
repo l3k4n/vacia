@@ -3,54 +3,25 @@
  * See: https://github.com/excalidraw/excalidraw/tree/master
  */
 
-import { SELECTION_ROTATE_HANDLE_OFFSET } from "@constants";
 import {
-  CanvasElementMutations,
-  Point,
-  RotatedBoundingBox,
   TransformHandle,
+  TransformHandleObject,
   TransformingElement,
-  XYCoords,
-} from "@core/types";
-import { getRotatedBoxCoords, rotatePointAroundAnchor } from "@core/utils";
-
-/* gets the surrounding box of 'initialElement' in a single iteration */
-function getInitialElementSurroundingBox(elements: TransformingElement[]) {
-  if (elements.length < 1) return { x: 0, y: 0, w: 0, h: 0, rotate: 0 };
-  if (elements.length === 1) {
-    // if there is a single box return its bounds
-    const { x, y, w, h, rotate } = elements[0].initialElement;
-    return { x, y, w, h, rotate };
-  }
-  let x1 = Infinity;
-  let y1 = Infinity;
-  let x2 = -Infinity;
-  let y2 = -Infinity;
-
-  for (let i = 0; i < elements.length; i += 1) {
-    const [nw, ne, sw, se] = getRotatedBoxCoords(elements[i].initialElement);
-
-    x1 = Math.min(x1, nw.x, ne.x, se.x, sw.x);
-    y1 = Math.min(y1, nw.y, ne.y, se.y, sw.y);
-    x2 = Math.max(x2, nw.x, ne.x, se.x, sw.x);
-    y2 = Math.max(y2, nw.y, ne.y, se.y, sw.y);
-  }
-
-  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1, rotate: 0 };
-}
+} from "./types";
+import { SELECTION_ROTATE_HANDLE_OFFSET } from "@constants";
+import { Point, RotatedBoundingBox, XYCoords } from "@core/types";
+import { rotatePoint } from "@core/utils";
 
 export function getRotateAngle(
-  elements: TransformingElement[],
-  pointerCoords: XYCoords,
-  handle: TransformHandle,
+  { box, handle }: TransformHandleObject,
+  pointer: XYCoords,
 ) {
-  const initialSelectionBox = getInitialElementSurroundingBox(elements);
-  const normalizedPointer = rotatePointAroundAnchor(
-    pointerCoords.x,
-    pointerCoords.y,
-    initialSelectionBox.x + initialSelectionBox.w / 2,
-    initialSelectionBox.y + initialSelectionBox.h / 2,
-    -initialSelectionBox.rotate,
+  const normalizedPointer = rotatePoint(
+    pointer.x,
+    pointer.y,
+    box.x + box.w / 2,
+    box.y + box.h / 2,
+    -box.rotate,
   );
 
   let angle = Math.atan2(
@@ -65,13 +36,12 @@ export function getRotateAngle(
 }
 
 export function getResizeScale(
-  elements: TransformingElement[],
+  { box, handle }: TransformHandleObject,
   pointer: XYCoords,
-  handle: TransformHandle,
 ): Point {
-  const { x, y, w, h, rotate } = getInitialElementSurroundingBox(elements);
+  const { x, y, w, h, rotate } = box;
   const { type } = handle;
-  const normalizedPointer = rotatePointAroundAnchor(
+  const normalizedPointer = rotatePoint(
     pointer.x,
     pointer.y,
     x + w / 2,
@@ -117,7 +87,7 @@ function getSingleElementResizeMutations(
   { initialElement }: TransformingElement,
   [scaleX, scaleY]: Point,
   { anchorX, anchorY }: TransformHandle,
-): CanvasElementMutations {
+) {
   const absScaleX = Math.abs(scaleX);
   const absScaleY = Math.abs(scaleY);
 
@@ -139,9 +109,9 @@ function getSingleElementResizeMutations(
   const cx = x + w / 2;
   const cy = y + h / 2;
 
-  const rotatedPosition = rotatePointAroundAnchor(x, y, prevCx, prevCy, rotate);
-  const rotatedCenter = rotatePointAroundAnchor(cx, cy, prevCx, prevCy, rotate);
-  const normalizedCoords = rotatePointAroundAnchor(
+  const rotatedPosition = rotatePoint(x, y, prevCx, prevCy, rotate);
+  const rotatedCenter = rotatePoint(cx, cy, prevCx, prevCy, rotate);
+  const normalizedCoords = rotatePoint(
     rotatedPosition.x,
     rotatedPosition.y,
     rotatedCenter.x,
@@ -167,7 +137,7 @@ function getMultipleElementResizeMutations(
   { initialElement }: TransformingElement,
   [scaleX, scaleY]: Point,
   { anchorX, anchorY }: TransformHandle,
-): CanvasElementMutations {
+) {
   const scale = Math.max(Math.abs(scaleX), Math.abs(scaleY));
 
   const w = initialElement.w * scale;
@@ -196,28 +166,29 @@ function getMultipleElementResizeMutations(
   return { x, y, w, h, path };
 }
 
-export function getResizeMutations(
+export function resizeElement(
   element: TransformingElement,
+  hit: TransformHandleObject,
   scale: Point,
-  anchor: TransformHandle,
-  multipleElements: boolean,
-): CanvasElementMutations {
+) {
+  const multipleElements = hit.elements.length > 1;
   if (multipleElements) {
-    return getMultipleElementResizeMutations(element, scale, anchor);
+    return getMultipleElementResizeMutations(element, scale, hit.handle);
   }
-  return getSingleElementResizeMutations(element, scale, anchor);
+  return getSingleElementResizeMutations(element, scale, hit.handle);
 }
 
-export function getRotateMutations(
+export function rotateElement(
   { element, initialElement }: TransformingElement,
+  hit: TransformHandleObject,
   angle: number,
-  { anchorX, anchorY }: TransformHandle,
-): CanvasElementMutations {
+) {
+  const { anchorX, anchorY } = hit.handle;
   const elementAngle = angle + initialElement.rotate;
   const cx = element.x + element.w / 2;
   const cy = element.y + element.h / 2;
   /** rotate the element using its center as an anchor and return the offset */
-  const offset = rotatePointAroundAnchor(
+  const offset = rotatePoint(
     cx,
     cy,
     anchorX,
@@ -255,7 +226,7 @@ export function getTransformHandles(box: RotatedBoundingBox, scale: number) {
     handles.forEach((handle) => {
       Object.assign(
         handle,
-        rotatePointAroundAnchor(
+        rotatePoint(
           handle.x,
           handle.y,
           (x1 + x2) / 2,

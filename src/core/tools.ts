@@ -7,33 +7,22 @@ import {
   TextIcon,
 } from "@assets/icons";
 
-// is an object to allow dynamic positions when rendering
 export const ControlTools = {
-  hand: {
-    icon: HandIcon,
-    label: "Hand",
-  },
-  select: {
-    icon: SelectIcon,
-    label: "Selection",
-  },
+  hand: { icon: HandIcon, label: "Hand" },
+  select: { icon: SelectIcon, label: "Selection" },
 } as const;
 
 export const DrawingTools = [
-  {
-    icon: RectIcon,
-    label: "Rectangle",
-  },
-  {
-    icon: EllipseIcon,
-    label: "Ellipse",
-  },
-  {
-    icon: PenIcon,
-    label: "Freedraw",
-  },
-  {
-    icon: TextIcon,
-    label: "Text",
-  },
+  { icon: RectIcon, label: "Rectangle" },
+  { icon: EllipseIcon, label: "Ellipse" },
+  { icon: PenIcon, label: "Freedraw" },
+  { icon: TextIcon, label: "Text" },
 ] as const;
+
+type cT = typeof ControlTools;
+export type ControlToolLabel = cT[keyof cT]["label"];
+
+type dT = typeof DrawingTools;
+export type DrawingToolLabel = dT[number]["label"];
+
+export type ToolLabel = DrawingToolLabel | ControlToolLabel;

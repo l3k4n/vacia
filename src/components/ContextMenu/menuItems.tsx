@@ -1,8 +1,25 @@
-import {
-  ContextMenuButton,
-  ContextMenuDropdown,
-  ContextMenuItem,
-} from "@core/types";
+export interface ContextMenuSeparator {
+  type: "separator";
+}
+
+export interface ContextMenuButton {
+  type: "button";
+  label: string;
+  icon?: string | null;
+  binding?: string;
+  exec: () => void;
+}
+
+export interface ContextMenuDropdown {
+  type: "dropdown";
+  label: string;
+  options: (ContextMenuButton | ContextMenuSeparator)[];
+}
+
+export type ContextMenuItem =
+  | ContextMenuButton
+  | ContextMenuDropdown
+  | ContextMenuSeparator;
 
 interface Props<T extends ContextMenuItem> {
   item: T;

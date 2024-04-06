@@ -7,14 +7,14 @@ interface RadioToolProps {
   name: string;
   checked: boolean;
   onChange?(): void;
-  testId: string;
+  testId?: string;
 }
 interface ButtonToolProps {
   type: "button";
   label: string;
   children?: React.ReactNode;
   onClick?(event: React.MouseEvent): void;
-  testId: string;
+  testId?: string;
 }
 type ToolProps = RadioToolProps | ButtonToolProps;
 

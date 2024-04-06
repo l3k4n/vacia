@@ -1,146 +1,175 @@
 import React from "react";
-import { ContextMenu } from "@components/ContextMenu";
+import ContextMenu from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
-import QuickActions from "@components/QuickActions";
+import QuickActions, { QuickActionType } from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
-import WysiwygEditor from "@components/WysiwygEditor";
-import {
-  ELEMENT_PRECISION,
-  USERMODE,
-  ZOOM_STEP,
-  DBL_CLICK_TIMEOUT,
-  ROTATION_SNAP_THRESHOLD,
-} from "@constants";
+import { USERMODE, ZOOM_STEP, ROTATION_SNAP_THRESHOLD } from "@constants";
 import { ActionManager } from "@core/actionManager";
 import { CoreActions } from "@core/actionManager/coreActions";
 import { CoreBindings } from "@core/actionManager/coreBindings";
-import { createAppState, createPointerState } from "@core/createState";
-import DblClickResolver from "@core/dblclick";
+import * as DefaultObjects from "@core/defaultObjects";
 import ElementLayer from "@core/elementLayer";
+import { FreedrawHandler, TextHandler } from "@core/elements";
+import { ElementHandler } from "@core/elements/handler";
 import {
-  createFreedrawElement,
-  createShapeElement,
-  createTextElement,
-} from "@core/elements";
-import {
-  createTransformingElements,
-  getTextDimensionsForElement,
-  getTextElementCssStyles,
-  isElementNegligible,
-} from "@core/elements/miscellaneous";
-import {
-  getTransformHandles,
-  rescalePath,
-  getRotateMutations,
-  getRotateAngle,
   getResizeScale,
-  getResizeMutations,
+  getRotateAngle,
+  getTransformHandles,
+  resizeElement,
+  rotateElement,
 } from "@core/elements/transform";
 import {
-  hitTestElementAgainstUnrotatedBox,
-  hitTestCoordsAgainstUnrotatedBox,
-  hitTestCoordsAgainstElement,
-  hitTestCoordsAgainstTransformHandles,
-} from "@core/hitTest";
-import renderFrame from "@core/renderer";
-import {
-  AppState,
   CanvasElement,
-  PointerState,
-  BoundingBox,
-  ToolLabel,
-  XYCoords,
-  CanvasElementMutations,
   TransformingElement,
-  TransformHandle,
-  ContextMenuItem,
-  AppData,
-} from "@core/types";
+  CanvasObject,
+} from "@core/elements/types";
 import {
-  getSurroundingBoundingBox,
-  invertNegativeBoundingBox,
-} from "@core/utils";
-import {
-  getScreenCenterCoords,
-  getNewZoomState,
-  snapVirtualCoordsToGrid,
-  screenOffsetToVirtualOffset,
-  virtualOffsetToScreenOffset,
-} from "@core/viewport";
+  hitTestRotatedBoxInBox,
+  hitTestRotatedBox,
+  hitTestTransformHandles,
+} from "@core/hitTest";
+import { Errors } from "@core/logs";
+import { CanvasPointer } from "@core/pointer";
+import renderFrame from "@core/renderer";
+import { DrawingToolLabel, ToolLabel } from "@core/tools";
+import { AppState, XYCoords, BoundingBox } from "@core/types";
+import * as utils from "@core/utils";
 import "@css/App.scss";
 
 declare global {
   interface Window {
-    appData: AppData;
+    appData: {
+      state: () => Readonly<AppState>;
+      creatingElement: () => CanvasElement | null;
+      editingElement: () => CanvasElement | null;
+      transformingElements: () => TransformingElement[];
+      pointer: () => CanvasPointer | null;
+      elementLayer: () => ElementLayer;
+      setState: (data: Pick<AppState, keyof AppState>) => void;
+    };
   }
 }
 
+type ElementHandlerMap = Map<CanvasElement["type"], ElementHandler>;
+
 class App extends React.Component<Record<string, never>, AppState> {
   canvas: HTMLCanvasElement | null = null;
-  pointer: PointerState | null = null;
+  pointer: CanvasPointer | null = null;
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
+  elementHandlers: ElementHandlerMap = new Map();
+  actionManager: ActionManager;
+  quickActions: QuickActionType[];
+
+  creatingElement: CanvasElement | null = null;
   editingElement: CanvasElement | null = null;
   transformingElements: TransformingElement[] = [];
-  dblClickResolver: DblClickResolver;
-  actionManager: ActionManager;
+
+  getters = {
+    state: () => this.state,
+    creatingElement: () => this.creatingElement,
+    editingElement: () => this.editingElement,
+    transformingElements: () => this.transformingElements,
+    pointer: () => this.pointer,
+    elementLayer: () => this.elementLayer,
+    setState: (data: Pick<AppState, keyof AppState>) => this.setState(data),
+  };
 
   constructor(props: Record<string, never>) {
     super(props);
-    this.state = createAppState();
 
-    const appData = Object.freeze(
-      Object.defineProperties(
-        {},
-        {
-          state: { get: () => this.state },
-          pointer: { get: () => this.pointer },
-          editingElement: { get: () => this.editingElement },
-          transformingElements: { get: () => this.transformingElements },
-          elementLayer: { get: () => this.elementLayer },
-          setState: { get: () => this.setState.bind(this) },
-          setEditingElement: {
-            get: () => (element: CanvasElement | null) => {
-              this.editingElement = element;
-            },
-          },
-        },
-      ),
-    ) as AppData;
-
-    this.dblClickResolver = new DblClickResolver({
-      timeout: DBL_CLICK_TIMEOUT,
-      maxPointerOffset: 100,
-    });
-    this.actionManager = new ActionManager(appData);
+    this.state = DefaultObjects.defaultAppState();
+    this.quickActions = DefaultObjects.defaultQuickActions();
+    this.actionManager = new ActionManager(this.getters);
     this.actionManager.registerActions(CoreActions);
     this.actionManager.registerBindings(CoreBindings);
+    this.setElementHandlers();
 
-    if (import.meta.env.DEV) window.appData = appData;
+    if (import.meta.env.DEV) window.appData = this.getters;
   }
 
-  private getFirstElementAtCoords(coords: XYCoords) {
-    const allElements = this.elementLayer.getAllElements();
-    let hitElement: CanvasElement | null = null;
+  getElementHandler(element: CanvasElement) {
+    const handler = this.elementHandlers.get(element.type);
+    if (!handler) throw Errors.UnknownElement(element.type);
+    return handler;
+  }
 
-    for (let i = allElements.length - 1; i > -1; i -= 1) {
-      const element = allElements[i];
-
-      if (hitTestCoordsAgainstElement(element, coords)) {
-        hitElement = element;
+  getElementHandlerFromTool(tool: DrawingToolLabel) {
+    let handler: ElementHandler | undefined;
+    switch (tool) {
+      case "Freedraw":
+        handler = this.elementHandlers.get("freedraw");
         break;
+      case "Text":
+        handler = this.elementHandlers.get("text");
+        break;
+      default:
+        break;
+    }
+    if (!handler) throw Errors.UnknownTool(tool);
+    return handler;
+  }
+
+  getElementAtCoords(coords: XYCoords): CanvasElement | null {
+    const elements = this.elementLayer.getAllElements();
+
+    for (let i = 0; i < elements.length; i += 1) {
+      const element = elements[i];
+      const handler = this.getElementHandler(element);
+
+      if (handler.hitTest(element, coords)) {
+        return element;
       }
     }
-    return hitElement;
+
+    return null;
   }
 
-  private getAllElementsWithinBox(box: BoundingBox) {
+  getObjectAtCoords(coords: XYCoords): CanvasObject {
+    const selectedElements = this.elementLayer.getSelectedElements();
+
+    const hitElement = this.getElementAtCoords(coords);
+
+    if (hitElement) return { type: "element", element: hitElement };
+
+    if (selectedElements.length) {
+      const selectionBox = utils.getSurroundingBoundingBox(selectedElements);
+      if (hitTestRotatedBox(selectionBox, coords)) {
+        return {
+          type: "selectionBox",
+          elements: selectedElements,
+          box: selectionBox,
+          // if element is hit and selection is also hit, then element was
+          // definitely hit through the selection
+          hitElement,
+        };
+      }
+
+      const { zoom } = this.state;
+      const handles = getTransformHandles(selectionBox, zoom);
+      const hitHandle = hitTestTransformHandles(handles, coords, zoom);
+
+      if (hitHandle) {
+        return {
+          type: "transformHandle",
+          elements: selectedElements,
+          box: selectionBox,
+          handle: hitHandle,
+        };
+      }
+    }
+
+    // nothing hit
+    return { type: null };
+  }
+
+  private getElementsWithinBox(box: BoundingBox) {
     const allElements = this.elementLayer.getAllElements();
     const hitElements: CanvasElement[] = [];
 
     for (let i = 0; i < allElements.length; i += 1) {
       const element = allElements[i];
 
-      if (hitTestElementAgainstUnrotatedBox(element, box)) {
+      if (hitTestRotatedBoxInBox(element, box)) {
         hitElements.push(element);
       }
     }
@@ -148,43 +177,35 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
-  private createElementFromTool(
-    tool: ToolLabel,
-    position: XYCoords,
-    snapElementToGrid: boolean,
-  ) {
-    let element: CanvasElement | null = null;
-    const elementPosition = snapElementToGrid
-      ? position
-      : snapVirtualCoordsToGrid(position, this.state);
-    const box = { ...elementPosition, w: 0, h: 0 };
-    const unsnappedBox = { ...position, w: 0, h: 0 };
-    switch (tool) {
-      case "Ellipse":
-        element = createShapeElement({ shape: "ellipse", ...box });
-        break;
-      case "Rectangle":
-        element = createShapeElement({ shape: "rect", ...box });
-        break;
-      case "Freedraw":
-        element = createFreedrawElement({ path: [[0, 0]], ...unsnappedBox });
-        break;
-      case "Text": {
-        element = createTextElement({ text: "", ...unsnappedBox });
-        break;
-      }
-      default:
-    }
+  private startEditing(element: CanvasElement) {
+    const handler = this.getElementHandler(element);
 
-    return element;
+    handler.onEditStart(element);
+    this.setState({ usermode: USERMODE.EDITING });
+    this.creatingElement = null;
+    this.editingElement = element;
+    this.transformingElements.length = 0;
+  }
+
+  private stopEditing(element: CanvasElement) {
+    const handler = this.getElementHandler(element);
+
+    handler.onEditEnd(element);
+    this.setState({ usermode: USERMODE.IDLE });
+    this.creatingElement = null;
+    this.editingElement = null;
+    this.transformingElements.length = 0;
   }
 
   // setup functions
   private setCanvasRef = (canvas: HTMLCanvasElement) => {
-    if (canvas) {
-      this.canvas = canvas;
-    }
+    if (canvas) this.canvas = canvas;
   };
+
+  private setElementHandlers() {
+    this.elementHandlers.set("freedraw", new FreedrawHandler(this.getters));
+    this.elementHandlers.set("text", new TextHandler(this.getters));
+  }
 
   // local event handlers
   private onToolChange = (tool: ToolLabel) => {
@@ -197,62 +218,254 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onDesignMenuUpdate = (
     elements: CanvasElement[],
-    mutations: CanvasElementMutations,
+    mutations: object,
   ) => {
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
-      if (element.type === "freedraw") {
-        let scaleX = (mutations.w ?? element.w) / element.w;
-        let scaleY = (mutations.h ?? element.h) / element.h;
-
-        if (!Number.isFinite(scaleX)) scaleX = 1;
-        if (!Number.isFinite(scaleY)) scaleY = 1;
-        if (scaleX !== 1 || scaleY !== 1) {
-          // eslint-disable-next-line no-param-reassign
-          mutations.path = rescalePath(element.path, scaleX, scaleY, 0, 0);
-        }
-      }
       this.elementLayer.mutateElement(element, mutations);
     }
   };
 
-  private onElementDrag(
-    e: PointerEvent,
-    pointer: PointerState,
-    elements: TransformingElement[],
-  ) {
-    let dragOffset = { ...pointer.drag.offset };
+  // event handling
+  private addEventListeners = () => {
+    window.addEventListener("pointermove", this.onWindowPointerMove);
+    window.addEventListener("pointerup", this.onWindowPointerUp);
+    window.addEventListener("wheel", this.onWindowWheel, { passive: false });
+  };
 
-    if (!e.ctrlKey) {
-      // snap position if ctrl key is not pressed
-      dragOffset = snapVirtualCoordsToGrid(dragOffset, this.state);
+  private removeEventListeners() {
+    window.removeEventListener("pointermove", this.onWindowPointerMove);
+    window.removeEventListener("pointerup", this.onWindowPointerUp);
+    window.removeEventListener("wheel", this.onWindowWheel);
+  }
+
+  private onCanvasPointerDown = (e: React.PointerEvent) => {
+    if (e.buttons !== 1) return; // only handle primary key
+
+    this.pointer = new CanvasPointer(e.nativeEvent, this.getters.state);
+    const pointerPosition = this.pointer.currentPosition;
+
+    if (this.state.usermode === USERMODE.EDITING) {
+      const hit = this.getObjectAtCoords(pointerPosition);
+      if (hit.type === "element" && hit.element === this.editingElement) return;
+      // if user click anything else while editing, editing has ended
+      this.stopEditing(this.editingElement!);
+      // if editing ends, continue normal flow
+    }
+
+    if (this.state.activeTool === "Hand") return;
+    if (this.state.activeTool === "Selection") {
+      const hit = this.getObjectAtCoords(pointerPosition);
+      this.pointer.hit = hit;
+
+      switch (hit.type) {
+        case "element": {
+          const elements = [hit.element];
+          if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
+          this.elementLayer.selectElements(elements);
+          this.setState({ usermode: USERMODE.DRAGGING });
+          this.transformingElements = utils.createTransformElements(elements);
+          break;
+        }
+
+        case "selectionBox":
+          this.setState({ usermode: USERMODE.DRAGGING });
+          this.transformingElements = utils.createTransformElements(
+            hit.elements,
+          );
+          break;
+
+        case "transformHandle": {
+          const mode =
+            hit.handle.type === "rotate"
+              ? USERMODE.ROTATING
+              : USERMODE.RESIZING;
+
+          this.setState({ usermode: mode });
+          this.transformingElements = utils.createTransformElements(
+            hit.elements,
+          );
+          break;
+        }
+
+        default:
+          if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
+      }
+      return;
+    }
+
+    const handler = this.getElementHandlerFromTool(this.state.activeTool);
+    const element = handler.create({ ...pointerPosition, w: 0, h: 0 });
+
+    this.elementLayer.addElement(element);
+    this.elementLayer.unselectAllElements();
+    this.elementLayer.selectElements([element]);
+    this.creatingElement = element;
+    this.setState({ usermode: USERMODE.CREATING });
+    handler.onCreateStart(element, this.pointer, e.nativeEvent);
+  };
+
+  private onWindowPointerMove = (e: PointerEvent) => {
+    if (!this.pointer) return;
+    this.pointer.move(e);
+
+    switch (this.state.usermode) {
+      case USERMODE.EDITING:
+        break;
+
+      case USERMODE.CREATING: {
+        this.onElementCreate(this.creatingElement!, e);
+        break;
+      }
+
+      case USERMODE.DRAGGING:
+        this.onElementDrag(this.transformingElements, e);
+        break;
+
+      case USERMODE.ROTATING:
+        this.onElementRotate(this.transformingElements, e);
+        break;
+
+      case USERMODE.RESIZING:
+        this.onElementResize(this.transformingElements, e);
+        break;
+
+      case USERMODE.IDLE: {
+        /** pointer drag is treated as a box selection */
+        const { dragBox } = this.pointer;
+        const selectionBox = utils.normalizeBox(dragBox);
+        const selectedElements = this.getElementsWithinBox(selectionBox);
+
+        this.setState({ selectionHighlight: selectionBox });
+        this.elementLayer.selectElements(selectedElements);
+        break;
+      }
+
+      default:
+        throw Errors.UnknownUserMode(this.state.usermode);
+    }
+  };
+
+  private onWindowPointerUp = (e: PointerEvent) => {
+    if (!this.pointer) return;
+
+    switch (this.state.usermode) {
+      case USERMODE.EDITING:
+      case USERMODE.IDLE:
+        break;
+
+      case USERMODE.CREATING: {
+        const element = this.creatingElement!;
+        const handler = this.getElementHandler(element);
+
+        handler.onCreateEnd(element, e);
+
+        if (
+          handler.features_supportsEditing &&
+          handler.features_startEditingOnCreateEnd
+        ) {
+          this.startEditing(element);
+          break;
+        }
+
+        this.setState({ usermode: USERMODE.IDLE });
+        this.creatingElement = null;
+        this.editingElement = null;
+        this.transformingElements.length = 0;
+        break;
+      }
+
+      default:
+        this.setState({ usermode: USERMODE.IDLE });
+        this.creatingElement = null;
+        this.editingElement = null;
+        this.transformingElements.length = 0;
+    }
+
+    this.setState({ selectionHighlight: null });
+    this.pointer = null;
+  };
+
+  private onCanvasDblClick = (e: React.MouseEvent) => {
+    // when user double clicks, attempt to edit selected element
+
+    if (this.state.activeTool !== "Selection") return;
+    if (this.state.usermode === USERMODE.EDITING) return;
+
+    const pointerCoords = CanvasPointer.getCoords(e.nativeEvent, this.state);
+    const doubleClickedElement = this.getElementAtCoords(pointerCoords);
+    if (!doubleClickedElement) return;
+
+    const handler = this.getElementHandler(doubleClickedElement);
+    if (handler.features_supportsEditing) {
+      this.startEditing(doubleClickedElement);
+    }
+  };
+
+  private onCanvasContextMenu = (e: React.MouseEvent) => {
+    const pointerCoords = CanvasPointer.getCoords(e.nativeEvent, this.state);
+
+    switch (this.state.usermode) {
+      case USERMODE.EDITING: {
+        const element = this.getElementAtCoords(pointerCoords);
+        if (element === this.editingElement) e.preventDefault();
+        else this.stopEditing(this.editingElement!);
+        break;
+      }
+
+      case USERMODE.CREATING: {
+        const element = this.creatingElement!;
+        const handler = this.getElementHandler(element);
+
+        const ev = ElementHandler.EventFromMouse(e.nativeEvent);
+        handler.onCreateEnd(element, ev);
+        this.setState({ usermode: USERMODE.IDLE });
+        this.creatingElement = null;
+        break;
+      }
+
+      default:
+    }
+  };
+
+  private onElementCreate(element: CanvasElement, e: PointerEvent) {
+    if (!this.pointer) return;
+    const handler = this.getElementHandler(element);
+    handler.onCreateDrag(element, this.pointer, e);
+  }
+
+  private onElementDrag(elements: TransformingElement[], e: PointerEvent) {
+    const { offset, hit } = this.pointer!;
+
+    if (hit.type !== "element" && hit.type !== "selectionBox") {
+      throw Errors.ImpossibleState(
+        `attempted to drag while pointer hit: '${hit.type}'`,
+      );
     }
 
     for (let i = 0; i < elements.length; i += 1) {
       const { element, initialElement } = elements[i];
+      const { x, y } = initialElement;
+      let position = { x: x + offset.x, y: y + offset.y };
 
-      this.elementLayer.mutateElement(element, {
-        x: initialElement.x + dragOffset.x,
-        y: initialElement.y + dragOffset.y,
-      });
+      if (!e.ctrlKey) position = utils.snapToGrid(position, this.state.grid);
+
+      this.elementLayer.mutateElement(element, position);
     }
   }
 
-  private onElementRotate(
-    e: PointerEvent,
-    pointer: PointerState,
-    elements: TransformingElement[],
-    handle: TransformHandle,
-  ) {
-    const virtualPointerCoords = screenOffsetToVirtualOffset(
-      {
-        x: pointer.origin.x + pointer.drag.offset.x,
-        y: pointer.origin.y + pointer.drag.offset.y,
-      },
-      this.state,
-    );
+  private onElementRotate(elements: TransformingElement[], e: PointerEvent) {
+    if (!this.pointer) return;
 
-    let angle = getRotateAngle(elements, virtualPointerCoords, handle);
+    const { hit } = this.pointer!;
+    if (hit.type !== "transformHandle") {
+      throw Errors.ImpossibleState(
+        `attempted to rotate while dragging: '${hit.type}'`,
+      );
+    }
+
+    const position = this.pointer!.currentPosition;
+    let angle = getRotateAngle(hit, position);
 
     if (!e.ctrlKey) {
       // snap rotation if ctrl is not pressed
@@ -260,268 +473,34 @@ class App extends React.Component<Record<string, never>, AppState> {
       angle = Math.round(angle / threshold) * threshold;
     }
 
-    elements.forEach((transformingElement) => {
-      this.elementLayer.mutateElement(
-        transformingElement.element,
-        getRotateMutations(transformingElement, angle, handle),
-      );
-    });
+    for (let i = 0; i < elements.length; i += 1) {
+      const tElement = elements[i];
+      const mutations = rotateElement(tElement, hit, angle);
+      this.elementLayer.mutateElement(tElement.element, mutations);
+    }
   }
 
-  private onElementResize(
-    e: PointerEvent,
-    pointer: PointerState,
-    elements: TransformingElement[],
-    handle: TransformHandle,
-  ) {
-    let virtualPointerCoords = screenOffsetToVirtualOffset(
-      {
-        x: pointer.origin.x + pointer.drag.offset.x,
-        y: pointer.origin.y + pointer.drag.offset.y,
-      },
-      this.state,
-    );
+  private onElementResize(elements: TransformingElement[], e: PointerEvent) {
+    if (!this.pointer) return;
 
+    const { hit } = this.pointer;
+    if (hit.type !== "transformHandle") {
+      throw Errors.ImpossibleState(
+        `attempted to resize while dragging: '${hit.type}'`,
+      );
+    }
+
+    let position = this.pointer.currentPosition;
     if (!e.ctrlKey) {
       // snap pointer if ctrl is not pressed (this makes the scale snapped)
-      virtualPointerCoords = snapVirtualCoordsToGrid(
-        virtualPointerCoords,
-        this.state,
-      );
+      position = utils.snapToGrid(position, this.state.grid);
     }
 
-    const scale = getResizeScale(elements, virtualPointerCoords, handle);
-    const multiElement = elements.length > 1;
-
-    elements.forEach((transformingElement) => {
-      this.elementLayer.mutateElement(
-        transformingElement.element,
-        getResizeMutations(transformingElement, scale, handle, multiElement),
-      );
-    });
-  }
-
-  private onElementCreation(
-    e: PointerEvent,
-    pointer: PointerState,
-    element: CanvasElement,
-  ) {
-    switch (element.type) {
-      case "shape": {
-        const elementBox = {
-          ...screenOffsetToVirtualOffset(pointer.origin, this.state),
-          w: pointer.drag.offset.x / this.state.zoom,
-          h: pointer.drag.offset.y / this.state.zoom,
-        };
-
-        // when the position should be snapped
-        if (!pointer.ctrlKey) {
-          const position = snapVirtualCoordsToGrid(elementBox, this.state);
-          Object.assign(elementBox, position);
-        }
-
-        // when the size should be snapped
-        if (!e.ctrlKey) {
-          const fallbackSize = this.state.grid.size;
-          // absolute position of the w and h coords
-          const sizeCoords = snapVirtualCoordsToGrid(
-            { x: elementBox.x + elementBox.w, y: elementBox.y + elementBox.h },
-            this.state,
-          );
-
-          // use calculated size or fallback to prevent 0 values
-          elementBox.w = sizeCoords.x - elementBox.x || fallbackSize;
-          elementBox.h = sizeCoords.y - elementBox.y || fallbackSize;
-        }
-
-        /** box created from pointer origin to its current position */
-        const normalizedBox = invertNegativeBoundingBox(elementBox);
-        this.elementLayer.mutateElement(element, {
-          ...normalizedBox.box,
-          flippedX: normalizedBox.didFlipX,
-          flippedY: normalizedBox.didFlipY,
-        });
-        break;
-      }
-
-      case "freedraw": {
-        const point = screenOffsetToVirtualOffset(
-          {
-            x: pointer.origin.x + pointer.drag.offset.x,
-            y: pointer.origin.y + pointer.drag.offset.y,
-          },
-          this.state,
-        );
-
-        const mutations = {
-          x: element.x,
-          y: element.y,
-          w: element.w,
-          h: element.h,
-          // reuse `path` sice it will be destroyed
-          path: element.path,
-        };
-
-        const dx = Math.max(mutations.x - point.x, 0);
-        const dy = Math.max(mutations.y - point.y, 0);
-
-        mutations.x -= dx;
-        mutations.y -= dy;
-        mutations.w = Math.max(mutations.w, point.x - mutations.x) + dx;
-        mutations.h = Math.max(mutations.h, point.y - mutations.y) + dy;
-        mutations.path.push([
-          /** subtract x, y coords to make point relative to element position
-           * then set precision */
-          +(point.x - mutations.x).toFixed(ELEMENT_PRECISION),
-          +(point.y - mutations.y).toFixed(ELEMENT_PRECISION),
-        ]);
-
-        /** apply changes on the x or y coords to path points */
-        if (dx || dy) {
-          mutations.path.forEach((pathPoint) => {
-            // eslint-disable-next-line no-param-reassign
-            pathPoint[0] = +(pathPoint[0] + dx).toFixed(2);
-            // eslint-disable-next-line no-param-reassign
-            pathPoint[1] = +(pathPoint[1] + dy).toFixed(2);
-          });
-        }
-        // apply mutations
-        this.elementLayer.mutateElement(element, mutations);
-        break;
-      }
-
-      default:
-        break;
-    }
-  }
-
-  // event handling
-  private addEventListeners = () => {
-    window.addEventListener("pointermove", this.onWindowPointerMove);
-    window.addEventListener("pointerup", this.onWindowPointerUp);
-    window.addEventListener("wheel", this.onWindowWheel, { passive: false });
-    this.dblClickResolver.setEventListener(this.onCanvasDblClick.bind(this));
-  };
-
-  private onCanvasPointerDown = (e: React.PointerEvent) => {
-    this.dblClickResolver.handleEvent(e.nativeEvent);
-
-    if (e.buttons === 1) {
-      this.pointer = createPointerState(e.nativeEvent);
-      /** pointer coords in virtual space */
-      const virtualPointerCoords = screenOffsetToVirtualOffset(
-        this.pointer.origin,
-        this.state,
-      );
-
-      switch (this.state.activeTool) {
-        case "Hand":
-          break;
-        case "Selection": {
-          const selectedElements = this.elementLayer.getSelectedElements();
-          const selectionBox = getSurroundingBoundingBox(selectedElements);
-          const transformHandles = getTransformHandles(
-            selectionBox,
-            this.state.zoom,
-          );
-          const hitHandle = hitTestCoordsAgainstTransformHandles(
-            transformHandles,
-            virtualPointerCoords,
-            this.state,
-          );
-          const isPointerInSelectionBox = hitTestCoordsAgainstUnrotatedBox(
-            virtualPointerCoords,
-            selectionBox,
-          );
-          const hitElement = this.getFirstElementAtCoords(virtualPointerCoords);
-
-          if (hitHandle) {
-            const mode =
-              hitHandle.type === "rotate"
-                ? USERMODE.ROTATING
-                : USERMODE.RESIZING;
-
-            this.setState({ usermode: mode });
-            this.pointer.hit.transformHandle = hitHandle;
-            this.transformingElements =
-              createTransformingElements(selectedElements);
-          } else if (isPointerInSelectionBox) {
-            this.setState({ usermode: USERMODE.DRAGGING });
-            this.pointer.hit.element = hitElement;
-            this.transformingElements =
-              createTransformingElements(selectedElements);
-          } else if (hitElement) {
-            if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
-            this.pointer.hit.element = hitElement;
-            this.elementLayer.selectElements([hitElement]);
-            this.setState({ usermode: USERMODE.DRAGGING });
-            this.transformingElements = createTransformingElements(
-              this.elementLayer.getSelectedElements(),
-            );
-          } else {
-            // this else block represents when pointer hits nothing
-            if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
-          }
-          break;
-        }
-        default: {
-          const element = this.createElementFromTool(
-            this.state.activeTool,
-            virtualPointerCoords,
-            this.pointer.ctrlKey,
-          );
-          if (element) {
-            // set mode, select and start editing element
-            this.elementLayer.addElement(element);
-            this.elementLayer.unselectAllElements();
-            this.elementLayer.selectElements([element]);
-            this.editingElement = element;
-            this.setState({ usermode: USERMODE.CREATING });
-          }
-        }
-      }
-    }
-  };
-
-  private onCanvasContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const items: ContextMenuItem[] = [];
-
-    const virtualPointerCoords = screenOffsetToVirtualOffset(
-      e.nativeEvent,
-      this.state,
-    );
-    const hitElement = this.getFirstElementAtCoords(virtualPointerCoords);
-
-    if (hitElement) {
-      items.push({
-        type: "button",
-        label: "Delete",
-        exec: () => this.elementLayer.deleteElement(hitElement),
-      });
-    } else {
-      items.push({
-        type: "button",
-        label: "Select All",
-        exec: () => {
-          const elements = this.elementLayer.getAllElements();
-          this.elementLayer.selectElements(elements);
-        },
-      });
-    }
-
-    this.setState({ contextMenu: { x: e.clientX, y: e.clientY, items } });
-  };
-
-  private onCanvasDblClick(e: PointerEvent) {
-    // Note: since dblclick ends with pointerup, `this.pointer` will be null
-    if (this.state.activeTool === "Selection") {
-      const virtualPointerCoords = screenOffsetToVirtualOffset(e, this.state);
-
-      const hitElement = this.getFirstElementAtCoords(virtualPointerCoords);
-      if (hitElement?.type === "text") {
-        this.editingElement = hitElement;
-      }
+    const scale = getResizeScale(hit, position);
+    for (let i = 0; i < elements.length; i += 1) {
+      const tElement = elements[i];
+      const mutations = resizeElement(tElement, hit, scale);
+      this.elementLayer.mutateElement(tElement.element, mutations);
     }
   }
 
@@ -530,131 +509,9 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (e.metaKey || e.ctrlKey) {
       const direction = -Math.sign(e.deltaY);
       const value = this.state.zoom + direction * ZOOM_STEP;
-      const zoomState = getNewZoomState(value, e, this.state);
+      const zoomState = utils.getNewZoomState(value, e, this.state);
 
       this.setState(zoomState);
-    }
-  };
-
-  private onWindowPointerUp = (e: PointerEvent) => {
-    if (!this.pointer) return;
-
-    let newUserMode = USERMODE.IDLE;
-
-    switch (this.state.usermode) {
-      case USERMODE.CREATING: {
-        const element = this.editingElement!;
-        if (element.type === "text") {
-          // WysiwygEditor determines when user is done creating, so make sure
-          // mode is still set to `CREATING`
-          newUserMode = USERMODE.CREATING;
-          this.editingElement = element;
-        } else if (isElementNegligible(element, this.state)) {
-          this.elementLayer.deleteElement(element);
-          this.editingElement = null;
-        }
-        break;
-      }
-
-      case USERMODE.DRAGGING: {
-        if (!this.pointer.drag.occurred) {
-          // after pointer is released, if drag did not occur, select the
-          // element under pointer if one exists.
-          this.elementLayer.unselectAllElements();
-          if (this.pointer.hit.element) {
-            this.elementLayer.selectElements([this.pointer.hit.element]);
-          }
-        }
-
-        break;
-      }
-
-      default:
-    }
-
-    // transformingElements should be recreated on every pointerdown
-    this.transformingElements.length = 0;
-    this.pointer = null;
-    this.setState({
-      usermode: newUserMode,
-      selectionHighlight: null,
-    });
-  };
-
-  private onWindowPointerMove = (e: PointerEvent) => {
-    if (!this.pointer) return;
-
-    this.pointer.drag = {
-      occurred: true,
-      previousOffset: this.pointer.drag.offset,
-      offset: {
-        x: e.clientX - this.pointer.origin.x,
-        y: e.clientY - this.pointer.origin.y,
-      },
-    };
-
-    if (this.state.activeTool === "Hand") {
-      const pointerDragChange = {
-        x: this.pointer.drag.offset.x - this.pointer.drag.previousOffset.x,
-        y: this.pointer.drag.offset.y - this.pointer.drag.previousOffset.y,
-      };
-
-      this.setState({
-        scrollOffset: {
-          x: this.state.scrollOffset.x + pointerDragChange.x,
-          y: this.state.scrollOffset.y + pointerDragChange.y,
-        },
-      });
-      return;
-    }
-
-    switch (this.state.usermode) {
-      case USERMODE.CREATING: {
-        if (this.editingElement) {
-          this.onElementCreation(e, this.pointer, this.editingElement);
-        }
-        break;
-      }
-
-      case USERMODE.DRAGGING:
-        this.onElementDrag(e, this.pointer, this.transformingElements);
-        break;
-
-      case USERMODE.ROTATING:
-        if (this.pointer.hit.transformHandle?.type === "rotate") {
-          this.onElementRotate(
-            e,
-            this.pointer,
-            this.transformingElements,
-            this.pointer.hit.transformHandle,
-          );
-        }
-        break;
-
-      case USERMODE.RESIZING:
-        if (this.pointer.hit.transformHandle) {
-          this.onElementResize(
-            e,
-            this.pointer,
-            this.transformingElements,
-            this.pointer.hit.transformHandle,
-          );
-        }
-        break;
-
-      default: {
-        /** pointer drag is treated as a box selection */
-        const { box: selectionBox } = invertNegativeBoundingBox({
-          ...screenOffsetToVirtualOffset(this.pointer.origin, this.state),
-          w: this.pointer.drag.offset.x / this.state.zoom,
-          h: this.pointer.drag.offset.y / this.state.zoom,
-        });
-
-        this.setState({ selectionHighlight: selectionBox });
-        this.elementLayer.selectElements(
-          this.getAllElementsWithinBox(selectionBox),
-        );
-      }
     }
   };
 
@@ -673,62 +530,20 @@ class App extends React.Component<Record<string, never>, AppState> {
       elements: this.elementLayer.getAllElements(),
       selectedElements: this.elementLayer.getSelectedElements(),
       hideBoundingBoxes: modesToHideBoundingBox.includes(this.state.usermode),
+      elementHandlers: this.elementHandlers,
     });
   }
 
-  // rendering
-  renderWysiwygEditor() {
-    const { editingElement } = this;
-
-    return (
-      <div className="overlays">
-        {editingElement?.type === "text" && (
-          <WysiwygEditor
-            coords={virtualOffsetToScreenOffset(editingElement, this.state)}
-            initialValue={editingElement.text}
-            styles={getTextElementCssStyles(editingElement)}
-            onChange={(text) => {
-              // recalculate element size since text changed
-              const newSize = getTextDimensionsForElement(text, editingElement);
-              const mutations = { ...newSize, text };
-              this.elementLayer.mutateElement(editingElement, mutations);
-            }}
-            onSubmit={(text) => {
-              this.elementLayer.mutateElement(editingElement, { text });
-              this.editingElement = null;
-              this.setState({ usermode: USERMODE.IDLE });
-            }}
-          />
-        )}
-      </div>
-    );
+  componentWillUnmount() {
+    this.removeEventListeners();
   }
 
+  // rendering
   render() {
     const canvasWidth = this.state.appBounds.w;
     const canvasHeight = this.state.appBounds.h;
     const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
     const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
-
-    const handleZoomInAction = () => {
-      const zoomState = getNewZoomState(
-        this.state.zoom + ZOOM_STEP,
-        getScreenCenterCoords(this.state),
-        this.state,
-      );
-
-      this.setState(zoomState);
-    };
-    const handleZoomOutAction = () => {
-      const zoomState = getNewZoomState(
-        this.state.zoom - ZOOM_STEP,
-        getScreenCenterCoords(this.state),
-        this.state,
-      );
-
-      this.setState(zoomState);
-    };
-
     const selectedElements = this.elementLayer.getSelectedElements();
 
     return (
@@ -740,7 +555,6 @@ class App extends React.Component<Record<string, never>, AppState> {
             onChange={this.onDesignMenuUpdate}
           />
         )}
-        {this.renderWysiwygEditor()}
         <div className="tools">
           <ToolBar
             position={this.state.toolbarPosition}
@@ -748,8 +562,8 @@ class App extends React.Component<Record<string, never>, AppState> {
             onToolChange={this.onToolChange}
           />
           <QuickActions
-            onZoomIn={handleZoomInAction}
-            onZoomOut={handleZoomOutAction}
+            actionManager={this.actionManager}
+            actions={this.quickActions}
           />
           {this.state.contextMenu && (
             <ContextMenu
@@ -769,15 +583,12 @@ class App extends React.Component<Record<string, never>, AppState> {
           style={{ width: canvasWidth, height: canvasHeight }}
           ref={this.setCanvasRef}
           onPointerDown={this.onCanvasPointerDown}
-          // using window events would require checking `event.target`
-          onPointerUp={(e) => this.dblClickResolver.handleEvent(e.nativeEvent)}
-          onPointerMove={(e) =>
-            this.dblClickResolver.handleEvent(e.nativeEvent)
-          }
+          onDoubleClick={this.onCanvasDblClick}
           onContextMenu={this.onCanvasContextMenu}
         />
       </div>
     );
   }
 }
+
 export default App;

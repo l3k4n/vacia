@@ -3,21 +3,15 @@
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  }
-
-  @else if ($device ==tablet) {
+  } @else if ($device ==tablet) {
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  }
-
-  @else if ($device ==pc) {
+  } @else if ($device ==pc) {
     @media (min-width: 768px) and (max-width: 1023px) {
       @content;
     }
-  }
-
-  @else {
+  } @else {
     @error Invalid media $device (expected 'mobile', 'tablet', or 'pc');
   }
 }
