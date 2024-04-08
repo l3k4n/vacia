@@ -14,5 +14,3 @@ export interface SectionProps {
   onChange: (value: Partial<SelectionProps>) => void;
 }
 export type SectionComponent = (props: SectionProps) => JSX.Element;
-
-export type ToolbarPosition = "top" | "left" | "right" | "bottom";

@@ -1,58 +1,58 @@
 @import "@css/mixins";
 
 .ContextMenu {
-  border-radius: 10px;
-  padding: 3px;
-  width: 230px;
+  min-width: 220px;
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 5px;
   @include widgetStyles;
 
-  .ContextMenuItem {
-    border-radius: 5px;
-    padding: 5px;
-    width: 100%;
-    background-color: transparent;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    font-size: 11px;
-    gap: 5px;
-    > * {
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    &:focus {
-      background-color: var(--color-grey-80);
-    }
-  }
-
-  .CMenuItemIcon {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .CMenuItemLabel {
-    font-size: 12px;
-  }
-
-  .CMenuItemBinding {
-    margin-left: auto;
-    background-color: #0000003f;
-    padding: 2px 5px;
-    border-radius: 2px;
-  }
-
-  .CMenuItemChevron {
-    @extend .CMenuItemBinding;
-    background-color: transparent;
-  }
-
-  .ContextMenuSeparator {
-    background-color: var(--color-grey-80);
-    margin: 5px;
+  .CMenuSeparator {
     height: 1px;
+    margin: 5px;
+    background-color: var(--color-grey-80);
+  }
+
+  .CMenuEntry {
+    font-size: 12px;
+    color: var(--color-grey-30);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 5px;
+    position: relative;
+    padding-left: 25px;
+    user-select: none;
+    outline: none;
+
+    .CMenuBinding {
+      margin-left: auto;
+    }
+
+    .CMenuChecked {
+      position: absolute;
+      left: 0;
+      width: 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .CMenuBinding,
+    .CMenuChecked {
+      svg {
+        width: 16px;
+        fill: var(--color-grey-30);
+      }
+    }
+
+    &[data-highlighted] {
+      background-color: var(--accent-color-dark);
+      color: #fff;
+      svg {
+        fill: #fff;
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import ContextMenu from "@components/ContextMenu";
+import ContextMenu, { ContextMenuItem } from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions, { QuickActionType } from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
@@ -404,12 +404,13 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onCanvasContextMenu = (e: React.MouseEvent) => {
     const pointerCoords = CanvasPointer.getCoords(e.nativeEvent, this.state);
+    const hit = this.getObjectAtCoords(pointerCoords);
 
     switch (this.state.usermode) {
       case USERMODE.EDITING: {
-        const element = this.getElementAtCoords(pointerCoords);
-        if (element === this.editingElement) e.preventDefault();
-        else this.stopEditing(this.editingElement!);
+        if (hit.type === "element" && hit.element === this.editingElement) {
+          e.preventDefault();
+        } else this.stopEditing(this.editingElement!);
         break;
       }
 
@@ -426,6 +427,40 @@ class App extends React.Component<Record<string, never>, AppState> {
 
       default:
     }
+
+    switch (hit.type) {
+      case "element":
+        this.elementLayer.unselectAllElements();
+        this.elementLayer.selectElements([hit.element]);
+        break;
+      case "selectionBox":
+        this.elementLayer.unselectAllElements();
+        this.elementLayer.selectElements(hit.elements);
+        break;
+      default:
+        break;
+    }
+    const items: ContextMenuItem[] = [];
+
+    items.push({
+      type: "button",
+      label: "Select All",
+      exec: () => this.actionManager.execute("core:elements.selectAll"),
+    });
+
+    if (hit.type === "element" || hit.type !== "selectionBox") {
+      items.push({
+        type: "button",
+        label: "Delete",
+        exec: () => {
+          this.elementLayer.getSelectedElements().forEach((element) => {
+            this.elementLayer.deleteElement(element);
+          });
+        },
+      });
+    }
+
+    this.setState({ contextMenuItems: items });
   };
 
   private onElementCreate(element: CanvasElement, e: PointerEvent) {
@@ -551,13 +586,11 @@ class App extends React.Component<Record<string, never>, AppState> {
         {!!selectedElements.length && (
           <DesignMenu
             selectedElements={selectedElements}
-            toolbarPosition={this.state.toolbarPosition}
             onChange={this.onDesignMenuUpdate}
           />
         )}
         <div className="tools">
           <ToolBar
-            position={this.state.toolbarPosition}
             activeTool={this.state.activeTool}
             onToolChange={this.onToolChange}
           />
@@ -565,27 +598,19 @@ class App extends React.Component<Record<string, never>, AppState> {
             actionManager={this.actionManager}
             actions={this.quickActions}
           />
-          {this.state.contextMenu && (
-            <ContextMenu
-              // use x position as key to ensure remount when postion changes
-              key={this.state.contextMenu.x}
-              items={this.state.contextMenu.items}
-              position={this.state.contextMenu}
-              containerBounds={this.state.appBounds}
-              onClose={() => this.setState({ contextMenu: null })}
-            />
-          )}
         </div>
-        <canvas
-          data-testid="app-canvas"
-          width={canvasVirtualWidth}
-          height={canvasVirtualHeight}
-          style={{ width: canvasWidth, height: canvasHeight }}
-          ref={this.setCanvasRef}
-          onPointerDown={this.onCanvasPointerDown}
-          onDoubleClick={this.onCanvasDblClick}
-          onContextMenu={this.onCanvasContextMenu}
-        />
+        <ContextMenu items={this.state.contextMenuItems}>
+          <canvas
+            data-testid="app-canvas"
+            width={canvasVirtualWidth}
+            height={canvasVirtualHeight}
+            style={{ width: canvasWidth, height: canvasHeight }}
+            ref={this.setCanvasRef}
+            onPointerDown={this.onCanvasPointerDown}
+            onDoubleClick={this.onCanvasDblClick}
+            onContextMenu={this.onCanvasContextMenu}
+          />
+        </ContextMenu>
       </div>
     );
   }

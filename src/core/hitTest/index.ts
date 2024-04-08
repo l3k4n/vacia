@@ -6,11 +6,11 @@ import { getRotatedBoxVertices, rotatePoint } from "@core/utils";
 /** returns true if the coords is inside the box */
 export function hitTestBox(box: BoundingBox, coords: XYCoords, thershold = 0) {
   let { x, y, w, h } = box;
-  if(thershold) {
-    x -=  thershold;
-    y -=  thershold;
-    w +=  thershold * 2;
-    h -=  thershold * 2;
+  if (thershold) {
+    x -= thershold;
+    y -= thershold;
+    w += thershold * 2;
+    h -= thershold * 2;
   }
   const isInHorizontalBounds = coords.x >= x && coords.x <= x + w;
   const isInVerticalBounds = coords.y >= y && coords.y <= y + h;

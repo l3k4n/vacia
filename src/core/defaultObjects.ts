@@ -10,10 +10,9 @@ export function defaultAppState(): AppState {
     grid: { type: "line", size: 20 },
     scrollOffset: { x: 0, y: 0 },
     zoom: 1,
-    toolbarPosition: "top",
     selectionHighlight: null,
     usermode: USERMODE.IDLE,
-    contextMenu: null,
+    contextMenuItems: [],
   };
 }
 

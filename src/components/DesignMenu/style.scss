@@ -14,9 +14,7 @@
 
   .DesignMenuSection {
     padding: 15px 20px;
-    // border-bottom: 1px solid #272727;
     border-bottom: 1px solid var(--widget-border-color);
-    font-family: "Inter", sans-serif;
 
     &_hidden {
       .DesignMenuSectionTitle {

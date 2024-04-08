@@ -1,54 +1,35 @@
-import ToolButton from "@components/ToolButton";
+import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { DrawingTools, ControlTools, ToolLabel } from "@core/tools";
 import "./style.scss";
 
-export type ToolbarPosition = "top" | "left" | "right" | "bottom";
-
 interface ToolBarProps {
-  position: ToolbarPosition;
   activeTool: ToolLabel;
   onToolChange: (tool: ToolLabel) => void;
 }
-interface ToolItemProps {
-  label: ToolLabel;
-  icon: React.ReactElement;
-  testId: string;
-}
 
 export default function ToolBar(props: ToolBarProps) {
-  const ToolBarSeparator = () => <div className="ToolBar_separator" />;
-  const ToolItem = (toolProps: ToolItemProps) => (
-    <ToolButton
-      type="radio"
-      name="selected-tool"
-      label={toolProps.label}
-      checked={props.activeTool === toolProps.label}
-      children={toolProps.icon}
-      onChange={() => props.onToolChange(toolProps.label)}
-      testId={toolProps.testId}
-    />
-  );
+  const { hand, select } = ControlTools;
+
   return (
-    <div className={`ToolBar ToolBar_position_${props.position}`}>
-      <ToolItem
-        label={ControlTools.hand.label}
-        icon={<ControlTools.hand.icon />}
-        testId={"toolitem-hand"}
-      />
-      <ToolBarSeparator />
-      <ToolItem
-        label={ControlTools.select.label}
-        icon={<ControlTools.select.icon />}
-        testId={"toolitem-select"}
-      />
+    <ToggleGroup.Root
+      className="ToolBar"
+      type="single"
+      aria-label="Active tool"
+      value={props.activeTool}
+      onValueChange={props.onToolChange}
+      rovingFocus={false}>
+      <ToggleGroup.Item className="ToolBarItem" value={hand.label}>
+        <hand.icon />
+      </ToggleGroup.Item>
+      <div className="Separator" />
+      <ToggleGroup.Item className="ToolBarItem" value={select.label}>
+        <select.icon />
+      </ToggleGroup.Item>
       {DrawingTools.map(({ icon: ToolIcon, label }, i) => (
-        <ToolItem
-          key={i}
-          label={label}
-          icon={<ToolIcon />}
-          testId={`toolitem-${label}`.toLowerCase()}
-        />
+        <ToggleGroup.Item key={i} className="ToolBarItem" value={label}>
+          <ToolIcon />
+        </ToggleGroup.Item>
       ))}
-    </div>
+    </ToggleGroup.Root>
   );
 }

@@ -1,4 +1,3 @@
-import ToolButton from "@components/ToolButton";
 import { ActionManager } from "@core/actionManager";
 import "./style.scss";
 
@@ -15,13 +14,14 @@ interface Props {
 
 export default function QuickActions(props: Props) {
   return (
-    <div className="QuickActionsIsland">
+    <div className="QuickActions">
       {props.actions.map((action, i) => (
-        <ToolButton
+        <button
           key={i}
           type="button"
+          className="QuickActionItem"
+          title={action.label}
           children={<action.icon />}
-          label={action.label}
           onClick={() => props.actionManager.execute(action.id)}
         />
       ))}

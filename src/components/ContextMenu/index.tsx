@@ -1,141 +1,132 @@
-import { useState } from "react";
+/* eslint-disable no-use-before-define */
 import {
-  Button,
-  Dropdown,
+  Item,
+  ItemIndicator,
+  Content,
+  SubContent,
+  Portal,
+  Root,
+  Trigger,
+  Sub,
+  SubTrigger,
+  CheckboxItem,
   Separator,
-  ContextMenuItem,
-  ContextMenuDropdown,
-} from "./menuItems";
-import DynamicWidget from "@components/DynamicWidget";
-import FocusTrap from "@components/FocusTrap";
+} from "@radix-ui/react-context-menu";
+import React from "react";
 import "./style.scss";
 
-interface ContextMenuProps {
-  items: ContextMenuItem[];
-  position: { x: number; y: number };
-  containerBounds: { x: number; y: number; w: number; h: number };
-  onClose(): void;
+export interface ContextMenuSeparator {
+  type: "separator";
 }
 
-interface WidgetProps {
-  items: ContextMenuItem[];
-  position: { x: number; y: number };
-  containerBounds: { x: number; y: number; w: number; h: number };
-  focusOnMount: boolean;
-  onItemClick(e: React.MouseEvent, item: ContextMenuItem): void;
-  onItemHover(e: React.MouseEvent, item: ContextMenuItem): void;
-  onClose(): void;
+export interface ContextMenuButton {
+  type: "button";
+  label: string;
+  icon?: string | null;
+  binding?: string;
+  exec: () => void;
 }
 
-interface DropdownProps {
-  items: ContextMenuItem[];
-  position: { x: number; y: number };
-  focusOnMount: boolean;
-  onClose(): void;
+export interface ContextMenuCheckbox {
+  type: "checkbox";
+  label: string;
+  binding?: string;
+  checked?: boolean;
+  exec: () => void;
 }
 
-function ContextMenuWidget(props: WidgetProps) {
+export interface ContextMenuDropdown {
+  type: "dropdown";
+  label: string;
+  options: (ContextMenuButton | ContextMenuCheckbox | ContextMenuSeparator)[];
+}
+
+export type ContextMenuItem =
+  | ContextMenuButton
+  | ContextMenuDropdown
+  | ContextMenuCheckbox
+  | ContextMenuSeparator;
+
+export interface CMenuProps extends React.PropsWithChildren {
+  items: ContextMenuItem[];
+}
+
+function RenderCMenuItems({ items }: { items: ContextMenuItem[] }) {
   return (
     <>
-      <DynamicWidget
-        className="ContextMenu"
-        containerBounds={props.containerBounds}
-        position={props.position}>
-        <FocusTrap
-          focusOnMount={props.focusOnMount}
-          onTrapRelease={props.onClose}>
-          {props.items.map((item, i) => {
-            switch (item.type) {
-              case "button":
-                return (
-                  <Button
-                    key={i}
-                    item={item}
-                    onClick={(e) => props.onItemClick(e, item)}
-                    onMouseEnter={(e) => props.onItemHover(e, item)}
-                  />
-                );
-              case "dropdown":
-                return (
-                  <Dropdown
-                    key={i}
-                    item={item}
-                    onClick={(e) => props.onItemClick(e, item)}
-                    onMouseEnter={(e) => props.onItemHover(e, item)}
-                  />
-                );
-              case "separator":
-                return <Separator key={i} />;
-              default:
-                return null;
-            }
-          })}
-        </FocusTrap>
-      </DynamicWidget>
+      {items.map((item, i) => {
+        switch (item.type) {
+          case "button":
+            return <CMenuButton key={i} item={item} />;
+          case "dropdown":
+            return <CMenuDropdown key={i} item={item} />;
+          case "checkbox":
+            return <CMenuCheckBox key={i} item={item} />;
+          case "separator":
+            return <Separator key={i} className="CMenuSeparator" />;
+          default:
+            return null;
+        }
+      })}
     </>
   );
 }
 
-export default function ContextMenu(props: ContextMenuProps) {
-  const [dropdown, setDropdown] = useState<DropdownProps | null>(null);
-
-  const openDropdown = (
-    el: Element,
-    item: ContextMenuDropdown,
-    focus = false,
-  ) => {
-    const { y, right } = el.getBoundingClientRect();
-    setDropdown({
-      items: item.options,
-      position: { x: right, y },
-      focusOnMount: focus,
-      onClose: () => {
-        (el as Partial<HTMLElement>).focus?.();
-        setDropdown(null);
-      },
-    });
-  };
-
+function CMenuButton({ item }: { item: ContextMenuButton }) {
   return (
-    <>
-      <ContextMenuWidget
-        items={props.items}
-        position={props.position}
-        containerBounds={props.containerBounds}
-        focusOnMount={true}
-        onItemClick={(e, item) => {
-          if (item.type === "dropdown") {
-            openDropdown(e.currentTarget, item, true);
-          } else if (item.type === "button") {
-            item.exec();
-            props.onClose();
-          }
-        }}
-        onItemHover={(e, item) => {
-          (e.currentTarget as Partial<HTMLElement>).focus?.();
-          if (item.type === "dropdown") {
-            openDropdown(e.currentTarget, item);
-          } else setDropdown(null);
-        }}
-        onClose={props.onClose}
-      />
-      {dropdown && (
-        <ContextMenuWidget
-          items={dropdown.items}
-          position={dropdown.position}
-          containerBounds={props.containerBounds}
-          focusOnMount={dropdown.focusOnMount}
-          onItemClick={(_, item) => {
-            // only handle button because dropdowns can't be inside eachother
-            if (item.type === "button") item.exec();
-            props.onClose();
-          }}
-          onItemHover={(e) => {
-            (e.currentTarget as Partial<HTMLElement>).focus?.();
-          }}
-          onClose={dropdown.onClose}
-        />
-      )}
-    </>
+    <Item className="CMenuEntry" onSelect={item.exec}>
+      {item.label}
+      <div className="CMenuBinding">⌘+S</div>
+    </Item>
+  );
+}
+
+function CMenuCheckBox(props: { item: ContextMenuCheckbox }) {
+  const { checked, label, exec } = props.item;
+  return (
+    <CheckboxItem className="CMenuEntry" checked={checked} onSelect={exec}>
+      <ItemIndicator className="CMenuChecked">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          {/* eslint-disable */}
+          <path d="m10 15.586-3.293-3.293-1.414 1.414L10 18.414l9.707-9.707-1.414-1.414z" />
+        </svg>
+      </ItemIndicator>
+      {label}
+      <div className="CMenuBinding" children={"⌘+B"} />
+    </CheckboxItem>
+  );
+}
+
+function CMenuDropdown({ item }: { item: ContextMenuDropdown }) {
+  return (
+    <Sub>
+      <SubTrigger className="CMenuEntry">
+        {item.label}
+        <div className="CMenuBinding">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            {/* eslint-disable */}
+            <path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z" />
+          </svg>
+        </div>
+      </SubTrigger>
+      <Portal>
+        <SubContent className="ContextMenu" sideOffset={5}>
+          <RenderCMenuItems items={item.options} />
+        </SubContent>
+      </Portal>
+    </Sub>
+  );
+}
+
+export default function CMenu({ children, items }: CMenuProps) {
+  return (
+    <Root>
+      <Trigger children={children} />
+      <Portal>
+        <Content className="ContextMenu" loop>
+          <RenderCMenuItems items={items} />
+        </Content>
+      </Portal>
+    </Root>
   );
 }

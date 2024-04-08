@@ -1,17 +1,11 @@
-import React, { CSSProperties } from "react";
+import React from "react";
 import { LayoutSection, ColorSection } from "./sections";
 import getSelectionDetails, { MIXED_VALUE } from "./selectionDetails";
-import {
-  SelectionMetadata,
-  SelectionProps,
-  SectionComponent,
-  ToolbarPosition,
-} from "./types";
+import { SelectionMetadata, SelectionProps, SectionComponent } from "./types";
 import { CanvasElement } from "@core/elements/types";
 import "./style.scss";
 
 interface DesignMenuProps {
-  toolbarPosition: ToolbarPosition;
   selectedElements: CanvasElement[];
   onChange(elements: CanvasElement[], changes: object): void;
 }
@@ -23,8 +17,6 @@ interface DesignMenuState {
   /** Stores additional information about the selection, describing its
    * properties. E.g, whether fill can be applied to the selected elements */
   selectionMetadata: SelectionMetadata;
-  /** styles to change menu position based on the toolbar's position */
-  positionStyles: CSSProperties;
 }
 
 class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
@@ -40,10 +32,6 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
       elements: props.selectedElements,
       selectionProps: selectionDetails.props,
       selectionMetadata: selectionDetails.metadata,
-      positionStyles:
-        props.toolbarPosition === "right" || props.toolbarPosition === "left"
-          ? { [props.toolbarPosition]: 70 }
-          : { left: 10 },
     };
   }
 
@@ -92,7 +80,7 @@ class DesignMenu extends React.Component<DesignMenuProps, DesignMenuState> {
   render(): React.ReactNode {
     const { selectionMetadata, selectionProps } = this.state;
     return (
-      <div className="DesignMenu" style={this.state.positionStyles}>
+      <div className="DesignMenu">
         {this.sectionComponents.map((Section, i) => (
           <Section
             key={i}

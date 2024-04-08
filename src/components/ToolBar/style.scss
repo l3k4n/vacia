@@ -1,62 +1,62 @@
 @import "@css/mixins";
 
-@mixin toolbarOrientation($orientation) {
-  @if ($orientation ==horizontal) {
-    top: 50%;
-    transform: translate(0, -50%);
-    grid-auto-flow: row;
+.ToolBar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+  position: absolute;
+  padding: 5px;
+  bottom: 10px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  @include widgetStyles;
+}
 
-    .ToolBar_separator {
-      width: var(--toolbar-separator-size);
-      height: 0;
-      border-top-style: solid;
+.ToolBarItem {
+  background-color: transparent;
+  aspect-ratio: 1;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  font-size: 15px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+
+  svg {
+    --icon-color: var(--color-grey-30);
+    width: 15px;
+    height: 15px;
+    stroke: var(--icon-color);
+  }
+
+  &:hover {
+    background-color: var(--color-grey-80);
+  }
+
+  &:active {
+    outline: var(--accent-color) solid 1px;
+  }
+
+  &:focus-visible {
+    outline: var(--accent-color) solid 1px;
+  }
+
+  &[data-state="on"] {
+    background-color: var(--accent-color-darker);
+
+    svg {
+      --icon-color: var(--accent-color);
+      fill: var(--icon-color);
     }
-  } @else if($orientation ==vertical) {
-    left: 50%;
-    transform: translate(-50%, 0);
   }
 }
 
-.ToolBar {
-  --toolbar-gap: 10px;
-  --toolbar-separator-size: 20px;
-  --toolbar-inset: 10px;
-  position: absolute;
-  border-radius: 10px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-gap: var(--toolbar-gap);
-  padding: calc(var(--toolbar-gap) / 2);
-  @include widgetStyles;
-
-  &_position {
-    &_top {
-      top: var(--toolbar-inset);
-      @include toolbarOrientation(vertical);
-    }
-
-    &_bottom {
-      bottom: var(--toolbar-inset);
-      @include toolbarOrientation(vertical);
-    }
-
-    &_left {
-      left: var(--toolbar-inset);
-      @include toolbarOrientation(horizontal);
-    }
-
-    &_right {
-      right: var(--toolbar-inset);
-      @include toolbarOrientation(horizontal);
-    }
-  }
-
-  &_separator {
-    height: var(--toolbar-separator-size);
-    width: 0;
-    border: 1px hidden var(--widget-border-color);
-    border-left-style: solid;
-    align-self: center;
-    justify-self: center;
-  }
+.Separator {
+  background-color: var(--widget-border-color);
+  height: 20px;
+  width: 2px;
 }

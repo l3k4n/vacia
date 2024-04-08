@@ -1,14 +1,45 @@
 @import "@css/mixins";
 
-.QuickActionsIsland {
-  width: fit-content;
-  padding: 5px;
+.QuickActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   border-radius: 10px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-gap: 10px;
   position: absolute;
-  right: 10px;
+  padding: 5px;
   bottom: 10px;
+  right: 10px;
   @include widgetStyles;
+}
+
+.QuickActionItem {
+  background-color: transparent;
+  aspect-ratio: 1;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  font-size: 15px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--color-grey-30);
+  }
+
+  &:hover {
+    background-color: var(--color-grey-80);
+  }
+
+  &:active {
+    outline: var(--accent-color) solid 1px;
+  }
+
+  &:focus-visible {
+    outline: var(--accent-color) solid 1px;
+  }
 }
