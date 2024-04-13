@@ -118,7 +118,7 @@ function CMenuDropdown({ item }: { item: ContextMenuDropdown }) {
   );
 }
 
-export default function CMenu({ children, items }: CMenuProps) {
+export default function ContextMenu({ children, items }: CMenuProps) {
   return (
     <Root>
       <Trigger children={children} />
