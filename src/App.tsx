@@ -9,7 +9,12 @@ import { CoreActions } from "@core/actionManager/coreActions";
 import { CoreBindings } from "@core/actionManager/coreBindings";
 import * as DefaultObjects from "@core/defaultObjects";
 import ElementLayer from "@core/elementLayer";
-import { FreedrawHandler, TextHandler } from "@core/elements";
+import {
+  EllipseHandler,
+  FreedrawHandler,
+  RectHandler,
+  TextHandler,
+} from "@core/elements";
 import { ElementHandler } from "@core/elements/handler";
 import {
   getResizeScale,
@@ -101,6 +106,12 @@ class App extends React.Component<Record<string, never>, AppState> {
         break;
       case "Text":
         handler = this.elementHandlers.get("text");
+        break;
+      case "Ellipse":
+        handler = this.elementHandlers.get("ellipse");
+        break;
+      case "Rectangle":
+        handler = this.elementHandlers.get("rect");
         break;
       default:
         break;
@@ -205,6 +216,8 @@ class App extends React.Component<Record<string, never>, AppState> {
   private setElementHandlers() {
     this.elementHandlers.set("freedraw", new FreedrawHandler(this.getters));
     this.elementHandlers.set("text", new TextHandler(this.getters));
+    this.elementHandlers.set("ellipse", new EllipseHandler(this.getters));
+    this.elementHandlers.set("rect", new RectHandler(this.getters));
   }
 
   // local event handlers

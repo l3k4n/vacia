@@ -157,3 +157,25 @@ export function getNewZoomState(
     },
   };
 }
+
+/** returns resizes the width and height to their new sizes and ensures their
+ * aspect ratio remains the same */
+export function resizeAspectRatio(
+  w: number,
+  h: number,
+  newW: number,
+  newH: number,
+  /** if true, absolute width and height will be equal */
+  equalRatio = false,
+) {
+  if(equalRatio) {
+    const size = Math.max(Math.abs(newW), Math.abs(newH));
+    return { w: size * Math.sign(newW), h: size * Math.sign(newH) }
+  }
+
+  const ratio = Math.max(Math.abs(newW / w), Math.abs(newH / h));
+  return {
+    w: w * ratio * Math.sign(newW),
+    h: h * ratio * Math.sign(newH),
+  };
+}

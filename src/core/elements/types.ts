@@ -7,9 +7,11 @@ interface AbstractElement extends BoundingBox {
   flippedY: boolean;
 }
 
-export interface ShapeElement extends AbstractElement {
-  type: "shape";
-  shape: "rect" | "ellipse";
+export interface RectElement extends AbstractElement {
+  type: "rect";
+}
+export interface EllipseElement extends AbstractElement {
+  type: "ellipse";
 }
 export interface FreedrawElement extends AbstractElement {
   type: "freedraw";
@@ -23,7 +25,7 @@ export interface TextElement extends AbstractElement {
 }
 
 export type CanvasElement = Readonly<
-  ShapeElement | FreedrawElement | TextElement
+  RectElement | EllipseElement | FreedrawElement | TextElement
 >;
 
 export interface TransformHandle {
@@ -61,6 +63,3 @@ export type CanvasObject =
   | SelectionObject
   | TransformHandleObject
   | NullObject;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CanvasElementMutations = { [key: string]: any };

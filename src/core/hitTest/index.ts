@@ -69,5 +69,3 @@ export function hitTestTransformHandles(
 
   return hitHandle;
 }
-
-// hitTestRotatedBox,
