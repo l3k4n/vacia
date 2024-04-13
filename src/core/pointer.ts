@@ -12,6 +12,7 @@ export class CanvasPointer {
   readonly screen_offset: XYCoords;
   /** the object that was hit by the pointer when it was created */
   hit: CanvasObject = NO_HIT;
+  readonly didMove = false;
   readonly shiftKey: boolean;
   readonly ctrlKey: boolean;
 
@@ -24,6 +25,8 @@ export class CanvasPointer {
   }
 
   move(e: PointerEvent) {
+    // @ts-ignore
+    this.didMove = true;
     this.screen_offset.x = e.clientX - this.screen_origin.x;
     this.screen_offset.y = e.clientY - this.screen_origin.y;
   }

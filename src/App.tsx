@@ -140,8 +140,6 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     const hitElement = this.getElementAtCoords(coords);
 
-    if (hitElement) return { type: "element", element: hitElement };
-
     if (selectedElements.length) {
       const selectionBox = utils.getSurroundingBoundingBox(selectedElements);
       if (hitTestRotatedBox(selectionBox, coords)) {
@@ -168,6 +166,8 @@ class App extends React.Component<Record<string, never>, AppState> {
         };
       }
     }
+
+    if (hitElement) return { type: "element", element: hitElement };
 
     // nothing hit
     return { type: null };
@@ -361,6 +361,14 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onWindowPointerUp = (e: PointerEvent) => {
     if (!this.pointer) return;
+
+    const { hit } = this.pointer;
+
+    if(hit.type === "selectionBox" && hit.hitElement && !this.pointer.didMove) {
+      this.pointer.hit = { type: "element", element: hit.hitElement };
+      this.elementLayer.unselectAllElements();
+      this.elementLayer.selectElements([ hit.hitElement ]);
+    }
 
     switch (this.state.usermode) {
       case USERMODE.EDITING:
