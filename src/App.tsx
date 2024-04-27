@@ -556,7 +556,13 @@ class App extends React.Component<Record<string, never>, AppState> {
     for (let i = 0; i < elements.length; i += 1) {
       const tElement = elements[i];
       const mutations = rotateElement(tElement, hit, angle);
+      const prevRotate = tElement.element.rotate;
+
       this.elementLayer.mutateElement(tElement.element, mutations);
+      if (prevRotate !== tElement.element.rotate) {
+        const handler = this.getElementHandler(tElement.element);
+        handler.onRotate(tElement.element, tElement.initialElement, angle);
+      }
     }
   }
 
@@ -580,7 +586,18 @@ class App extends React.Component<Record<string, never>, AppState> {
     for (let i = 0; i < elements.length; i += 1) {
       const tElement = elements[i];
       const mutations = resizeElement(tElement, hit, scale);
+      const { w: prevW, h: prevH } = tElement.element;
+
       this.elementLayer.mutateElement(tElement.element, mutations);
+      if (prevW !== tElement.element.w || prevH !== tElement.element.h) {
+        const handler = this.getElementHandler(tElement.element);
+        handler.onResize(
+          tElement.element,
+          tElement.initialElement,
+          scale[0],
+          scale[1],
+        );
+      }
     }
   }
 

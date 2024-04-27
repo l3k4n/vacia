@@ -51,6 +51,12 @@ export abstract class ElementHandler<T extends CanvasElement = CanvasElement> {
   /** called when view state (e.g scrollOffset, zoom) changes while editing */
   onEditViewStateChange(element: T) {}
 
+  /** called when elements angle changes */
+  onRotate(element: T, initialElement: T, angle: number) {}
+
+  /** called when elements dimensions changes */
+  onResize(element: T, initialElement: T, scaleX: number, scaleY: number) {}
+
   /** Creates an event from a mouse event which can be used with the methods
    * above in place of a pointer event */
   static EventFromMouse(e: MouseEvent): HandlerEventProps {

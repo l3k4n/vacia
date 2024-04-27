@@ -27,5 +27,5 @@ export function handleCreateDrag(
     box.h = newSize.h;
   }
 
-  return normalizeBox(box);
+  return { ...normalizeBox(box), flippedX: box.w < 0, flippedY: box.h < 0 };
 }

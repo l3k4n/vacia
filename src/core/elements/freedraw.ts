@@ -90,6 +90,26 @@ function hitTestClosedPath(point: XYCoords, vs: Point[]) {
   return isProjectionInPolygon;
 }
 
+export function rescalePath(
+  path: Point[],
+  scaleX: number,
+  scaleY: number,
+  shiftX: number,
+  shiftY: number,
+) {
+  if (scaleX === 1 && scaleY === 1) return path;
+
+  const newPath = path; // reuse path array
+  for (let i = 0; i < path.length; i += 1) {
+    // eslint-disable-next-line no-param-reassign
+    path[i][0] = path[i][0] * scaleX + shiftX;
+    // eslint-disable-next-line no-param-reassign
+    path[i][1] = path[i][1] * scaleY + shiftY;
+  }
+
+  return newPath;
+}
+
 const PATH_HIT_THRESHOLD = 10;
 
 export class FreedrawHandler extends ElementHandler<FreedrawElement> {
@@ -164,5 +184,19 @@ export class FreedrawHandler extends ElementHandler<FreedrawElement> {
     ]);
 
     this.app.elementLayer().mutateElement(element, mutations);
+  }
+
+  onResize(
+    element: FreedrawElement,
+    initialElement: FreedrawElement,
+    scaleX: number,
+    scaleY: number,
+  ) {
+    const shiftX = scaleX < 0 ? element.w : 0;
+    const shiftY = scaleY < 0 ? element.h : 0;
+
+    this.app.elementLayer().mutateElement(element, {
+      path: rescalePath(initialElement.path, scaleX, scaleY, shiftX, shiftY),
+    });
   }
 }

@@ -12,6 +12,16 @@ import { SELECTION_ROTATE_HANDLE_OFFSET } from "@constants";
 import { Point, RotatedBoundingBox, XYCoords } from "@core/types";
 import { rotatePoint } from "@core/utils";
 
+interface ElementMutations {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  rotate?: number;
+  flippedX?: boolean;
+  flippedY?: boolean;
+}
+
 export function getRotateAngle(
   { box, handle }: TransformHandleObject,
   pointer: XYCoords,
@@ -31,6 +41,8 @@ export function getRotateAngle(
   // add 2pi (1 full rotation) to prevent negative values
   // add pi/2 (90 deg) to make the top the starting point (see "unit-circle")
   angle += 2 * Math.PI + Math.PI / 2;
+  // wrap around 2PI
+  angle %= 2 * Math.PI;
 
   return angle;
 }
@@ -65,29 +77,11 @@ export function getResizeScale(
   return [scaleX, scaleY];
 }
 
-export function rescalePath(
-  path: Point[],
-  scaleX: number,
-  scaleY: number,
-  shiftX: number,
-  shiftY: number,
-) {
-  if (scaleX === 1 && scaleY === 1) return path;
-
-  const scaledPath: Point[] = [];
-  for (let i = 0; i < path.length; i += 1) {
-    const [x, y] = path[i];
-    scaledPath.push([x * scaleX + shiftX, y * scaleY + shiftY]);
-  }
-
-  return scaledPath;
-}
-
 function getSingleElementResizeMutations(
   { initialElement }: TransformingElement,
   [scaleX, scaleY]: Point,
   { anchorX, anchorY }: TransformHandle,
-) {
+): ElementMutations {
   const absScaleX = Math.abs(scaleX);
   const absScaleY = Math.abs(scaleY);
 
@@ -118,26 +112,24 @@ function getSingleElementResizeMutations(
     rotatedCenter.y,
     -rotate,
   );
+  const flippedX = (flipX === -1) !== initialElement.flippedX;
+  const flippedY = (flipY === -1) !== initialElement.flippedY;
 
-  let path: Point[] | undefined;
-  if (initialElement.type === "freedraw") {
-    path = rescalePath(
-      initialElement.path,
-      absScaleX * flipX,
-      absScaleY * flipY,
-      shiftX,
-      shiftY,
-    );
-  }
-
-  return { x: normalizedCoords.x, y: normalizedCoords.y, w, h, path };
+  return {
+    x: normalizedCoords.x,
+    y: normalizedCoords.y,
+    w,
+    h,
+    flippedX,
+    flippedY,
+  };
 }
 
 function getMultipleElementResizeMutations(
   { initialElement }: TransformingElement,
   [scaleX, scaleY]: Point,
   { anchorX, anchorY }: TransformHandle,
-) {
+): ElementMutations {
   const scale = Math.max(Math.abs(scaleX), Math.abs(scaleY));
 
   const w = initialElement.w * scale;
@@ -152,25 +144,17 @@ function getMultipleElementResizeMutations(
   const x = anchorX + flipX * (scale * offsetX + shiftX);
   const y = anchorY + flipY * (scale * offsetY + shiftY);
 
-  let path: Point[] | undefined;
-  if (initialElement.type === "freedraw") {
-    path = rescalePath(
-      initialElement.path,
-      scale * flipX,
-      scale * flipY,
-      shiftX,
-      shiftY,
-    );
-  }
+  const flippedX = (flipX === -1) !== initialElement.flippedX;
+  const flippedY = (flipY === -1) !== initialElement.flippedY;
 
-  return { x, y, w, h, path };
+  return { x, y, w, h, flippedX, flippedY };
 }
 
 export function resizeElement(
   element: TransformingElement,
   hit: TransformHandleObject,
   scale: Point,
-) {
+): ElementMutations {
   const multipleElements = hit.elements.length > 1;
   if (multipleElements) {
     return getMultipleElementResizeMutations(element, scale, hit.handle);
@@ -182,7 +166,7 @@ export function rotateElement(
   { element, initialElement }: TransformingElement,
   hit: TransformHandleObject,
   angle: number,
-) {
+): ElementMutations {
   const { anchorX, anchorY } = hit.handle;
   const elementAngle = angle + initialElement.rotate;
   const cx = element.x + element.w / 2;
