@@ -224,6 +224,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   // local event handlers
   private onToolChange = (tool: ToolLabel) => {
     this.setState({ activeTool: tool });
+    this.elementLayer.unselectAllElements();
   };
 
   private onElementLayerUpdate() {
@@ -399,6 +400,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         const handler = this.getElementHandler(element);
 
         handler.onCreateEnd(element, e);
+        this.setState({ activeTool: "Selection" });
 
         if (
           handler.features_supportsEditing &&
@@ -445,12 +447,15 @@ class App extends React.Component<Record<string, never>, AppState> {
   private onCanvasContextMenu = (e: React.MouseEvent) => {
     const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
     const hit = this.getObjectAtCoords(pointerCoords);
+    this.pointer = null;
 
     switch (this.state.usermode) {
       case USERMODE.EDITING: {
         if (hit.type === "element" && hit.element === this.editingElement) {
           e.preventDefault();
-        } else this.stopEditing(this.editingElement!);
+          return;
+        }
+        this.stopEditing(this.editingElement!);
         break;
       }
 
@@ -460,7 +465,7 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         const ev = ElementHandler.EventFromMouse(e.nativeEvent);
         handler.onCreateEnd(element, ev);
-        this.setState({ usermode: USERMODE.IDLE });
+        this.setState({ usermode: USERMODE.IDLE, activeTool: "Selection" });
         this.creatingElement = null;
         break;
       }
