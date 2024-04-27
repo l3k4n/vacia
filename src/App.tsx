@@ -267,7 +267,11 @@ class App extends React.Component<Record<string, never>, AppState> {
       // if editing ends, continue normal flow
     }
 
-    if (this.state.activeTool === "Hand") return;
+    if (this.state.activeTool === "Hand") {
+      this.setState({ usermode: USERMODE.PANNING });
+      return;
+    }
+
     if (this.state.activeTool === "Selection") {
       const hit = this.getObjectAtCoords(pointerPosition);
       this.pointer.hit = hit;
@@ -343,6 +347,16 @@ class App extends React.Component<Record<string, never>, AppState> {
       case USERMODE.RESIZING:
         this.onElementResize(this.transformingElements, e);
         break;
+
+      case USERMODE.PANNING: {
+        const offset = this.pointer.screen_offset;
+        const prevOffset = this.pointer.previous_screen_offset;
+        const x = this.state.scrollOffset.x + offset.x - prevOffset.x;
+        const y = this.state.scrollOffset.y + offset.y - prevOffset.y;
+
+        this.setState({ scrollOffset: { x, y } });
+        break;
+      }
 
       case USERMODE.IDLE: {
         /** pointer drag is treated as a box selection */

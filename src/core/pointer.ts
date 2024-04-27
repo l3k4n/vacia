@@ -11,6 +11,7 @@ export class CanvasPointer {
   readonly screen_origin: XYCoords;
   /** the pointers offset relative to the device's screen */
   readonly screen_offset: XYCoords;
+  readonly previous_screen_offset: XYCoords;
   /** the object that was hit by the pointer when it was created */
   hit: CanvasObject = NO_HIT;
   readonly didMove = false;
@@ -21,6 +22,7 @@ export class CanvasPointer {
     this.appState = state;
     this.screen_origin = { x: e.clientX, y: e.clientY };
     this.screen_offset = { x: 0, y: 0 };
+    this.previous_screen_offset = { x: 0, y: 0 };
     this.shiftKey = e.shiftKey;
     this.ctrlKey = e.ctrlKey;
   }
@@ -28,6 +30,8 @@ export class CanvasPointer {
   move(e: PointerEvent) {
     // @ts-ignore
     this.didMove = true;
+    this.previous_screen_offset.x = this.screen_offset.x;
+    this.previous_screen_offset.y = this.screen_offset.y;
     this.screen_offset.x = e.clientX - this.screen_origin.x;
     this.screen_offset.y = e.clientY - this.screen_origin.y;
   }
@@ -41,6 +45,14 @@ export class CanvasPointer {
     return {
       x: toViewportOffset(this.screen_offset.x, state),
       y: toViewportOffset(this.screen_offset.y, state),
+    };
+  }
+
+  get previousOffset() {
+    const state = this.appState();
+    return {
+      x: toViewportOffset(this.previous_screen_offset.x, state),
+      y: toViewportOffset(this.previous_screen_offset.y, state),
     };
   }
 

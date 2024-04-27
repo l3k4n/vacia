@@ -34,4 +34,5 @@ export const enum USERMODE {
   RESIZING = "resizing",
   CREATING = "creating",
   EDITING = "editing",
+  PANNING = "panning",
 }
