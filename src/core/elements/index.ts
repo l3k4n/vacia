@@ -3,4 +3,4 @@ import { FreedrawHandler } from "./freedraw";
 import { RectHandler } from "./rect";
 import { TextHandler } from "./text";
 
-export { TextHandler, FreedrawHandler, EllipseHandler, RectHandler }
+export { TextHandler, FreedrawHandler, EllipseHandler, RectHandler };

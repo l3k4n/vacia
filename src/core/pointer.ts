@@ -1,4 +1,5 @@
 import { CanvasObject } from "./elements/types";
+import { toViewportCoords, toViewportOffset } from "./utils";
 import { AppState, BoundingBox, XYCoords } from "@core/types";
 
 const NO_HIT = Object.freeze({ type: null });
@@ -32,18 +33,14 @@ export class CanvasPointer {
   }
 
   get origin() {
-    const { scrollOffset, zoom } = this.appState();
-    return {
-      x: (this.screen_origin.x - scrollOffset.x) / zoom,
-      y: (this.screen_origin.y - scrollOffset.y) / zoom,
-    };
+    return toViewportCoords(this.screen_origin, this.appState());
   }
 
   get offset() {
-    const { zoom } = this.appState();
+    const state = this.appState();
     return {
-      x: this.screen_offset.x / zoom,
-      y: this.screen_offset.y / zoom,
+      x: toViewportOffset(this.screen_offset.x, state),
+      y: toViewportOffset(this.screen_offset.y, state),
     };
   }
 
@@ -57,13 +54,5 @@ export class CanvasPointer {
     const { x, y } = this.origin;
     const { x: dx, y: dy } = this.offset;
     return { x: x + dx, y: y + dy };
-  }
-
-  static getCoords({ x, y }: XYCoords, state: AppState): XYCoords {
-    const { scrollOffset, zoom } = state;
-    return {
-      x: (x - scrollOffset.x) / zoom,
-      y: (y - scrollOffset.y) / zoom,
-    };
   }
 }

@@ -50,7 +50,7 @@ declare global {
       transformingElements: () => TransformingElement[];
       pointer: () => CanvasPointer | null;
       elementLayer: () => ElementLayer;
-      setState: (data: Pick<AppState, keyof AppState>) => void;
+      setState<K extends keyof AppState>(state: Pick<AppState, K>): void;
     };
   }
 }
@@ -69,7 +69,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   editingElement: CanvasElement | null = null;
   transformingElements: TransformingElement[] = [];
 
-  getters = {
+  appdata = {
     state: () => this.state,
     creatingElement: () => this.creatingElement,
     editingElement: () => this.editingElement,
@@ -77,6 +77,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     pointer: () => this.pointer,
     elementLayer: () => this.elementLayer,
     setState: (data: Pick<AppState, keyof AppState>) => this.setState(data),
+    stopEditing: (element: CanvasElement) => this.stopEditing(element),
   };
 
   constructor(props: Record<string, never>) {
@@ -84,12 +85,12 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     this.state = DefaultObjects.defaultAppState();
     this.quickActions = DefaultObjects.defaultQuickActions();
-    this.actionManager = new ActionManager(this.getters);
+    this.actionManager = new ActionManager(this.appdata);
     this.actionManager.registerActions(CoreActions);
     this.actionManager.registerBindings(CoreBindings);
     this.setElementHandlers();
 
-    if (import.meta.env.DEV) window.appData = this.getters;
+    if (import.meta.env.DEV) window.appData = this.appdata;
   }
 
   getElementHandler(element: CanvasElement) {
@@ -214,10 +215,10 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private setElementHandlers() {
-    this.elementHandlers.set("freedraw", new FreedrawHandler(this.getters));
-    this.elementHandlers.set("text", new TextHandler(this.getters));
-    this.elementHandlers.set("ellipse", new EllipseHandler(this.getters));
-    this.elementHandlers.set("rect", new RectHandler(this.getters));
+    this.elementHandlers.set("freedraw", new FreedrawHandler(this.appdata));
+    this.elementHandlers.set("text", new TextHandler(this.appdata));
+    this.elementHandlers.set("ellipse", new EllipseHandler(this.appdata));
+    this.elementHandlers.set("rect", new RectHandler(this.appdata));
   }
 
   // local event handlers
@@ -255,7 +256,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   private onCanvasPointerDown = (e: React.PointerEvent) => {
     if (e.buttons !== 1) return; // only handle primary key
 
-    this.pointer = new CanvasPointer(e.nativeEvent, this.getters.state);
+    this.pointer = new CanvasPointer(e.nativeEvent, this.appdata.state);
     const pointerPosition = this.pointer.currentPosition;
 
     if (this.state.usermode === USERMODE.EDITING) {
@@ -364,10 +365,14 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     const { hit } = this.pointer;
 
-    if(hit.type === "selectionBox" && hit.hitElement && !this.pointer.didMove) {
+    if (
+      hit.type === "selectionBox" &&
+      hit.hitElement &&
+      !this.pointer.didMove
+    ) {
       this.pointer.hit = { type: "element", element: hit.hitElement };
       this.elementLayer.unselectAllElements();
-      this.elementLayer.selectElements([ hit.hitElement ]);
+      this.elementLayer.selectElements([hit.hitElement]);
     }
 
     switch (this.state.usermode) {
@@ -413,7 +418,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (this.state.activeTool !== "Selection") return;
     if (this.state.usermode === USERMODE.EDITING) return;
 
-    const pointerCoords = CanvasPointer.getCoords(e.nativeEvent, this.state);
+    const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
     const doubleClickedElement = this.getElementAtCoords(pointerCoords);
     if (!doubleClickedElement) return;
 
@@ -424,7 +429,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   };
 
   private onCanvasContextMenu = (e: React.MouseEvent) => {
-    const pointerCoords = CanvasPointer.getCoords(e.nativeEvent, this.state);
+    const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
     const hit = this.getObjectAtCoords(pointerCoords);
 
     switch (this.state.usermode) {
@@ -577,8 +582,25 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({});
   }
 
-  componentDidUpdate() {
-    const modesToHideBoundingBox = [USERMODE.CREATING, USERMODE.ROTATING];
+  componentDidUpdate(_: unknown, prevState: AppState) {
+    const viewChanged =
+      prevState.zoom !== this.state.zoom ||
+      prevState.scrollOffset.x !== this.state.scrollOffset.x ||
+      prevState.scrollOffset.y !== this.state.scrollOffset.y;
+
+    // inform handler if viewport updates while editing.
+    // NOTE: this normally should not occur, but is handled just incase
+    if (this.state.usermode === USERMODE.EDITING && viewChanged) {
+      const handler = this.getElementHandler(this.editingElement!);
+      handler.onEditViewStateChange(this.editingElement!);
+    }
+
+    const modesToHideBoundingBox = [
+      USERMODE.CREATING,
+      USERMODE.ROTATING,
+      USERMODE.EDITING,
+    ];
+
     renderFrame({
       canvas: this.canvas!,
       state: this.state,
@@ -596,10 +618,9 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   // rendering
   render() {
-    const canvasWidth = this.state.appBounds.w;
-    const canvasHeight = this.state.appBounds.h;
-    const canvasVirtualWidth = canvasWidth * window.devicePixelRatio;
-    const canvasVirtualHeight = canvasHeight * window.devicePixelRatio;
+    const dimensions = { width: window.innerWidth, height: window.innerHeight };
+    const canvasVirtualWidth = dimensions.width * window.devicePixelRatio;
+    const canvasVirtualHeight = dimensions.height * window.devicePixelRatio;
     const selectedElements = this.elementLayer.getSelectedElements();
 
     return (
@@ -625,7 +646,7 @@ class App extends React.Component<Record<string, never>, AppState> {
             data-testid="app-canvas"
             width={canvasVirtualWidth}
             height={canvasVirtualHeight}
-            style={{ width: canvasWidth, height: canvasHeight }}
+            style={dimensions}
             ref={this.setCanvasRef}
             onPointerDown={this.onCanvasPointerDown}
             onDoubleClick={this.onCanvasDblClick}

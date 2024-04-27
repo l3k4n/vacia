@@ -1,3 +1,5 @@
+/* eslint-disable no-use-before-define */
+
 import { CanvasElement, TransformingElement } from "./elements/types";
 import { AppState, BoundingBox, RotatedBoundingBox, XYCoords } from "./types";
 import { MAX_ZOOM, MIN_ZOOM } from "@constants";
@@ -121,12 +123,10 @@ export function createTransformElements(elements: CanvasElement[]) {
   })) as TransformingElement[];
 }
 
-/** returns the center position of in screen coords */
+/** returns the center position of in viewport coords */
 export function getScreenCenterCoords(state: AppState): XYCoords {
-  return {
-    x: state.appBounds.w / 2,
-    y: state.appBounds.h / 2,
-  };
+  const bounds = getAppBounds(state);
+  return { x: bounds.w / 2, y: bounds.h / 2 };
 }
 
 /** snaps the coordinates to the nearest grid point */
@@ -168,9 +168,9 @@ export function resizeAspectRatio(
   /** if true, absolute width and height will be equal */
   equalRatio = false,
 ) {
-  if(equalRatio) {
+  if (equalRatio) {
     const size = Math.max(Math.abs(newW), Math.abs(newH));
-    return { w: size * Math.sign(newW), h: size * Math.sign(newH) }
+    return { w: size * Math.sign(newW), h: size * Math.sign(newH) };
   }
 
   const ratio = Math.max(Math.abs(newW / w), Math.abs(newH / h));
@@ -178,4 +178,65 @@ export function resizeAspectRatio(
     w: w * ratio * Math.sign(newW),
     h: h * ratio * Math.sign(newH),
   };
+}
+
+/** makes `coords` relative to the canvas */
+export function toViewportCoords(coords: XYCoords, state: AppState) {
+  const { scrollOffset: offset, zoom } = state;
+  return {
+    x: (coords.x - offset.x) / zoom,
+    y: (coords.y - offset.y) / zoom,
+  };
+}
+
+/** makes `offset` relative to the canvas */
+export function toViewportOffset(offset: number, state: AppState) {
+  return offset / state.zoom;
+}
+
+/** makes `coords` relative to the screen */
+export function toScreenCoords(coords: XYCoords, state: AppState) {
+  const { scrollOffset: offset, zoom } = state;
+  return {
+    x: coords.x * zoom + offset.x,
+    y: coords.y * zoom + offset.y,
+  };
+}
+
+/** makes `offset` relative to the screen */
+export function toScreenOffset(offset: number, state: AppState) {
+  return offset * state.zoom;
+}
+
+/** returns a bounding box of the current viewable portion of the app */
+export function getAppBounds(state: AppState): BoundingBox {
+  return {
+    x: -state.scrollOffset.x,
+    y: -state.scrollOffset.y,
+    w: toViewportOffset(window.innerWidth, state),
+    h: toViewportOffset(window.innerHeight, state),
+  };
+}
+
+/** returns XYCoords for a scroll offset that contains the bounding box */
+export function getScrollOffsetContainingBox(
+  box: BoundingBox,
+  state: AppState,
+): XYCoords {
+  const bounds = getAppBounds(state);
+  let { x, y } = state.scrollOffset;
+
+  if (box.x + box.w > bounds.x + bounds.w) {
+    x = (bounds.w - (box.x + box.w)) * state.zoom;
+  } else if (box.x < bounds.x) {
+    x = -Math.floor(box.x) * state.zoom;
+  }
+
+  if (box.y + box.h > bounds.y + bounds.h) {
+    y = Math.ceil(bounds.h - (box.y + box.h));
+  } else if (box.y < bounds.y) {
+    y = -Math.floor(box.y);
+  }
+
+  return { x, y };
 }

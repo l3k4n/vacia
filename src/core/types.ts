@@ -11,7 +11,6 @@ export type RotatedBoundingBox = BoundingBox & { rotate: number };
 export type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 export interface AppState {
-  appBounds: BoundingBox;
   activeTool: ToolLabel;
   grid: { type: "line" | "none"; size: number };
   /** canvas offset from { x: 0, y: 0 } */
