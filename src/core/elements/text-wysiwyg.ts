@@ -3,30 +3,11 @@ import { AppState } from "@core/types";
 import { toScreenCoords, toScreenOffset } from "@core/utils";
 
 export class WysiwygEditor {
-  temp_canvas = document.createElement("canvas");
-  temp_ctx = this.temp_canvas.getContext("2d")!;
   container: HTMLElement;
   editor: HTMLTextAreaElement | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
-  }
-
-  measureText(element: TextElement, text: string) {
-    const { fontSize, fontFamily } = element;
-    const lines = text.split("\n");
-    let w = 0;
-    const h = lines.length * fontSize;
-
-    this.temp_ctx.font = `${fontSize}px ${fontFamily}`;
-
-    for (let i = 0; i < lines.length; i += 1) {
-      const line = lines[i];
-      const size = this.temp_ctx.measureText(line);
-      w = Math.max(w, size.width);
-    }
-
-    return { w, h };
   }
 
   start(elem: TextElement, state: AppState) {

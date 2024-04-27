@@ -6,6 +6,27 @@ import { hitTestBox } from "@core/hitTest";
 import { BoundingBox, XYCoords } from "@core/types";
 import { getScrollOffsetContainingBox } from "@core/utils";
 
+const measuringCtx = document.createElement("canvas").getContext("2d")!;
+
+function measureText(element: TextElement, text: string) {
+  if (text === "") return { w: 0, h: 0 };
+
+  const { fontSize, fontFamily } = element;
+  const lines = text.split("\n");
+  let w = 0;
+  const h = lines.length * fontSize;
+
+  measuringCtx.font = `${fontSize}px ${fontFamily}`;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const size = measuringCtx.measureText(line);
+    w = Math.max(w, size.width);
+  }
+
+  return { w, h };
+}
+
 export class TextHandler extends ElementHandler<TextElement> {
   features_supportsEditing = true;
   features_startEditingOnCreateEnd = true;
@@ -53,10 +74,25 @@ export class TextHandler extends ElementHandler<TextElement> {
     this.editor.start(element, this.app.state());
     this.editor.focus();
 
+    if (element.h < element.fontSize || element.w < 1) {
+      this.app.elementLayer().mutateElement(element, {
+        w: Math.max(element.w, 1),
+        h: Math.max(element.h, element.fontSize),
+      });
+
+      this.editor.update(element, this.app.state());
+    }
+
     this.editor.onChange((text) => {
-      const { w, h } = this.editor.measureText(element, text);
       const state = this.app.state();
-      this.app.elementLayer().mutateElement(element, { w, h, text });
+
+      const { w, h } = measureText(element, text);
+      this.app.elementLayer().mutateElement(element, {
+        w: Math.max(w, 1),
+        h: Math.max(h, element.fontSize),
+        text,
+      });
+
       this.editor.update(element, state);
       this.editor.focus();
 
