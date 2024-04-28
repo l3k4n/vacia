@@ -99,12 +99,10 @@ export function rescalePath(
 ) {
   if (scaleX === 1 && scaleY === 1) return path;
 
-  const newPath = path; // reuse path array
+  const newPath = [];
   for (let i = 0; i < path.length; i += 1) {
-    // eslint-disable-next-line no-param-reassign
-    path[i][0] = path[i][0] * scaleX + shiftX;
-    // eslint-disable-next-line no-param-reassign
-    path[i][1] = path[i][1] * scaleY + shiftY;
+    const [x, y] = path[i];
+    newPath[i] = ([x * scaleX + shiftX, y * scaleY + shiftY]);
   }
 
   return newPath;
