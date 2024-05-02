@@ -198,26 +198,28 @@ class App extends React.Component<Record<string, never>, AppState> {
     const handler = this.getElementHandler(element);
 
     handler.onEditStart(element);
-    this.setState({ usermode: USERMODE.EDITING });
-    this.creatingElement = null;
+    this.setIdle();
     this.editingElement = element;
-    this.transformingElements.length = 0;
+    this.setState({ usermode: USERMODE.EDITING });
   }
 
   private stopEditing(element: CanvasElement) {
     const handler = this.getElementHandler(element);
-
     handler.onEditEnd(element);
-    this.setState({ usermode: USERMODE.IDLE });
-    this.creatingElement = null;
-    this.editingElement = null;
-    this.transformingElements.length = 0;
+    this.setIdle();
   }
 
   updateUserPreferences(changes: Partial<UserPreferences>) {
     const preferences = { ...this.state.preferences };
     utils.assignWithoutUndefined(preferences, changes);
     this.setState({ preferences });
+  }
+
+  setIdle() {
+    this.creatingElement = null;
+    this.editingElement = null;
+    this.transformingElements.length = 0;
+    this.setState({ usermode: USERMODE.IDLE });
   }
 
   // setup functions
@@ -423,18 +425,12 @@ class App extends React.Component<Record<string, never>, AppState> {
           break;
         }
 
-        this.setState({ usermode: USERMODE.IDLE });
-        this.creatingElement = null;
-        this.editingElement = null;
-        this.transformingElements.length = 0;
+        this.setIdle();
         break;
       }
 
       default:
-        this.setState({ usermode: USERMODE.IDLE });
-        this.creatingElement = null;
-        this.editingElement = null;
-        this.transformingElements.length = 0;
+        this.setIdle();
     }
 
     this.setState({ selectionHighlight: null });
@@ -478,41 +474,27 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         const ev = ElementHandler.EventFromMouse(e.nativeEvent);
         handler.onCreateEnd(element, ev);
-        this.setState({ usermode: USERMODE.IDLE });
+        this.setIdle();
         if (!this.state.preferences.lockCurrentTool) {
           this.setState({ activeTool: DEFAULT_TOOL });
         }
-        this.creatingElement = null;
         break;
       }
 
       default:
     }
 
-    switch (hit.type) {
-      case "element":
-        this.elementLayer.unselectAllElements();
-        this.elementLayer.selectElements([hit.element]);
-        break;
-      case "selectionBox":
-        this.elementLayer.unselectAllElements();
-        this.elementLayer.selectElements(hit.elements);
-        break;
-      default:
-        break;
-    }
-    const items: ContextMenuItem[] = [];
-
-    items.push({
-      type: "button",
-      label: "Select All",
-      exec: () => this.actionManager.execute("core:elements.selectAll"),
-    });
-
-    if (hit.type === null) {
-      items.push({
+    const allContextMenuItems: (ContextMenuItem & { predicate?: boolean })[] = [
+      {
+        type: "button",
+        label: "Select All",
+        disabled: this.elementLayer.getAllElements().length < 1,
+        exec: () => this.actionManager.execute("core:elements.selectAll"),
+      },
+      {
+        predicate: hit.type === null,
         type: "checkbox",
-        label: "Enable grid",
+        label: "Show grid",
         checked: !this.state.preferences.grid.disabled,
         exec: () => {
           const { grid } = this.state.preferences;
@@ -520,22 +502,33 @@ class App extends React.Component<Record<string, never>, AppState> {
             grid: { ...grid, disabled: !grid.disabled },
           });
         },
-      });
-    }
-
-    if (hit.type === "element" || hit.type !== "selectionBox") {
-      items.push({
+      },
+      {
+        predicate: hit.type === "element" || hit.type === "selectionBox",
         type: "button",
         label: "Delete",
+        danger: true,
         exec: () => {
           this.elementLayer.getSelectedElements().forEach((element) => {
             this.elementLayer.deleteElement(element);
           });
         },
-      });
-    }
+      },
+    ];
 
-    this.setState({ contextMenuItems: items });
+    const filteredContextMenuItems = allContextMenuItems.filter((entry) => {
+      if (Object.hasOwn(entry, "predicate")) return entry.predicate;
+      return true;
+    });
+
+    this.setState({ contextMenuItems: filteredContextMenuItems });
+
+    if (hit.type === "element" || hit.type === "selectionBox") {
+      // @ts-ignore
+      const elements = hit.elements || [hit.element];
+      this.elementLayer.unselectAllElements();
+      this.elementLayer.selectElements(elements);
+    }
   };
 
   private onElementCreate(element: CanvasElement, e: PointerEvent) {

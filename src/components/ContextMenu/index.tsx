@@ -24,6 +24,8 @@ export interface ContextMenuButton {
   label: string;
   icon?: string | null;
   binding?: string;
+  danger?: boolean;
+  disabled?: boolean;
   exec: () => void;
 }
 
@@ -32,12 +34,14 @@ export interface ContextMenuCheckbox {
   label: string;
   binding?: string;
   checked?: boolean;
+  disabled?: boolean;
   exec: () => void;
 }
 
 export interface ContextMenuDropdown {
   type: "dropdown";
   label: string;
+  disabled?: boolean;
   options: (ContextMenuButton | ContextMenuCheckbox | ContextMenuSeparator)[];
 }
 
@@ -74,7 +78,10 @@ function RenderCMenuItems({ items }: { items: ContextMenuItem[] }) {
 
 function CMenuButton({ item }: { item: ContextMenuButton }) {
   return (
-    <Item className="CMenuEntry" onSelect={item.exec}>
+    <Item
+      disabled={item.disabled}
+      className={`CMenuEntry ${item.danger ? "CMenuEntry-danger" : ""}`}
+      onSelect={item.exec}>
       {item.label}
       <div className="CMenuBinding">⌘+S</div>
     </Item>
@@ -84,7 +91,11 @@ function CMenuButton({ item }: { item: ContextMenuButton }) {
 function CMenuCheckBox(props: { item: ContextMenuCheckbox }) {
   const { checked, label, exec } = props.item;
   return (
-    <CheckboxItem className="CMenuEntry" checked={checked} onSelect={exec}>
+    <CheckboxItem
+      className="CMenuEntry"
+      checked={checked}
+      onSelect={exec}
+      disabled={props.item.disabled}>
       <ItemIndicator className="CMenuChecked">
         <svg width="24" height="24" viewBox="0 0 24 24">
           {/* eslint-disable */}
@@ -100,7 +111,7 @@ function CMenuCheckBox(props: { item: ContextMenuCheckbox }) {
 function CMenuDropdown({ item }: { item: ContextMenuDropdown }) {
   return (
     <Sub>
-      <SubTrigger className="CMenuEntry">
+      <SubTrigger className="CMenuEntry" disabled={item.disabled}>
         {item.label}
         <div className="CMenuBinding">
           <svg width="24" height="24" viewBox="0 0 24 24">

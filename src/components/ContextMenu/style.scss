@@ -26,6 +26,26 @@
     user-select: none;
     outline: none;
 
+    &[data-highlighted] {
+      background-color: var(--accent-color-dark);
+      color: #fff;
+      svg {
+        fill: #fff;
+      }
+    }
+
+    &[data-disabled] {
+      opacity: 0.3;
+    }
+
+    &-danger {
+      color: var(--color-danger-text);
+      &[data-highlighted] {
+        color: var(--color-danger-text);
+        background-color: var(--color-danger-bg);
+      }
+    }
+
     .CMenuBinding {
       margin-left: auto;
     }
@@ -44,14 +64,6 @@
       svg {
         width: 16px;
         fill: var(--color-grey-30);
-      }
-    }
-
-    &[data-highlighted] {
-      background-color: var(--accent-color-dark);
-      color: #fff;
-      svg {
-        fill: #fff;
       }
     }
   }
