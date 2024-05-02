@@ -3,7 +3,12 @@ import ContextMenu, { ContextMenuItem } from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions, { QuickActionType } from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
-import { USERMODE, ZOOM_STEP, ROTATION_SNAP_THRESHOLD } from "@constants";
+import {
+  USERMODE,
+  ZOOM_STEP,
+  ROTATION_SNAP_THRESHOLD,
+  DEFAULT_TOOL,
+} from "@constants";
 import { ActionManager } from "@core/actionManager";
 import { CoreActions } from "@core/actionManager/coreActions";
 import { CoreBindings } from "@core/actionManager/coreBindings";
@@ -37,7 +42,7 @@ import { Errors } from "@core/logs";
 import { CanvasPointer } from "@core/pointer";
 import renderFrame from "@core/renderer";
 import { DrawingToolLabel, ToolLabel } from "@core/tools";
-import { AppState, XYCoords, BoundingBox } from "@core/types";
+import { AppState, XYCoords, BoundingBox, UserPreferences } from "@core/types";
 import * as utils from "@core/utils";
 import "@css/App.scss";
 
@@ -207,6 +212,12 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.creatingElement = null;
     this.editingElement = null;
     this.transformingElements.length = 0;
+  }
+
+  updateUserPreferences(changes: Partial<UserPreferences>) {
+    const preferences = { ...this.state.preferences };
+    utils.assignWithoutUndefined(preferences, changes);
+    this.setState({ preferences });
   }
 
   // setup functions
@@ -400,7 +411,9 @@ class App extends React.Component<Record<string, never>, AppState> {
         const handler = this.getElementHandler(element);
 
         handler.onCreateEnd(element, e);
-        this.setState({ activeTool: "Selection" });
+        if (!this.state.preferences.lockCurrentTool) {
+          this.setState({ activeTool: DEFAULT_TOOL });
+        }
 
         if (
           handler.features_supportsEditing &&
@@ -465,7 +478,10 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         const ev = ElementHandler.EventFromMouse(e.nativeEvent);
         handler.onCreateEnd(element, ev);
-        this.setState({ usermode: USERMODE.IDLE, activeTool: "Selection" });
+        this.setState({ usermode: USERMODE.IDLE });
+        if (!this.state.preferences.lockCurrentTool) {
+          this.setState({ activeTool: DEFAULT_TOOL });
+        }
         this.creatingElement = null;
         break;
       }
@@ -670,7 +686,11 @@ class App extends React.Component<Record<string, never>, AppState> {
         <div className="tools">
           <ToolBar
             activeTool={this.state.activeTool}
+            toolLocked={this.state.preferences.lockCurrentTool}
             onToolChange={this.onToolChange}
+            onToolLockChange={(lock) =>
+              this.updateUserPreferences({ lockCurrentTool: lock })
+            }
           />
           <QuickActions
             actionManager={this.actionManager}

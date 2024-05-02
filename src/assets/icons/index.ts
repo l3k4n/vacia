@@ -2,6 +2,7 @@ export { ReactComponent as DraggableIcon } from "./draggable.svg";
 export { ReactComponent as EllipseIcon } from "./ellipse.svg";
 export { ReactComponent as FullScreenIcon } from "./fullscreen.svg";
 export { ReactComponent as HandIcon } from "./hand.svg";
+export { ReactComponent as LockIcon } from "./lock.svg";
 export { ReactComponent as ProhibitedIcon } from "./prohibited.svg";
 export { ReactComponent as PenIcon } from "./pen.svg";
 export { ReactComponent as RectIcon } from "./rect.svg";

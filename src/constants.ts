@@ -1,3 +1,5 @@
+import { ToolLabel } from "@core/tools";
+
 export const GRID_COLOR = "#2c2c2c";
 
 export const ZOOM_STEP = 0.1; // px
@@ -36,3 +38,5 @@ export const enum USERMODE {
   EDITING = "editing",
   PANNING = "panning",
 }
+
+export const DEFAULT_TOOL: ToolLabel = "Selection";

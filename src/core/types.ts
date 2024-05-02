@@ -10,6 +10,10 @@ export type RotatedBoundingBox = BoundingBox & { rotate: number };
 
 export type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
+export interface UserPreferences {
+  lockCurrentTool: boolean;
+}
+
 export interface AppState {
   activeTool: ToolLabel;
   grid: { type: "line" | "none"; size: number };
@@ -20,4 +24,12 @@ export interface AppState {
   selectionHighlight: BoundingBox | null;
   usermode: USERMODE;
   contextMenuItems: ContextMenuItem[];
+  preferences: UserPreferences;
+}
+
+export interface ExtraTool {
+  icon: React.FC;
+  label: string;
+  value: boolean;
+  onChange(value: boolean): void;
 }

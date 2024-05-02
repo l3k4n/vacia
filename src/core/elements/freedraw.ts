@@ -102,7 +102,7 @@ export function rescalePath(
   const newPath = [];
   for (let i = 0; i < path.length; i += 1) {
     const [x, y] = path[i];
-    newPath[i] = ([x * scaleX + shiftX, y * scaleY + shiftY]);
+    newPath[i] = [x * scaleX + shiftX, y * scaleY + shiftY];
   }
 
   return newPath;

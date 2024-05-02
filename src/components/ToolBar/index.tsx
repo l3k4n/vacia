@@ -1,35 +1,59 @@
-import * as ToggleGroup from "@radix-ui/react-toggle-group";
+import { Root as Toggle } from "@radix-ui/react-toggle";
+import {
+  Root,
+  ToggleGroup,
+  ToggleItem as ToggleGroupItem,
+  Separator,
+} from "@radix-ui/react-toolbar";
+import { LockIcon } from "@assets/icons";
 import { DrawingTools, ControlTools, ToolLabel } from "@core/tools";
 import "./style.scss";
 
 interface ToolBarProps {
+  toolLocked: boolean;
   activeTool: ToolLabel;
-  onToolChange: (tool: ToolLabel) => void;
+  onToolChange(tool: ToolLabel): void;
+  onToolLockChange(value: boolean): void;
 }
 
+const HandTool = ControlTools.hand;
+const SelectTool = ControlTools.select;
+
 export default function ToolBar(props: ToolBarProps) {
-  const { hand, select } = ControlTools;
+  const onToolChange = (tool: ToolLabel | "") => {
+    if (!tool) return;
+    props.onToolChange(tool);
+  };
 
   return (
-    <ToggleGroup.Root
-      className="ToolBar"
-      type="single"
-      aria-label="Active tool"
-      value={props.activeTool}
-      onValueChange={props.onToolChange}
-      rovingFocus={false}>
-      <ToggleGroup.Item className="ToolBarItem" value={hand.label}>
-        <hand.icon />
-      </ToggleGroup.Item>
-      <div className="Separator" />
-      <ToggleGroup.Item className="ToolBarItem" value={select.label}>
-        <select.icon />
-      </ToggleGroup.Item>
-      {DrawingTools.map(({ icon: ToolIcon, label }, i) => (
-        <ToggleGroup.Item key={i} className="ToolBarItem" value={label}>
-          <ToolIcon />
-        </ToggleGroup.Item>
-      ))}
-    </ToggleGroup.Root>
+    <Root className="ToolBar">
+      <div className="ToolBarGroup">
+        <Toggle
+          aria-label={"Lock current tool"}
+          className="ToolBarItem"
+          pressed={props.toolLocked}
+          onPressedChange={props.onToolLockChange}>
+          <LockIcon />
+        </Toggle>
+      </div>
+      <Separator className="Separator" />
+      <ToggleGroup
+        type="single"
+        className="ToolBarGroup"
+        value={props.activeTool}
+        onValueChange={onToolChange}>
+        <ToggleGroupItem className="ToolBarItem" value={HandTool.label}>
+          <HandTool.icon />
+        </ToggleGroupItem>
+        <ToggleGroupItem className="ToolBarItem" value={SelectTool.label}>
+          <SelectTool.icon />
+        </ToggleGroupItem>
+        {DrawingTools.map((tool, i) => (
+          <ToggleGroupItem key={i} className="ToolBarItem" value={tool.label}>
+            <tool.icon />
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </Root>
   );
 }

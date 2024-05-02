@@ -2,8 +2,6 @@
 
 .ToolBar {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 10px;
   border-radius: 10px;
   position: absolute;
@@ -12,6 +10,11 @@
   left: 50%;
   transform: translate(-50%, 0);
   @include widgetStyles;
+}
+
+.ToolBarGroup {
+  display: inline-flex;
+  gap: 10px;
 }
 
 .ToolBarItem {
@@ -59,4 +62,5 @@
   background-color: var(--widget-border-color);
   height: 20px;
   width: 2px;
+  margin: auto 0;
 }
