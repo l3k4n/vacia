@@ -509,6 +509,20 @@ class App extends React.Component<Record<string, never>, AppState> {
       exec: () => this.actionManager.execute("core:elements.selectAll"),
     });
 
+    if (hit.type === null) {
+      items.push({
+        type: "checkbox",
+        label: "Enable grid",
+        checked: !this.state.preferences.grid.disabled,
+        exec: () => {
+          const { grid } = this.state.preferences;
+          this.updateUserPreferences({
+            grid: { ...grid, disabled: !grid.disabled },
+          });
+        },
+      });
+    }
+
     if (hit.type === "element" || hit.type !== "selectionBox") {
       items.push({
         type: "button",
@@ -544,7 +558,9 @@ class App extends React.Component<Record<string, never>, AppState> {
       const { x, y } = initialElement;
       let position = { x: x + offset.x, y: y + offset.y };
 
-      if (!e.ctrlKey) position = utils.snapToGrid(position, this.state.grid);
+      if (!e.ctrlKey) {
+        position = utils.snapToGrid(position, this.state.preferences.grid);
+      }
 
       this.elementLayer.mutateElement(element, position);
     }
@@ -563,7 +579,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     const position = this.pointer!.currentPosition;
     let angle = getRotateAngle(hit, position);
 
-    if (!e.ctrlKey) {
+    if (!this.state.preferences.grid.disabled && !e.ctrlKey) {
       // snap rotation if ctrl is not pressed
       const threshold = ROTATION_SNAP_THRESHOLD;
       angle = Math.round(angle / threshold) * threshold;
@@ -595,7 +611,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     let position = this.pointer.currentPosition;
     if (!e.ctrlKey) {
       // snap pointer if ctrl is not pressed (this makes the scale snapped)
-      position = utils.snapToGrid(position, this.state.grid);
+      position = utils.snapToGrid(position, this.state.preferences.grid);
     }
 
     const scale = getResizeScale(hit, position);

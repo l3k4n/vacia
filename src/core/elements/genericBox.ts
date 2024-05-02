@@ -10,7 +10,7 @@ export function handleCreateDrag(
   e: PointerEvent,
   state: AppState,
 ) {
-  const { grid } = state;
+  const { grid } = state.preferences;
   const box = pointer.dragBox;
 
   // snap dimension if ctrl is not held

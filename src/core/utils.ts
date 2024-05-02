@@ -1,7 +1,13 @@
 /* eslint-disable no-use-before-define */
 
 import { CanvasElement, TransformingElement } from "./elements/types";
-import { AppState, BoundingBox, RotatedBoundingBox, XYCoords } from "./types";
+import {
+  AppState,
+  BoundingBox,
+  GridData,
+  RotatedBoundingBox,
+  XYCoords,
+} from "./types";
 import { MAX_ZOOM, MIN_ZOOM } from "@constants";
 
 export function clamp(value: number, min: number, max: number) {
@@ -130,7 +136,9 @@ export function getScreenCenterCoords(state: AppState): XYCoords {
 }
 
 /** snaps the coordinates to the nearest grid point */
-export function snapToGrid({ x, y }: XYCoords, grid: AppState["grid"]) {
+export function snapToGrid({ x, y }: XYCoords, grid: GridData) {
+  if (grid.disabled) return { x, y };
+
   const { size } = grid;
   return { x: Math.round(x / size) * size, y: Math.round(y / size) * size };
 }

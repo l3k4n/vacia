@@ -1,7 +1,7 @@
-import { AppState, XYCoords } from "@core/types";
+import { GridData, XYCoords } from "@core/types";
 
 interface GridOptions {
-  grid: AppState["grid"];
+  grid: GridData;
   stroke: { color: string; size: number };
   width: number;
   height: number;

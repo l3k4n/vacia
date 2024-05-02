@@ -10,13 +10,19 @@ export type RotatedBoundingBox = BoundingBox & { rotate: number };
 
 export type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
+export interface GridData {
+  type: "line";
+  size: number;
+  disabled: boolean;
+}
+
 export interface UserPreferences {
   lockCurrentTool: boolean;
+  grid: GridData;
 }
 
 export interface AppState {
   activeTool: ToolLabel;
-  grid: { type: "line" | "none"; size: number };
   /** canvas offset from { x: 0, y: 0 } */
   scrollOffset: XYCoords;
   zoom: number;

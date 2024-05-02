@@ -6,13 +6,13 @@ import { DEFAULT_TOOL, USERMODE } from "@constants";
 export function defaultAppState(): AppState {
   return {
     activeTool: DEFAULT_TOOL,
-    grid: { type: "line", size: 20 },
     scrollOffset: { x: 0, y: 0 },
     zoom: 1,
     selectionHighlight: null,
     usermode: USERMODE.IDLE,
     contextMenuItems: [],
     preferences: {
+      grid: { type: "line", size: 20, disabled: false },
       lockCurrentTool: false,
     },
   };

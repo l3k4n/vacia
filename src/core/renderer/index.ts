@@ -25,16 +25,18 @@ export default function renderFrame(config: RenderConfig) {
     ctx.save();
     ctx.scale(scale * state.zoom, scale * state.zoom);
 
-    renderGrid(ctx, {
-      grid: state.grid,
-      stroke: { color: GRID_COLOR, size: 1 / state.zoom },
-      width: canvas.width / (scale * state.zoom),
-      height: canvas.height / (scale * state.zoom),
-      offset: {
-        x: (state.scrollOffset.x / state.zoom) % state.grid.size,
-        y: (state.scrollOffset.y / state.zoom) % state.grid.size,
-      },
-    });
+    if (!state.preferences.grid.disabled) {
+      renderGrid(ctx, {
+        grid: state.preferences.grid,
+        stroke: { color: GRID_COLOR, size: 1 / state.zoom },
+        width: canvas.width / (scale * state.zoom),
+        height: canvas.height / (scale * state.zoom),
+        offset: {
+          x: (state.scrollOffset.x / state.zoom) % state.preferences.grid.size,
+          y: (state.scrollOffset.y / state.zoom) % state.preferences.grid.size,
+        },
+      });
+    }
 
     ctx.fillStyle = "#ff0000";
     ctx.font = "20px arial";
