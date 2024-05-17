@@ -1,7 +1,7 @@
 import { ELEMENT_PRECISION } from "@constants";
 import { CanvasElement } from "@core/elements/types";
 import { Mutable } from "@core/types";
-import { assignWithoutUndefined } from "@core/utils";
+import { assignWithoutUndefined, isInteractive } from "@core/utils";
 
 function roundElementCoord(element: Mutable<CanvasElement>) {
   const elem = element;
@@ -25,19 +25,30 @@ export default class ElementLayer {
     this.onChange();
   }
 
-  deleteElement(element: CanvasElement) {
-    const elementIndex = this.elements.indexOf(element);
-
-    if (elementIndex > -1) {
-      this.elements.splice(elementIndex, 1);
-    }
+  deleteElement(element: Mutable<CanvasElement>) {
+    // eslint-disable-next-line
+    element.deleted = true;
     this.selectedElements.delete(element);
+    this.onChange();
+  }
+
+  lockElement(element: Mutable<CanvasElement>) {
+    // eslint-disable-next-line
+    element.locked = true;
+    this.selectedElements.delete(element);
+    this.onChange();
+  }
+
+  unlockElement(element: Mutable<CanvasElement>) {
+    // eslint-disable-next-line
+    element.locked = false;
     this.onChange();
   }
 
   selectElements(elements: CanvasElement[]) {
     for (let i = 0; i < elements.length; i += 1) {
-      this.selectedElements.add(elements[i]);
+      const element = elements[i];
+      if(isInteractive(element)) this.selectedElements.add(element);
     }
 
     this.onChange();
@@ -61,6 +72,10 @@ export default class ElementLayer {
 
   getAllElements() {
     return this.elements;
+  }
+
+  getInteractiveElements() {
+    return this.elements.filter(isInteractive);
   }
 
   mutateElement(element: CanvasElement, mutations: object) {

@@ -40,7 +40,7 @@ export const CoreActions: Record<string, Action> = {
     exec(app) {
       const elementLayer = app.elementLayer();
       elementLayer.unselectAllElements();
-      const elements = elementLayer.getAllElements();
+      const elements = elementLayer.getInteractiveElements();
       elementLayer.selectElements(elements);
     },
   },

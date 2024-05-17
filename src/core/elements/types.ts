@@ -5,6 +5,8 @@ interface AbstractElement extends BoundingBox {
   rotate: number;
   flippedX: boolean;
   flippedY: boolean;
+  locked: boolean;
+  deleted: boolean;
 }
 
 export interface RectElement extends AbstractElement {
@@ -43,6 +45,10 @@ export interface TransformingElement {
 
 export type NullObject = { type: null };
 export type ElementObject = { type: "element"; element: CanvasElement };
+export type NonInteractiveElementObject = {
+  type: "nonInteractiveElement";
+  element: CanvasElement;
+};
 export type SelectionObject = {
   type: "selectionBox";
   box: RotatedBoundingBox;
@@ -60,6 +66,7 @@ export type TransformHandleObject = {
 
 export type CanvasObject =
   | ElementObject
+  | NonInteractiveElementObject
   | SelectionObject
   | TransformHandleObject
   | NullObject;

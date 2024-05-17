@@ -51,6 +51,8 @@ export default function renderFrame(config: RenderConfig) {
 
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
+      if(element.deleted) continue;
+
       const handler = config.elementHandlers.get(element.type);
 
       if (handler) {

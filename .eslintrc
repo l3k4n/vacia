@@ -62,6 +62,7 @@
     ],
     "react/jsx-pascal-case": "off",
     "no-lonely-if": "off",
-    "class-methods-use-this": "off"
+    "class-methods-use-this": "off",
+    "no-continue": "off"
   }
 }

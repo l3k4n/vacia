@@ -11,6 +11,8 @@ export const GENERIC_ELEMENT_PROPS = {
   flippedX: false,
   flippedY: false,
   fill: "#ffffffff",
+  deleted: false,
+  locked: false,
 };
 
 export const DEFAULT_ELEMENT_FONT_PROPS = {

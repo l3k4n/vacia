@@ -248,3 +248,7 @@ export function getScrollOffsetContainingBox(
 
   return { x, y };
 }
+
+export function isInteractive({ locked, deleted }: CanvasElement) {
+  return !locked && !deleted;
+}

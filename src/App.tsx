@@ -32,6 +32,7 @@ import {
   CanvasElement,
   TransformingElement,
   CanvasObject,
+  NonInteractiveElementObject,
 } from "@core/elements/types";
 import {
   hitTestRotatedBoxInBox,
@@ -128,8 +129,26 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   getElementAtCoords(coords: XYCoords): CanvasElement | null {
     const elements = this.elementLayer.getAllElements();
+    let nonInteractiveElementHit: CanvasElement | null = null;
 
-    for (let i = 0; i < elements.length; i += 1) {
+    for (let i = elements.length - 1; i >= 0; i -= 1) {
+      const element = elements[i];
+      if (element.deleted) continue;
+
+      const handler = this.getElementHandler(element);
+
+      if (!handler.hitTest(element, coords)) continue;
+      if (!nonInteractiveElementHit) nonInteractiveElementHit = element;
+      if (utils.isInteractive(element)) return element;
+    }
+
+    return nonInteractiveElementHit;
+  }
+
+  getInteractiveElementAtCoords(coords: XYCoords): CanvasElement | null {
+    const elements = this.elementLayer.getInteractiveElements();
+
+    for (let i = elements.length - 1; i >= 0; i -= 1) {
       const element = elements[i];
       const handler = this.getElementHandler(element);
 
@@ -146,6 +165,12 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     const hitElement = this.getElementAtCoords(coords);
 
+    if (hitElement && !utils.isInteractive(hitElement)) {
+      return {
+        type: "nonInteractiveElement",
+        element: hitElement,
+      };
+    }
     if (selectedElements.length) {
       const selectionBox = utils.getSurroundingBoundingBox(selectedElements);
       if (hitTestRotatedBox(selectionBox, coords)) {
@@ -180,7 +205,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   private getElementsWithinBox(box: BoundingBox) {
-    const allElements = this.elementLayer.getAllElements();
+    const allElements = this.elementLayer.getInteractiveElements();
     const hitElements: CanvasElement[] = [];
 
     for (let i = 0; i < allElements.length; i += 1) {
@@ -444,7 +469,8 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (this.state.usermode === USERMODE.EDITING) return;
 
     const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
-    const doubleClickedElement = this.getElementAtCoords(pointerCoords);
+    const doubleClickedElement =
+      this.getInteractiveElementAtCoords(pointerCoords);
     if (!doubleClickedElement) return;
 
     const handler = this.getElementHandler(doubleClickedElement);
@@ -488,7 +514,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       {
         type: "button",
         label: "Select All",
-        disabled: this.elementLayer.getAllElements().length < 1,
+        disabled: this.elementLayer.getInteractiveElements().length < 1,
         exec: () => this.actionManager.execute("core:elements.selectAll"),
       },
       {
@@ -501,6 +527,27 @@ class App extends React.Component<Record<string, never>, AppState> {
           this.updateUserPreferences({
             grid: { ...grid, disabled: !grid.disabled },
           });
+        },
+      },
+      {
+        predicate: hit.type === "element" || hit.type === "selectionBox",
+        type: "button",
+        label: "Lock",
+        exec: () => {
+          this.elementLayer.getSelectedElements().forEach((element) => {
+            this.elementLayer.lockElement(element);
+          });
+        },
+      },
+      {
+        predicate: hit.type === "nonInteractiveElement",
+        type: "button",
+        label: "Unlock",
+        exec: () => {
+          const { element } = hit as NonInteractiveElementObject;
+          this.elementLayer.unlockElement(element);
+          this.elementLayer.unselectAllElements();
+          this.elementLayer.selectElements([element]);
         },
       },
       {
