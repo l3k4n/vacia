@@ -10,8 +10,7 @@ import {
   DEFAULT_TOOL,
 } from "@constants";
 import { ActionManager } from "@core/actionManager";
-import { CoreActions } from "@core/actionManager/coreActions";
-import { CoreBindings } from "@core/actionManager/coreBindings";
+import { SelectAllAction } from "@core/actions";
 import * as DefaultObjects from "@core/defaultObjects";
 import ElementLayer from "@core/elementLayer";
 import {
@@ -92,8 +91,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.state = DefaultObjects.defaultAppState();
     this.quickActions = DefaultObjects.defaultQuickActions();
     this.actionManager = new ActionManager(this.appdata);
-    this.actionManager.registerActions(CoreActions);
-    this.actionManager.registerBindings(CoreBindings);
+    this.actionManager.registerBindingMap(DefaultObjects.defaultBindings());
     this.setElementHandlers();
 
     if (import.meta.env.DEV) window.appData = this.appdata;
@@ -547,7 +545,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         type: "button",
         label: "Select All",
         disabled: this.elementLayer.getInteractiveElements().length < 1,
-        exec: () => this.actionManager.execute("core:elements.selectAll"),
+        exec: () => this.actionManager.executeAction(SelectAllAction),
       },
       {
         predicate: hit.type === null,

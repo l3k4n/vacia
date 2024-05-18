@@ -11,4 +11,7 @@ export const Errors = {
   ImpossibleState(msg: string) {
     return new Error(`VaciaError: Impossible State Reached\n${msg}`);
   },
+  DuplicateAction(actionId: string) {
+    return new Error(`VaciaError: Multiple actions for id: ${actionId}`);
+  },
 };

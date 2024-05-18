@@ -32,3 +32,16 @@ export function defaultQuickActions(): QuickActionType[] {
     },
   ];
 }
+
+export function defaultBindings(): Record<string, string> {
+  return {
+    "ctrl+=": "core:ui.zoom.in",
+    "ctrl+-": "core:ui.zoom.out",
+    "ctrl+0": "core:ui.zoom.reset",
+    delete: "core:selection.delete",
+    backspace: "core:selection.delete",
+    "ctrl+a": "core:selection.select.all",
+    "ctrl+z": "core:history.undo",
+    "ctrl+shift+z": "core:history.redo",
+  };
+}

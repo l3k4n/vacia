@@ -25,4 +25,9 @@ const allowedKeys = new Set([
   ...nums,
 ]);
 
-export { allowedKeys };
+function validateKeys(keys: string[]) {
+  if(!keys.length) return false;
+  return keys.every((key) => allowedKeys.has(key));
+}
+
+export { allowedKeys, validateKeys };
