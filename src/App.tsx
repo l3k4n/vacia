@@ -222,6 +222,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   private startEditing(element: CanvasElement) {
     const handler = this.getElementHandler(element);
 
+    this.elementLayer.batchIncomingHistoryEntries();
     handler.onEditStart(element);
     this.setIdle();
     this.editingElement = element;
@@ -231,7 +232,27 @@ class App extends React.Component<Record<string, never>, AppState> {
   private stopEditing(element: CanvasElement) {
     const handler = this.getElementHandler(element);
     handler.onEditEnd(element);
+    this.elementLayer.mergeBatchedHistoryEntries();
     this.setIdle();
+  }
+
+  lockElement(element: CanvasElement) {
+    this.elementLayer.lockElement(element);
+  }
+
+  unlockElement(element: CanvasElement) {
+    this.elementLayer.unlockElement(element);
+    this.elementLayer.unselectAllElements();
+    this.elementLayer.selectElements([element]);
+  }
+
+  historyUndo() {
+    this.elementLayer.unselectAllElements();
+    this.elementLayer.undo();
+  }
+
+  historyRedo() {
+    this.elementLayer.redo();
   }
 
   updateUserPreferences(changes: Partial<UserPreferences>) {
@@ -297,9 +318,9 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     this.pointer = new CanvasPointer(e.nativeEvent, this.appdata.state);
     const pointerPosition = this.pointer.currentPosition;
+    const hit = this.getObjectAtCoords(pointerPosition);
 
     if (this.state.usermode === USERMODE.EDITING) {
-      const hit = this.getObjectAtCoords(pointerPosition);
       if (hit.type === "element" && hit.element === this.editingElement) return;
       // if user click anything else while editing, editing has ended
       this.stopEditing(this.editingElement!);
@@ -312,7 +333,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     if (this.state.activeTool === "Selection") {
-      const hit = this.getObjectAtCoords(pointerPosition);
       this.pointer.hit = hit;
 
       switch (hit.type) {
@@ -322,6 +342,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           this.elementLayer.selectElements(elements);
           this.setState({ usermode: USERMODE.DRAGGING });
           this.transformingElements = utils.createTransformElements(elements);
+          this.elementLayer.batchIncomingHistoryEntries("Dragging Element");
           break;
         }
 
@@ -330,6 +351,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           this.transformingElements = utils.createTransformElements(
             hit.elements,
           );
+          this.elementLayer.batchIncomingHistoryEntries("Dragging Selection");
           break;
 
         case "transformHandle": {
@@ -342,6 +364,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           this.transformingElements = utils.createTransformElements(
             hit.elements,
           );
+          this.elementLayer.batchIncomingHistoryEntries("Transforming Element");
           break;
         }
 
@@ -354,6 +377,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     const handler = this.getElementHandlerFromTool(this.state.activeTool);
     const element = handler.create({ ...pointerPosition, w: 0, h: 0 });
 
+    this.elementLayer.batchIncomingHistoryEntries("Creating Element");
     this.elementLayer.addElement(element);
     this.elementLayer.unselectAllElements();
     this.elementLayer.selectElements([element]);
@@ -433,11 +457,18 @@ class App extends React.Component<Record<string, never>, AppState> {
       case USERMODE.IDLE:
         break;
 
+      case USERMODE.RESIZING:
+      case USERMODE.ROTATING:
+      case USERMODE.DRAGGING:
+        this.elementLayer.mergeBatchedHistoryEntries();
+        break;
+
       case USERMODE.CREATING: {
         const element = this.creatingElement!;
         const handler = this.getElementHandler(element);
 
         handler.onCreateEnd(element, e);
+        this.elementLayer.mergeBatchedHistoryEntries();
         if (!this.state.preferences.lockCurrentTool) {
           this.setState({ activeTool: DEFAULT_TOOL });
         }
@@ -482,6 +513,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   private onCanvasContextMenu = (e: React.MouseEvent) => {
     const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
     const hit = this.getObjectAtCoords(pointerCoords);
+    this.elementLayer.mergeBatchedHistoryEntries();
     this.pointer = null;
 
     switch (this.state.usermode) {
@@ -535,7 +567,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         label: "Lock",
         exec: () => {
           this.elementLayer.getSelectedElements().forEach((element) => {
-            this.elementLayer.lockElement(element);
+            this.lockElement(element);
           });
         },
       },
@@ -545,9 +577,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         label: "Unlock",
         exec: () => {
           const { element } = hit as NonInteractiveElementObject;
-          this.elementLayer.unlockElement(element);
-          this.elementLayer.unselectAllElements();
-          this.elementLayer.selectElements([element]);
+          this.unlockElement(element);
         },
       },
       {

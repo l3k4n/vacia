@@ -5,6 +5,7 @@ import {
   AppState,
   BoundingBox,
   GridData,
+  Mutable,
   RotatedBoundingBox,
   XYCoords,
 } from "./types";
@@ -102,7 +103,7 @@ export function deepClone<T extends object>(obj: T | null): T | null {
   return clone;
 }
 
-/** bahaves like 'Object.assign' except 'undefined' keys will be ignored */
+/** behaves like 'Object.assign' except 'undefined' keys will be ignored */
 export function assignWithoutUndefined<T extends object, S extends object>(
   target: T,
   source: S,
@@ -251,4 +252,16 @@ export function getScrollOffsetContainingBox(
 
 export function isInteractive({ locked, deleted }: CanvasElement) {
   return !locked && !deleted;
+}
+
+export function applyElementMutations(
+  element: Mutable<CanvasElement>,
+  mutations: object,
+  precision: number,
+) {
+  const elem = assignWithoutUndefined(element, mutations);
+  elem.x = +elem.x.toFixed(precision);
+  elem.y = +elem.y.toFixed(precision);
+  elem.w = +elem.w.toFixed(precision);
+  elem.h = +elem.h.toFixed(precision);
 }

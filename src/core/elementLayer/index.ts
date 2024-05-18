@@ -1,19 +1,14 @@
+import { ElementHistory } from "./history";
 import { ELEMENT_PRECISION } from "@constants";
 import { CanvasElement } from "@core/elements/types";
+import { ElementOperation } from "@core/operations/elements";
 import { Mutable } from "@core/types";
-import { assignWithoutUndefined, isInteractive } from "@core/utils";
-
-function roundElementCoord(element: Mutable<CanvasElement>) {
-  const elem = element;
-  elem.x = +elem.x.toFixed(ELEMENT_PRECISION);
-  elem.y = +elem.y.toFixed(ELEMENT_PRECISION);
-  elem.w = +elem.w.toFixed(ELEMENT_PRECISION);
-  elem.h = +elem.h.toFixed(ELEMENT_PRECISION);
-}
+import { applyElementMutations, isInteractive } from "@core/utils";
 
 export default class ElementLayer {
   private elements: CanvasElement[] = [];
   private selectedElements: Set<CanvasElement> = new Set<CanvasElement>();
+  private history = new ElementHistory(() => this.elements);
   private onChange;
 
   constructor(onChange: () => void) {
@@ -21,11 +16,13 @@ export default class ElementLayer {
   }
 
   addElement(element: CanvasElement) {
+    this.history.push(ElementOperation.Add.create(element));
     this.elements.push(element);
     this.onChange();
   }
 
   deleteElement(element: Mutable<CanvasElement>) {
+    this.history.push(ElementOperation.Delete.create(element));
     // eslint-disable-next-line
     element.deleted = true;
     this.selectedElements.delete(element);
@@ -33,6 +30,7 @@ export default class ElementLayer {
   }
 
   lockElement(element: Mutable<CanvasElement>) {
+    this.history.push(ElementOperation.Lock.create(element));
     // eslint-disable-next-line
     element.locked = true;
     this.selectedElements.delete(element);
@@ -40,6 +38,7 @@ export default class ElementLayer {
   }
 
   unlockElement(element: Mutable<CanvasElement>) {
+    this.history.push(ElementOperation.Unlock.create(element));
     // eslint-disable-next-line
     element.locked = false;
     this.onChange();
@@ -48,7 +47,7 @@ export default class ElementLayer {
   selectElements(elements: CanvasElement[]) {
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
-      if(isInteractive(element)) this.selectedElements.add(element);
+      if (isInteractive(element)) this.selectedElements.add(element);
     }
 
     this.onChange();
@@ -78,9 +77,27 @@ export default class ElementLayer {
     return this.elements.filter(isInteractive);
   }
 
+  batchIncomingHistoryEntries(debugName?: string) {
+    this.history.batchIncoming(debugName);
+  }
+
+  mergeBatchedHistoryEntries() {
+    this.history.completeBatch();
+  }
+
+  undo() {
+    this.history.undo();
+    this.onChange();
+  }
+
+  redo() {
+    this.history.redo();
+    this.onChange();
+  }
+
   mutateElement(element: CanvasElement, mutations: object) {
-    assignWithoutUndefined(element, mutations);
-    roundElementCoord(element);
+    this.history.push(ElementOperation.Mutate.create(element, mutations));
+    applyElementMutations(element, mutations, ELEMENT_PRECISION);
     this.onChange();
   }
 }
