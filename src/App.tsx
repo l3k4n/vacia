@@ -721,6 +721,10 @@ class App extends React.Component<Record<string, never>, AppState> {
   }
 
   componentDidUpdate(_: unknown, prevState: AppState) {
+    // prevent all actions unless user is idle
+    if(this.state.usermode === USERMODE.IDLE) this.actionManager.enable();
+    else this.actionManager.disable()
+
     const viewChanged =
       prevState.zoom !== this.state.zoom ||
       prevState.scrollOffset.x !== this.state.scrollOffset.x ||

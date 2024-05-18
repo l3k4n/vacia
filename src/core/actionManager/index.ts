@@ -5,7 +5,9 @@ import { CanvasElement, TransformingElement } from "@core/elements/types";
 import { CanvasPointer } from "@core/pointer";
 import { AppState } from "@core/types";
 
-const HOTKEYS_CONFIG = { keyup: false, keydown: true };
+const HOTKEYS_SCOPE = "enabled";
+const HOTKEYS_SCOPE_DISABLED = "disabled";
+const HOTKEYS_CONFIG = { keyup: false, keydown: true, scope: HOTKEYS_SCOPE };
 const HOTKEYS_IGNORE = ["input", "textarea", "select", "button", "a"];
 const HOTKEYS_FILTER = (e: KeyboardEvent) => {
   const tagname = (e.target as HTMLElement).tagName.toLowerCase();
@@ -24,7 +26,6 @@ export interface ActionManagerAppData {
 
 export interface Action {
   label: string;
-  // eslint-disable-next-line
   exec(args: ActionManagerAppData): void;
 }
 
@@ -43,6 +44,7 @@ export class ActionManager {
   constructor(appData: ActionManagerAppData) {
     this.appData = appData;
     hotkeys.filter = HOTKEYS_FILTER;
+    this.enable();
   }
 
   private resetKeybindings() {
@@ -85,6 +87,14 @@ export class ActionManager {
       }
     });
     this.resetKeybindings();
+  }
+
+  enable() {
+    hotkeys.setScope(HOTKEYS_SCOPE);
+  }
+
+  disable() {
+    hotkeys.setScope(HOTKEYS_SCOPE_DISABLED);
   }
 
   execute(actionId: string) {

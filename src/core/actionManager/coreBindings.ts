@@ -1,4 +1,3 @@
-// bindings are part of the user UX.
 export const CoreBindings: Record<string, string> = {
   "ctrl+=": "core:ui.zoomIn",
   "ctrl+-": "core:ui.zoomOut",
@@ -6,4 +5,6 @@ export const CoreBindings: Record<string, string> = {
   delete: "core:elements.deleteSelected",
   backspace: "core:elements.deleteSelected",
   "ctrl+a": "core:elements.selectAll",
+  "ctrl+z": "core:history.undo",
+  "ctrl+shift+z": "core:history.redo",
 };

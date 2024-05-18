@@ -44,4 +44,18 @@ export const CoreActions: Record<string, Action> = {
       elementLayer.selectElements(elements);
     },
   },
+  "core:history.undo": {
+    label: "undo",
+    exec(app) {
+      const elementLayer = app.elementLayer();
+      elementLayer.undo();
+      elementLayer.unselectAllElements();
+    },
+  },
+  "core:history.redo": {
+    label: "redo",
+    exec(app) {
+      app.elementLayer().redo();
+    },
+  },
 };
