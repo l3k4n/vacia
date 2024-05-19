@@ -8,7 +8,7 @@ import { AppState, BoundingBox, XYCoords } from "@core/types";
 type HandlerAppData = {
   state: () => AppState;
   elementLayer: () => ElementLayer;
-  stopEditing: (element: CanvasElement) => void;
+  stopEditing: () => void;
   setState<K extends keyof AppState>(state: Pick<AppState, K>): void;
 };
 

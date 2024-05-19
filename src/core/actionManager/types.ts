@@ -11,6 +11,8 @@ export interface ActionManagerAppData {
   pointer: () => CanvasPointer | null;
   elementLayer: () => ElementLayer;
   setState<K extends keyof AppState>(newState: Pick<AppState, K>): void;
+  requestEditStart: (element: CanvasElement) => void;
+  stopEditing: () => void;
 }
 
 export interface Action {

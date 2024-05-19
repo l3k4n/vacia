@@ -80,7 +80,7 @@ const Lock = {
     op.element.locked = true;
   },
   revert: (_: CanvasElement[], op: LockOperation) => {
-    op.element.locked = true;
+    op.element.locked = false;
   },
   merge(_: LockOperation, __: AtomicOperation): boolean {
     // no operation can be merged with a lock

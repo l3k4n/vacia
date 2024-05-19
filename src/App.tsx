@@ -3,14 +3,14 @@ import ContextMenu, { ContextMenuItem } from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions, { QuickActionType } from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
-import {
-  USERMODE,
-  ZOOM_STEP,
-  ROTATION_SNAP_THRESHOLD,
-  DEFAULT_TOOL,
-} from "@constants";
+import { USERMODE, ZOOM_STEP, DEFAULT_TOOL } from "@constants";
 import { ActionManager } from "@core/actionManager";
-import { SelectAllAction } from "@core/actions";
+import {
+  DeleteSelectionAction,
+  LockSelectionAction,
+  SelectAllAction,
+  ToggleGridAction,
+} from "@core/actions";
 import * as DefaultObjects from "@core/defaultObjects";
 import ElementLayer from "@core/elementLayer";
 import {
@@ -42,7 +42,7 @@ import { Errors } from "@core/logs";
 import { CanvasPointer } from "@core/pointer";
 import renderFrame from "@core/renderer";
 import { DrawingToolLabel, ToolLabel } from "@core/tools";
-import { AppState, XYCoords, BoundingBox, UserPreferences } from "@core/types";
+import { AppState, XYCoords, BoundingBox } from "@core/types";
 import * as utils from "@core/utils";
 import "@css/App.scss";
 
@@ -82,7 +82,8 @@ class App extends React.Component<Record<string, never>, AppState> {
     pointer: () => this.pointer,
     elementLayer: () => this.elementLayer,
     setState: (data: Pick<AppState, keyof AppState>) => this.setState(data),
-    stopEditing: (element: CanvasElement) => this.stopEditing(element),
+    requestEditStart: this.requestEditStart.bind(this),
+    stopEditing: this.stopEditing.bind(this),
   };
 
   constructor(props: Record<string, never>) {
@@ -93,6 +94,8 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.actionManager = new ActionManager(this.appdata);
     this.actionManager.registerBindingMap(DefaultObjects.defaultBindings());
     this.setElementHandlers();
+
+    console.log(this.actionManager.getInvalidBindings());
 
     if (import.meta.env.DEV) window.appData = this.appdata;
   }
@@ -217,8 +220,9 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
-  private startEditing(element: CanvasElement) {
+  private requestEditStart(element: CanvasElement) {
     const handler = this.getElementHandler(element);
+    if (!handler.features_supportsEditing) return;
 
     this.elementLayer.batchIncomingHistoryEntries();
     handler.onEditStart(element);
@@ -227,36 +231,13 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.setState({ usermode: USERMODE.EDITING });
   }
 
-  private stopEditing(element: CanvasElement) {
-    const handler = this.getElementHandler(element);
-    handler.onEditEnd(element);
+  private stopEditing() {
+    if (!this.editingElement) return;
+
+    const handler = this.getElementHandler(this.editingElement);
+    handler.onEditEnd(this.editingElement);
     this.elementLayer.mergeBatchedHistoryEntries();
     this.setIdle();
-  }
-
-  lockElement(element: CanvasElement) {
-    this.elementLayer.lockElement(element);
-  }
-
-  unlockElement(element: CanvasElement) {
-    this.elementLayer.unlockElement(element);
-    this.elementLayer.unselectAllElements();
-    this.elementLayer.selectElements([element]);
-  }
-
-  historyUndo() {
-    this.elementLayer.unselectAllElements();
-    this.elementLayer.undo();
-  }
-
-  historyRedo() {
-    this.elementLayer.redo();
-  }
-
-  updateUserPreferences(changes: Partial<UserPreferences>) {
-    const preferences = { ...this.state.preferences };
-    utils.assignWithoutUndefined(preferences, changes);
-    this.setState({ preferences });
   }
 
   setIdle() {
@@ -321,7 +302,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     if (this.state.usermode === USERMODE.EDITING) {
       if (hit.type === "element" && hit.element === this.editingElement) return;
       // if user click anything else while editing, editing has ended
-      this.stopEditing(this.editingElement!);
+      this.stopEditing();
       // if editing ends, continue normal flow
     }
 
@@ -471,11 +452,8 @@ class App extends React.Component<Record<string, never>, AppState> {
           this.setState({ activeTool: DEFAULT_TOOL });
         }
 
-        if (
-          handler.features_supportsEditing &&
-          handler.features_startEditingOnCreateEnd
-        ) {
-          this.startEditing(element);
+        if (handler.features_startEditingOnCreateEnd) {
+          this.requestEditStart(element);
           break;
         }
 
@@ -502,10 +480,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.getInteractiveElementAtCoords(pointerCoords);
     if (!doubleClickedElement) return;
 
-    const handler = this.getElementHandler(doubleClickedElement);
-    if (handler.features_supportsEditing) {
-      this.startEditing(doubleClickedElement);
-    }
+    this.requestEditStart(doubleClickedElement)
   };
 
   private onCanvasContextMenu = (e: React.MouseEvent) => {
@@ -520,7 +495,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           e.preventDefault();
           return;
         }
-        this.stopEditing(this.editingElement!);
+        this.stopEditing();
         break;
       }
 
@@ -552,22 +527,13 @@ class App extends React.Component<Record<string, never>, AppState> {
         type: "checkbox",
         label: "Show grid",
         checked: !this.state.preferences.grid.disabled,
-        exec: () => {
-          const { grid } = this.state.preferences;
-          this.updateUserPreferences({
-            grid: { ...grid, disabled: !grid.disabled },
-          });
-        },
+        exec: () => this.actionManager.executeAction(ToggleGridAction),
       },
       {
         predicate: hit.type === "element" || hit.type === "selectionBox",
         type: "button",
         label: "Lock",
-        exec: () => {
-          this.elementLayer.getSelectedElements().forEach((element) => {
-            this.lockElement(element);
-          });
-        },
+        exec: () => this.actionManager.executeAction(LockSelectionAction),
       },
       {
         predicate: hit.type === "nonInteractiveElement",
@@ -575,7 +541,9 @@ class App extends React.Component<Record<string, never>, AppState> {
         label: "Unlock",
         exec: () => {
           const { element } = hit as NonInteractiveElementObject;
-          this.unlockElement(element);
+          this.elementLayer.unlockElement(element);
+          this.elementLayer.unselectAllElements();
+          this.elementLayer.selectElements([element]);
         },
       },
       {
@@ -583,11 +551,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         type: "button",
         label: "Delete",
         danger: true,
-        exec: () => {
-          this.elementLayer.getSelectedElements().forEach((element) => {
-            this.elementLayer.deleteElement(element);
-          });
-        },
+        exec: () => this.actionManager.executeAction(DeleteSelectionAction),
       },
     ];
 
@@ -647,10 +611,9 @@ class App extends React.Component<Record<string, never>, AppState> {
     const position = this.pointer!.currentPosition;
     let angle = getRotateAngle(hit, position);
 
-    if (!this.state.preferences.grid.disabled && !e.ctrlKey) {
+    if (!e.ctrlKey) {
       // snap rotation if ctrl is not pressed
-      const threshold = ROTATION_SNAP_THRESHOLD;
-      angle = Math.round(angle / threshold) * threshold;
+      angle = utils.snapAngleToGrid(angle, this.state.preferences.grid);
     }
 
     for (let i = 0; i < elements.length; i += 1) {
@@ -703,13 +666,12 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   private onWindowWheel = (e: WheelEvent) => {
     e.preventDefault();
-    if (e.metaKey || e.ctrlKey) {
-      const direction = -Math.sign(e.deltaY);
-      const value = this.state.zoom + direction * ZOOM_STEP;
-      const zoomState = utils.getNewZoomState(value, e, this.state);
+    if (!e.metaKey && !e.ctrlKey) return;
 
-      this.setState(zoomState);
-    }
+    const direction = -Math.sign(e.deltaY);
+    const value = this.state.zoom + direction * ZOOM_STEP;
+    const zoomState = utils.getNewZoomState(value, e, this.state);
+    this.setState(zoomState);
   };
 
   // react lifecycle
@@ -720,8 +682,8 @@ class App extends React.Component<Record<string, never>, AppState> {
 
   componentDidUpdate(_: unknown, prevState: AppState) {
     // prevent all actions unless user is idle
-    if(this.state.usermode === USERMODE.IDLE) this.actionManager.enable();
-    else this.actionManager.disable()
+    if (this.state.usermode === USERMODE.IDLE) this.actionManager.enable();
+    else this.actionManager.disable();
 
     const viewChanged =
       prevState.zoom !== this.state.zoom ||
@@ -776,9 +738,11 @@ class App extends React.Component<Record<string, never>, AppState> {
             activeTool={this.state.activeTool}
             toolLocked={this.state.preferences.lockCurrentTool}
             onToolChange={this.onToolChange}
-            onToolLockChange={(lock) =>
-              this.updateUserPreferences({ lockCurrentTool: lock })
-            }
+            onToolLockChange={(lock) => {
+              const preferences = { ...this.state.preferences };
+              Object.assign(preferences, { lockCurrentTool: lock });
+              this.setState({ preferences });
+            }}
           />
           <QuickActions
             actionManager={this.actionManager}

@@ -38,9 +38,17 @@ export function defaultBindings(): Record<string, string> {
     "ctrl+=": "core:ui.zoom.in",
     "ctrl+-": "core:ui.zoom.out",
     "ctrl+0": "core:ui.zoom.reset",
+
     delete: "core:selection.delete",
     backspace: "core:selection.delete",
-    "ctrl+a": "core:selection.select.all",
+
+    "enter": "core:selection.edit",
+
+    "ctrl+l": "core:selection.lock",
+    "ctrl+shift+l": "core:elements.unlock.all",
+
+    "ctrl+a": "core:elements.interactive.select",
+
     "ctrl+z": "core:history.undo",
     "ctrl+shift+z": "core:history.redo",
   };

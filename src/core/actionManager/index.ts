@@ -84,4 +84,13 @@ export class ActionManager {
   executeAction(action: Action) {
     action.exec(this.appData);
   }
+
+  getInvalidBindings() {
+    const invalid: string[] = [];
+    this.bindings.forEach((actionId, binding) => {
+      if(!actionMap.has(actionId)) invalid.push(binding);
+    });
+
+    return invalid;
+  }
 }

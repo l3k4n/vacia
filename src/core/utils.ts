@@ -9,7 +9,7 @@ import {
   RotatedBoundingBox,
   XYCoords,
 } from "./types";
-import { MAX_ZOOM, MIN_ZOOM } from "@constants";
+import { MAX_ZOOM, MIN_ZOOM, ROTATION_SNAP_THRESHOLD } from "@constants";
 
 export function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -142,6 +142,13 @@ export function snapToGrid({ x, y }: XYCoords, grid: GridData) {
 
   const { size } = grid;
   return { x: Math.round(x / size) * size, y: Math.round(y / size) * size };
+}
+
+/** snaps the angle to the nearest grid point */
+export function snapAngleToGrid(angle: number, grid: GridData) {
+  if (grid.disabled) return angle;
+
+  return Math.round(angle / ROTATION_SNAP_THRESHOLD) * ROTATION_SNAP_THRESHOLD;
 }
 
 /** Calculates scrolloffset and zoom value around a specified anchor point,
