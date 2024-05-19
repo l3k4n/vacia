@@ -8,18 +8,9 @@ import { AppState, BoundingBox, XYCoords } from "@core/types";
 type HandlerAppData = {
   state: () => AppState;
   elementLayer: () => ElementLayer;
-  stopEditing: () => void;
+  makeUserIdle: () => void;
   setState<K extends keyof AppState>(state: Pick<AppState, K>): void;
 };
-
-interface HandlerEventProps {
-  clientX: number;
-  clientY: number;
-  shiftKey: boolean;
-  ctrlKey: boolean;
-  isPrimary: boolean;
-  pointerType: string;
-}
 
 export abstract class ElementHandler<T extends CanvasElement = CanvasElement> {
   protected app: HandlerAppData;
@@ -38,11 +29,11 @@ export abstract class ElementHandler<T extends CanvasElement = CanvasElement> {
   abstract render(element: T, ctx: CanvasRenderingContext2D): void;
 
   /** called immediately after user starts creating */
-  onCreateStart(element: T, pointer: CanvasPointer, e: HandlerEventProps) {}
+  onCreateStart(element: T, pointer: CanvasPointer) {}
   /** called when user moves pointer while creating */
-  onCreateDrag(element: T, pointer: CanvasPointer, e: HandlerEventProps) {}
+  onCreateDrag(element: T, pointer: CanvasPointer) {}
   /** called once user is done creating */
-  onCreateEnd(element: T, e: HandlerEventProps) {}
+  onCreateEnd(element: T) {}
 
   /** called immediately after user starts editing */
   onEditStart(element: T) {}
@@ -56,18 +47,4 @@ export abstract class ElementHandler<T extends CanvasElement = CanvasElement> {
 
   /** called when elements dimensions changes */
   onResize(element: T, initialElement: T, scaleX: number, scaleY: number) {}
-
-  /** Creates an event from a mouse event which can be used with the methods
-   * above in place of a pointer event */
-  static EventFromMouse(e: MouseEvent): HandlerEventProps {
-    const { clientX, clientY, shiftKey, ctrlKey } = e;
-    return {
-      clientX,
-      clientY,
-      shiftKey,
-      ctrlKey,
-      isPrimary: e.buttons === 1,
-      pointerType: "mouse",
-    };
-  }
 }

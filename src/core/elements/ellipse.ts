@@ -45,9 +45,9 @@ export class EllipseHandler extends ElementHandler<EllipseElement> {
     ctx.fill();
   }
 
-  onCreateDrag(elem: EllipseElement, pointer: CanvasPointer, e: PointerEvent) {
+  onCreateDrag(elem: EllipseElement, pointer: CanvasPointer) {
     const state = this.app.state();
-    const mutations = GenericBoxUtils.handleCreateDrag(elem, pointer, e, state);
+    const mutations = GenericBoxUtils.handleCreateDrag(elem, pointer, state);
     this.app.elementLayer().mutateElement(elem, mutations);
   }
 }

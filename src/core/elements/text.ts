@@ -102,7 +102,7 @@ export class TextHandler extends ElementHandler<TextElement> {
       });
     });
 
-    this.editor.onBlur(() => this.app.stopEditing());
+    this.editor.onBlur(() => this.app.makeUserIdle());
   }
 
   onEditEnd(element: TextElement) {

@@ -12,7 +12,7 @@ export interface ActionManagerAppData {
   elementLayer: () => ElementLayer;
   setState<K extends keyof AppState>(newState: Pick<AppState, K>): void;
   requestEditStart: (element: CanvasElement) => void;
-  stopEditing: () => void;
+  makeUserIdle: () => void;
 }
 
 export interface Action {

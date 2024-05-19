@@ -83,7 +83,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     elementLayer: () => this.elementLayer,
     setState: (data: Pick<AppState, keyof AppState>) => this.setState(data),
     requestEditStart: this.requestEditStart.bind(this),
-    stopEditing: this.stopEditing.bind(this),
+    makeUserIdle: this.makeUserIdle.bind(this),
   };
 
   constructor(props: Record<string, never>) {
@@ -94,8 +94,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.actionManager = new ActionManager(this.appdata);
     this.actionManager.registerBindingMap(DefaultObjects.defaultBindings());
     this.setElementHandlers();
-
-    console.log(this.actionManager.getInvalidBindings());
 
     if (import.meta.env.DEV) window.appData = this.appdata;
   }
@@ -220,31 +218,45 @@ class App extends React.Component<Record<string, never>, AppState> {
     return hitElements;
   }
 
+  makeUserIdle() {
+    switch (this.state.usermode) {
+      case USERMODE.EDITING: {
+        if (!this.editingElement) break;
+
+        const handler = this.getElementHandler(this.editingElement);
+        handler.onEditEnd(this.editingElement);
+        break;
+      }
+
+      case USERMODE.CREATING: {
+        if (!this.creatingElement) break;
+
+        const handler = this.getElementHandler(this.creatingElement);
+        handler.onCreateEnd(this.creatingElement);
+
+        if (!this.state.preferences.lockCurrentTool) {
+          this.setState({ activeTool: DEFAULT_TOOL });
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    this.elementLayer.mergeBatchedHistoryEntries();
+    this.setState({ usermode: USERMODE.IDLE });
+  }
+
   private requestEditStart(element: CanvasElement) {
     const handler = this.getElementHandler(element);
     if (!handler.features_supportsEditing) return;
 
+    this.makeUserIdle();
     this.elementLayer.batchIncomingHistoryEntries();
-    handler.onEditStart(element);
-    this.setIdle();
     this.editingElement = element;
     this.setState({ usermode: USERMODE.EDITING });
-  }
-
-  private stopEditing() {
-    if (!this.editingElement) return;
-
-    const handler = this.getElementHandler(this.editingElement);
-    handler.onEditEnd(this.editingElement);
-    this.elementLayer.mergeBatchedHistoryEntries();
-    this.setIdle();
-  }
-
-  setIdle() {
-    this.creatingElement = null;
-    this.editingElement = null;
-    this.transformingElements.length = 0;
-    this.setState({ usermode: USERMODE.IDLE });
+    handler.onEditStart(element);
   }
 
   // setup functions
@@ -299,12 +311,16 @@ class App extends React.Component<Record<string, never>, AppState> {
     const pointerPosition = this.pointer.currentPosition;
     const hit = this.getObjectAtCoords(pointerPosition);
 
-    if (this.state.usermode === USERMODE.EDITING) {
-      if (hit.type === "element" && hit.element === this.editingElement) return;
-      // if user click anything else while editing, editing has ended
-      this.stopEditing();
-      // if editing ends, continue normal flow
+    if (
+      this.state.usermode === USERMODE.EDITING &&
+      hit.type === "element" &&
+      hit.element === this.editingElement
+    ) {
+      // ignore clicks on element while editing
+      return;
     }
+
+    this.makeUserIdle();
 
     if (this.state.activeTool === "Hand") {
       this.setState({ usermode: USERMODE.PANNING });
@@ -317,7 +333,9 @@ class App extends React.Component<Record<string, never>, AppState> {
       switch (hit.type) {
         case "element": {
           const elements = [hit.element];
-          if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
+          if (!this.pointer.origin_shiftKey) {
+            this.elementLayer.unselectAllElements();
+          } 
           this.elementLayer.selectElements(elements);
           this.setState({ usermode: USERMODE.DRAGGING });
           this.transformingElements = utils.createTransformElements(elements);
@@ -348,7 +366,9 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
 
         default:
-          if (!this.pointer.shiftKey) this.elementLayer.unselectAllElements();
+          if (!this.pointer.origin_shiftKey) {
+            this.elementLayer.unselectAllElements();
+          } 
       }
       return;
     }
@@ -362,7 +382,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     this.elementLayer.selectElements([element]);
     this.creatingElement = element;
     this.setState({ usermode: USERMODE.CREATING });
-    handler.onCreateStart(element, this.pointer, e.nativeEvent);
+    handler.onCreateStart(element, this.pointer);
   };
 
   private onWindowPointerMove = (e: PointerEvent) => {
@@ -374,20 +394,20 @@ class App extends React.Component<Record<string, never>, AppState> {
         break;
 
       case USERMODE.CREATING: {
-        this.onElementCreate(this.creatingElement!, e);
+        this.onElementCreate(this.creatingElement!);
         break;
       }
 
       case USERMODE.DRAGGING:
-        this.onElementDrag(this.transformingElements, e);
+        this.onElementDrag(this.transformingElements);
         break;
 
       case USERMODE.ROTATING:
-        this.onElementRotate(this.transformingElements, e);
+        this.onElementRotate(this.transformingElements);
         break;
 
       case USERMODE.RESIZING:
-        this.onElementResize(this.transformingElements, e);
+        this.onElementResize(this.transformingElements);
         break;
 
       case USERMODE.PANNING: {
@@ -416,7 +436,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private onWindowPointerUp = (e: PointerEvent) => {
+  private onWindowPointerUp = () => {
     if (!this.pointer) return;
 
     const { hit } = this.pointer;
@@ -431,42 +451,22 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.elementLayer.selectElements([hit.hitElement]);
     }
 
-    switch (this.state.usermode) {
-      case USERMODE.EDITING:
-      case USERMODE.IDLE:
-        break;
+    // keep these because 'makeUserIdle' will reset them
+    const elementBeingCreated = this.creatingElement;
+    const previousUsermode = this.state.usermode;
 
-      case USERMODE.RESIZING:
-      case USERMODE.ROTATING:
-      case USERMODE.DRAGGING:
-        this.elementLayer.mergeBatchedHistoryEntries();
-        break;
-
-      case USERMODE.CREATING: {
-        const element = this.creatingElement!;
-        const handler = this.getElementHandler(element);
-
-        handler.onCreateEnd(element, e);
-        this.elementLayer.mergeBatchedHistoryEntries();
-        if (!this.state.preferences.lockCurrentTool) {
-          this.setState({ activeTool: DEFAULT_TOOL });
-        }
-
-        if (handler.features_startEditingOnCreateEnd) {
-          this.requestEditStart(element);
-          break;
-        }
-
-        this.setIdle();
-        break;
-      }
-
-      default:
-        this.setIdle();
-    }
-
+    this.makeUserIdle();
     this.setState({ selectionHighlight: null });
     this.pointer = null;
+
+    if (
+      elementBeingCreated &&
+      previousUsermode === USERMODE.CREATING &&
+      this.getElementHandler(elementBeingCreated)
+        .features_startEditingOnCreateEnd
+    ) {
+      this.requestEditStart(elementBeingCreated);
+    }
   };
 
   private onCanvasDblClick = (e: React.MouseEvent) => {
@@ -480,40 +480,25 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.getInteractiveElementAtCoords(pointerCoords);
     if (!doubleClickedElement) return;
 
-    this.requestEditStart(doubleClickedElement)
+    this.requestEditStart(doubleClickedElement);
   };
 
   private onCanvasContextMenu = (e: React.MouseEvent) => {
     const pointerCoords = utils.toViewportCoords(e.nativeEvent, this.state);
     const hit = this.getObjectAtCoords(pointerCoords);
-    this.elementLayer.mergeBatchedHistoryEntries();
     this.pointer = null;
 
-    switch (this.state.usermode) {
-      case USERMODE.EDITING: {
-        if (hit.type === "element" && hit.element === this.editingElement) {
-          e.preventDefault();
-          return;
-        }
-        this.stopEditing();
-        break;
-      }
-
-      case USERMODE.CREATING: {
-        const element = this.creatingElement!;
-        const handler = this.getElementHandler(element);
-
-        const ev = ElementHandler.EventFromMouse(e.nativeEvent);
-        handler.onCreateEnd(element, ev);
-        this.setIdle();
-        if (!this.state.preferences.lockCurrentTool) {
-          this.setState({ activeTool: DEFAULT_TOOL });
-        }
-        break;
-      }
-
-      default:
+    if (
+      this.state.usermode === USERMODE.EDITING &&
+      hit.type === "element" &&
+      hit.element === this.editingElement
+    ) {
+      // ignore contextmenu while editing
+      e.preventDefault();
+      return;
     }
+
+    this.makeUserIdle();
 
     const allContextMenuItems: (ContextMenuItem & { predicate?: boolean })[] = [
       {
@@ -570,14 +555,15 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   };
 
-  private onElementCreate(element: CanvasElement, e: PointerEvent) {
+  private onElementCreate(element: CanvasElement) {
     if (!this.pointer) return;
     const handler = this.getElementHandler(element);
-    handler.onCreateDrag(element, this.pointer, e);
+    handler.onCreateDrag(element, this.pointer);
   }
 
-  private onElementDrag(elements: TransformingElement[], e: PointerEvent) {
-    const { offset, hit } = this.pointer!;
+  private onElementDrag(elements: TransformingElement[]) {
+    if (!this.pointer) return;
+    const { offset, hit } = this.pointer;
 
     if (hit.type !== "element" && hit.type !== "selectionBox") {
       throw Errors.ImpossibleState(
@@ -590,7 +576,7 @@ class App extends React.Component<Record<string, never>, AppState> {
       const { x, y } = initialElement;
       let position = { x: x + offset.x, y: y + offset.y };
 
-      if (!e.ctrlKey) {
+      if (!this.pointer.current_ctrlKey) {
         position = utils.snapToGrid(position, this.state.preferences.grid);
       }
 
@@ -598,7 +584,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
-  private onElementRotate(elements: TransformingElement[], e: PointerEvent) {
+  private onElementRotate(elements: TransformingElement[]) {
     if (!this.pointer) return;
 
     const { hit } = this.pointer!;
@@ -611,7 +597,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     const position = this.pointer!.currentPosition;
     let angle = getRotateAngle(hit, position);
 
-    if (!e.ctrlKey) {
+    if (!this.pointer.current_ctrlKey) {
       // snap rotation if ctrl is not pressed
       angle = utils.snapAngleToGrid(angle, this.state.preferences.grid);
     }
@@ -629,7 +615,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
   }
 
-  private onElementResize(elements: TransformingElement[], e: PointerEvent) {
+  private onElementResize(elements: TransformingElement[]) {
     if (!this.pointer) return;
 
     const { hit } = this.pointer;
@@ -640,7 +626,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     let position = this.pointer.currentPosition;
-    if (!e.ctrlKey) {
+    if (!this.pointer.current_ctrlKey) {
       // snap pointer if ctrl is not pressed (this makes the scale snapped)
       position = utils.snapToGrid(position, this.state.preferences.grid);
     }

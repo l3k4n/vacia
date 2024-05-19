@@ -36,9 +36,9 @@ export class RectHandler extends ElementHandler<RectElement> {
     ctx.fillRect(-rX, -rY, w, h);
   }
 
-  onCreateDrag(elem: RectElement, pointer: CanvasPointer, e: PointerEvent) {
+  onCreateDrag(elem: RectElement, pointer: CanvasPointer) {
     const state = this.app.state();
-    const mutations = GenericBoxUtils.handleCreateDrag(elem, pointer, e, state);
+    const mutations = GenericBoxUtils.handleCreateDrag(elem, pointer, state);
     this.app.elementLayer().mutateElement(elem, mutations);
   }
 }

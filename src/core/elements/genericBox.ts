@@ -7,21 +7,20 @@ import { normalizeBox, resizeAspectRatio, snapToGrid } from "@core/utils";
 export function handleCreateDrag(
   elem: CanvasElement,
   pointer: CanvasPointer,
-  e: PointerEvent,
   state: AppState,
 ) {
   const { grid } = state.preferences;
   const box = pointer.dragBox;
 
   // snap dimension if ctrl is not held
-  if (!e.ctrlKey) {
+  if (!pointer.current_ctrlKey) {
     const newSize = snapToGrid({ x: box.w, y: box.h }, grid);
     box.w = newSize.x;
     box.h = newSize.y;
   }
 
   // make aspect ratio equal if shift is held
-  if (e.shiftKey) {
+  if (pointer.current_shiftKey) {
     const newSize = resizeAspectRatio(elem.w, elem.h, box.w, box.h, true);
     box.w = newSize.w;
     box.h = newSize.h;
