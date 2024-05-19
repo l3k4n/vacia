@@ -1,6 +1,7 @@
+import { ZoomInAction, ZoomOutAction } from "./actions";
 import { AppState } from "./types";
 import { ZoomInIcon, ZoomOutIcon } from "@assets/icons";
-import { QuickActionType } from "@components/QuickActions";
+import { RenderableAction } from "@components/QuickActions/types";
 import { DEFAULT_TOOL, USERMODE } from "@constants";
 
 export function defaultAppState(): AppState {
@@ -18,18 +19,10 @@ export function defaultAppState(): AppState {
   };
 }
 
-export function defaultQuickActions(): QuickActionType[] {
+export function defaultRenderableActions(): RenderableAction[] {
   return [
-    {
-      icon: ZoomInIcon,
-      id: "core:ui.zoomIn",
-      label: "zoom in",
-    },
-    {
-      icon: ZoomOutIcon,
-      id: "core:ui.zoomOut",
-      label: "zoom out",
-    },
+    { Icon: ZoomInIcon, action: ZoomInAction },
+    { Icon: ZoomOutIcon, action: ZoomOutAction },
   ];
 }
 
@@ -42,7 +35,7 @@ export function defaultBindings(): Record<string, string> {
     delete: "core:selection.delete",
     backspace: "core:selection.delete",
 
-    "enter": "core:selection.edit",
+    enter: "core:selection.edit",
 
     "ctrl+l": "core:selection.lock",
     "ctrl+shift+l": "core:elements.unlock.all",

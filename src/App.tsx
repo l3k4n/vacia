@@ -1,7 +1,7 @@
 import React from "react";
 import ContextMenu, { ContextMenuItem } from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
-import QuickActions, { QuickActionType } from "@components/QuickActions";
+import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { USERMODE, ZOOM_STEP, DEFAULT_TOOL } from "@constants";
 import { ActionManager } from "@core/actionManager";
@@ -68,7 +68,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   elementLayer = new ElementLayer(this.onElementLayerUpdate.bind(this));
   elementHandlers: ElementHandlerMap = new Map();
   actionManager: ActionManager;
-  quickActions: QuickActionType[];
+  renderableActions = DefaultObjects.defaultRenderableActions();
 
   creatingElement: CanvasElement | null = null;
   editingElement: CanvasElement | null = null;
@@ -90,7 +90,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     super(props);
 
     this.state = DefaultObjects.defaultAppState();
-    this.quickActions = DefaultObjects.defaultQuickActions();
     this.actionManager = new ActionManager(this.appdata);
     this.actionManager.registerBindingMap(DefaultObjects.defaultBindings());
     this.setElementHandlers();
@@ -731,8 +730,8 @@ class App extends React.Component<Record<string, never>, AppState> {
             }}
           />
           <QuickActions
-            actionManager={this.actionManager}
-            actions={this.quickActions}
+            renderableActions={this.renderableActions}
+            execute={(action) => this.actionManager.executeAction(action)}
           />
         </div>
         <ContextMenu items={this.state.contextMenuItems}>

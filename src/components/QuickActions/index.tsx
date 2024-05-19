@@ -1,28 +1,23 @@
-import { ActionManager } from "@core/actionManager";
+import { RenderableAction } from "./types";
+import { Action } from "@core/actionManager/types";
 import "./style.scss";
 
-export interface QuickActionType {
-  id: string;
-  label: string;
-  icon: React.FC;
-}
-
 interface Props {
-  actions: QuickActionType[];
-  actionManager: ActionManager;
+  renderableActions: RenderableAction[];
+  execute: (action: Action) => void;
 }
 
 export default function QuickActions(props: Props) {
   return (
     <div className="QuickActions">
-      {props.actions.map((action, i) => (
+      {props.renderableActions.map(({ action, Icon }, i) => (
         <button
           key={i}
           type="button"
           className="QuickActionItem"
           title={action.label}
-          children={<action.icon />}
-          onClick={() => props.actionManager.execute(action.id)}
+          children={<Icon />}
+          onClick={() => props.execute(action)}
         />
       ))}
     </div>
