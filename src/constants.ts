@@ -6,19 +6,7 @@ export const ZOOM_STEP = 0.1; // px
 export const MAX_ZOOM = 50; // px
 export const MIN_ZOOM = 0.1; // px
 
-export const GENERIC_ELEMENT_PROPS = {
-  rotate: 0, // degrees
-  flippedX: false,
-  flippedY: false,
-  fill: "#ffffffff",
-  deleted: false,
-  locked: false,
-};
-
-export const DEFAULT_ELEMENT_FONT_PROPS = {
-  fontSize: 14, // px
-  fontFamily: "Arial",
-};
+export const DEFAULT_ELEMENT_FILL = "#ffffff";
 
 /** The max number of decimal places an element's position values should have.
  * Position values include x, y, width, height and the in a path[] */

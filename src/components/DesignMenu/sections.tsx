@@ -4,7 +4,7 @@ import { evalMathExpr } from "./matheval";
 import { MIXED_VALUE } from "./selectionDetails";
 import { SectionProps, Mixed } from "./types";
 import { ProhibitedIcon } from "@assets/icons";
-import { GENERIC_ELEMENT_PROPS } from "@constants";
+import { DEFAULT_ELEMENT_FILL } from "@constants";
 import { BoundingBox } from "@core/types";
 import { clamp } from "@core/utils";
 import { useUnmount } from "@hooks/useUnmount";
@@ -149,7 +149,7 @@ export function ColorSection(props: SectionProps) {
   };
 
   const resetColors = () => {
-    props.onChange({ fill: GENERIC_ELEMENT_PROPS.fill });
+    props.onChange({ fill: DEFAULT_ELEMENT_FILL });
   };
 
   useEffect(() => {

@@ -1,14 +1,15 @@
 import { ElementHandler } from "./handler";
-import { FreedrawElement } from "./types";
-import {
-  ELEMENT_PRECISION,
-  GENERIC_ELEMENT_PROPS,
-  PATH_JOIN_THRESHOLD,
-} from "@constants";
+import { CanvasElement } from "./types";
+import { ELEMENT_PRECISION, PATH_JOIN_THRESHOLD } from "@constants";
 import { hitTestBox } from "@core/hitTest";
 import { CanvasPointer } from "@core/pointer";
-import { BoundingBox, Point, XYCoords } from "@core/types";
+import { Point, XYCoords } from "@core/types";
 import { rotatePoint } from "@core/utils";
+
+interface FreedrawElement extends CanvasElement {
+  type: "freedraw";
+  path: Point[];
+}
 
 function isPathClosed(path: Point[]) {
   if (path.length < 3) return true;
@@ -111,13 +112,12 @@ export function rescalePath(
 const PATH_HIT_THRESHOLD = 10;
 
 export class FreedrawHandler extends ElementHandler<FreedrawElement> {
-  create(box: BoundingBox) {
+  create(partialElement: CanvasElement): FreedrawElement {
     return {
-      ...GENERIC_ELEMENT_PROPS,
-      ...box,
+      ...partialElement,
       type: "freedraw",
       path: [[0, 0]],
-    } as FreedrawElement;
+    };
   }
 
   hitTest(element: FreedrawElement, coords: XYCoords) {

@@ -18,6 +18,7 @@ import {
   FreedrawHandler,
   RectHandler,
   TextHandler,
+  createPartialElement,
 } from "@core/elements";
 import { ElementHandler } from "@core/elements/handler";
 import {
@@ -334,7 +335,7 @@ class App extends React.Component<Record<string, never>, AppState> {
           const elements = [hit.element];
           if (!this.pointer.origin_shiftKey) {
             this.elementLayer.unselectAllElements();
-          } 
+          }
           this.elementLayer.selectElements(elements);
           this.setState({ usermode: USERMODE.DRAGGING });
           this.transformingElements = utils.createTransformElements(elements);
@@ -367,13 +368,18 @@ class App extends React.Component<Record<string, never>, AppState> {
         default:
           if (!this.pointer.origin_shiftKey) {
             this.elementLayer.unselectAllElements();
-          } 
+          }
       }
       return;
     }
 
     const handler = this.getElementHandlerFromTool(this.state.activeTool);
-    const element = handler.create({ ...pointerPosition, w: 0, h: 0 });
+    const partialElement = createPartialElement({
+      ...pointerPosition,
+      w: 0,
+      h: 0,
+    });
+    const element = handler.create(partialElement);
 
     this.elementLayer.batchIncomingHistoryEntries("Creating Element");
     this.elementLayer.addElement(element);

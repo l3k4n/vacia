@@ -1,16 +1,18 @@
 import * as GenericBoxUtils from "./genericBox";
 import { ElementHandler } from "./handler";
-import { EllipseElement } from "./types";
-import { GENERIC_ELEMENT_PROPS } from "@constants";
+import { CanvasElement } from "./types";
 import { CanvasPointer } from "@core/pointer";
-import { BoundingBox, XYCoords } from "@core/types";
+import { XYCoords } from "@core/types";
 import { rotatePoint } from "@core/utils";
 
+interface EllipseElement extends CanvasElement {
+  type: "ellipse";
+}
+
 export class EllipseHandler extends ElementHandler<EllipseElement> {
-  create(box: BoundingBox): EllipseElement {
+  create(partialElement: CanvasElement): EllipseElement {
     return {
-      ...GENERIC_ELEMENT_PROPS,
-      ...box,
+      ...partialElement,
       type: "ellipse",
     };
   }

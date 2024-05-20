@@ -1,10 +1,90 @@
+/* eslint-disable max-classes-per-file */
+
 import { ElementHandler } from "./handler";
-import { WysiwygEditor } from "./text-wysiwyg";
-import { TextElement } from "./types";
-import { DEFAULT_ELEMENT_FONT_PROPS, GENERIC_ELEMENT_PROPS } from "@constants";
+import { CanvasElement } from "./types";
 import { hitTestBox } from "@core/hitTest";
-import { BoundingBox, XYCoords } from "@core/types";
-import { getScrollOffsetContainingBox } from "@core/utils";
+import { AppState, XYCoords } from "@core/types";
+import {
+  getScrollOffsetContainingBox,
+  toScreenCoords,
+  toScreenOffset,
+} from "@core/utils";
+
+interface TextElement extends CanvasElement {
+  type: "text";
+  fontSize: number;
+  fontFamily: string;
+  text: string;
+}
+
+class WysiwygEditor {
+  container: HTMLElement;
+  editor: HTMLTextAreaElement | null = null;
+
+  constructor(container: HTMLElement) {
+    this.container = container;
+  }
+
+  start(elem: TextElement, state: AppState) {
+    this.editor = document.createElement("textarea");
+    this.editor.id = "wysiwyg-editor";
+    this.editor.value = elem.text;
+
+    Object.assign(this.editor.style, {
+      position: "absolute",
+      overflow: "hidden",
+      lineHeight: "1",
+      display: "inline-block",
+      resize: "none",
+      wordBreak: "normal",
+      whiteSpace: "pre",
+      overflowWrap: "break-word",
+      boxSizing: "content-box",
+      background: "transparent",
+    });
+
+    this.update(elem, state);
+    this.container.appendChild(this.editor);
+  }
+
+  onChange(cb: (text: string) => void) {
+    if (!this.editor) return;
+    this.editor.oninput = () => cb(this.editor!.value);
+  }
+
+  onBlur(cb: () => void) {
+    if (!this.editor) return;
+    this.editor.onblur = () => cb();
+  }
+
+  focus() {
+    this.editor?.focus();
+  }
+
+  update(elem: TextElement, state: AppState) {
+    if (!this.editor) return;
+
+    const { style } = this.editor;
+    const coords = toScreenCoords(elem, state);
+    const size = {
+      w: toScreenOffset(elem.w, state),
+      h: toScreenOffset(elem.h, state),
+    };
+
+    style.width = `${size.w}px`;
+    style.height = `${size.h}px`;
+    style.top = `${coords.y}px`;
+    style.left = `${coords.x}px`;
+    style.color = elem.fill;
+    style.fontSize = `${elem.fontSize * state.zoom}px`;
+    style.fontFamily = elem.fontFamily;
+    style.transform = `rotate(${elem.rotate * (180 / Math.PI)}deg)`;
+  }
+
+  stop() {
+    this.editor?.remove();
+  }
+}
 
 const measuringCtx = document.createElement("canvas").getContext("2d")!;
 
@@ -34,14 +114,14 @@ export class TextHandler extends ElementHandler<TextElement> {
   editor = new WysiwygEditor(document.querySelector("#root")!);
   editing_element: TextElement | null = null;
 
-  create(box: BoundingBox) {
+  create(partialElement: CanvasElement): TextElement {
     return {
-      ...GENERIC_ELEMENT_PROPS,
-      ...DEFAULT_ELEMENT_FONT_PROPS,
-      ...box,
+      ...partialElement,
       type: "text",
+      fontSize: 14, // px
+      fontFamily: "Arial",
       text: "",
-    } as TextElement;
+    };
   }
 
   hitTest(element: TextElement, coords: XYCoords) {

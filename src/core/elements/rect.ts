@@ -1,17 +1,19 @@
 import * as GenericBoxUtils from "./genericBox";
 import { ElementHandler } from "./handler";
-import { RectElement } from "./types";
-import { GENERIC_ELEMENT_PROPS } from "@constants";
+import { CanvasElement } from "./types";
 import { hitTestBox } from "@core/hitTest";
 import { CanvasPointer } from "@core/pointer";
-import { BoundingBox, XYCoords } from "@core/types";
+import { XYCoords } from "@core/types";
 import { rotatePoint } from "@core/utils";
 
+interface RectElement extends CanvasElement {
+  type: "rect";
+}
+
 export class RectHandler extends ElementHandler<RectElement> {
-  create(box: BoundingBox): RectElement {
+  create(partialElement: CanvasElement): RectElement {
     return {
-      ...GENERIC_ELEMENT_PROPS,
-      ...box,
+      ...partialElement,
       type: "rect",
     };
   }

@@ -3,7 +3,7 @@
 import { CanvasElement } from "./types";
 import ElementLayer from "@core/elementLayer";
 import { CanvasPointer } from "@core/pointer";
-import { AppState, BoundingBox, XYCoords } from "@core/types";
+import { AppState, XYCoords } from "@core/types";
 
 type HandlerAppData = {
   state: () => AppState;
@@ -23,7 +23,7 @@ export abstract class ElementHandler<T extends CanvasElement = CanvasElement> {
 
   /** Initializes new element object. NOTE: not the same as onCreateStart,
    * it may be called even when user is not creating */
-  abstract create(box: BoundingBox): T;
+  abstract create(partialElement: CanvasElement): T;
   /** returns a boolean indicating whether `coords` is inside the element */
   abstract hitTest(element: T, coords: XYCoords): boolean;
   abstract render(element: T, ctx: CanvasRenderingContext2D): void;

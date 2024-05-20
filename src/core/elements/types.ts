@@ -1,6 +1,7 @@
-import { BoundingBox, RotatedBoundingBox, Point } from "@core/types";
+import { BoundingBox, RotatedBoundingBox } from "@core/types";
 
-interface AbstractElement extends BoundingBox {
+export interface CanvasElement extends BoundingBox {
+  type: string;
   fill: string;
   rotate: number;
   flippedX: boolean;
@@ -8,27 +9,6 @@ interface AbstractElement extends BoundingBox {
   locked: boolean;
   deleted: boolean;
 }
-
-export interface RectElement extends AbstractElement {
-  type: "rect";
-}
-export interface EllipseElement extends AbstractElement {
-  type: "ellipse";
-}
-export interface FreedrawElement extends AbstractElement {
-  type: "freedraw";
-  path: Point[];
-}
-export interface TextElement extends AbstractElement {
-  type: "text";
-  fontSize: number;
-  fontFamily: string;
-  text: string;
-}
-
-export type CanvasElement = Readonly<
-  RectElement | EllipseElement | FreedrawElement | TextElement
->;
 
 export interface TransformHandle {
   x: number;
