@@ -191,7 +191,7 @@ export class TextHandler extends ElementHandler<TextElement> {
 
     // remove elements with just whitespace
     if (element.text.trim() === "") {
-      this.app.elementLayer().deleteElement(element);
+      this.app.elementLayer().dangerous_discardElement(element);
     }
   }
 

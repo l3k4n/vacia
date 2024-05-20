@@ -4,6 +4,7 @@ import {
   BatchOperation,
   ElementOperation,
   merge,
+  OperationType,
   perform,
   revert,
 } from "@core/operations/elements";
@@ -16,6 +17,10 @@ export class ElementHistory {
 
   constructor(elements: () => CanvasElement[]) {
     this.elements = elements;
+    window.c = () => {
+      console.log(this.undoStack);
+      console.log(this.redoStack);
+    };
   }
 
   push(op: AtomicOperation) {
@@ -64,5 +69,19 @@ export class ElementHistory {
 
   discardBatched() {
     this.batchOperation = null;
+  }
+
+  discardOperationsWithElement(element: CanvasElement) {
+    const filter = (op: AtomicOperation | BatchOperation) => {
+      if(op.type !== OperationType.BATCHED) return op.element !== element;
+      // eslint-disable-next-line
+      op.entries = op.entries.filter((operation) => filter(operation));
+      return op.entries.length === 0;
+    }
+
+    this.undoStack = this.undoStack.filter(filter);
+    this.redoStack = this.redoStack.filter(filter);
+    if(!this.batchOperation) return;
+    this.batchOperation.entries = this.batchOperation.entries.filter(filter);
   }
 }

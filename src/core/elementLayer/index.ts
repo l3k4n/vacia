@@ -29,6 +29,7 @@ export default class ElementLayer {
     this.onChange();
   }
 
+
   lockElement(element: Mutable<CanvasElement>) {
     this.history.push(ElementOperation.Lock.create(element));
     // eslint-disable-next-line
@@ -92,6 +93,16 @@ export default class ElementLayer {
 
   redo() {
     this.history.redo();
+    this.onChange();
+  }
+
+  /* completely erases all traces of element */
+  dangerous_discardElement(element: Mutable<CanvasElement>) {
+    this.history.discardOperationsWithElement(element);
+    this.elements = this.elements.filter(
+      (targetElement) => targetElement !== element,
+    );
+    this.selectedElements.delete(element);
     this.onChange();
   }
 
