@@ -6,6 +6,7 @@ const directions = ["down", "left", "right", "up"];
 const misc = [
   "backspace",
   "delete",
+  "del",
   "enter",
   "esc",
   "pagedown",
@@ -25,9 +26,23 @@ const allowedKeys = new Set([
   ...nums,
 ]);
 
-function validateKeys(keys: string[]) {
-  if(!keys.length) return false;
-  return keys.every((key) => allowedKeys.has(key));
+const replacedKeys = {
+  control: "ctrl",
+  command: "cmd",
+  delete: "del",
+};
+
+export function validateKey(key: string) {
+  return allowedKeys.has(key.toLowerCase());
 }
 
-export { allowedKeys, validateKeys };
+export function formatKey(key: string) {
+  if (key.length === 1) return key.toUpperCase();
+
+  if (Object.hasOwn(replacedKeys, key.toLowerCase())) {
+    // eslint-disable-next-line no-param-reassign
+    key = replacedKeys[key as keyof typeof replacedKeys];
+  }
+
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}

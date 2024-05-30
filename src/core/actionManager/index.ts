@@ -1,5 +1,5 @@
 import hotkeys from "hotkeys-js";
-import { validateKeys } from "./keys";
+import { validateKey, formatKey } from "./keys";
 import { Action, ActionManagerAppData } from "./types";
 import { Errors } from "@core/logs";
 
@@ -10,6 +10,17 @@ const HOTKEYS_CONFIG = {
   keydown: true,
   scope: HOTKEYS_ENABLED_SCOPE,
 };
+
+type FormattedBinding = string & { "-formatted": true };
+
+function formatBinding(binding: string) {
+  return binding.split("+").map(formatKey).join("+") as FormattedBinding;
+}
+
+function validateBinding(binding: FormattedBinding) {
+  return binding.split("+").every(validateKey);
+}
+
 const HOTKEYS_IGNORE = ["input", "textarea", "select", "button", "a"];
 const HOTKEYS_FILTER = (e: KeyboardEvent) => {
   const tagname = (e.target as HTMLElement).tagName.toLowerCase();
@@ -25,7 +36,7 @@ export function registerAction(action: Action) {
 }
 
 export class ActionManager {
-  private bindings = new Map<string, string>();
+  private bindings = new Map<FormattedBinding, string>();
   private appData: ActionManagerAppData;
 
   constructor(appData: ActionManagerAppData) {
@@ -34,17 +45,17 @@ export class ActionManager {
     this.enable();
   }
 
-  isBindingSet(binding: string) {
-    return this.bindings.has(binding.toLowerCase());
+  isBindingSet(rawBinding: string) {
+    const binding = formatBinding(rawBinding);
+    return this.bindings.has(binding);
   }
 
-  registerBinding(binding: string, actionId: string) {
-    // eslint-disable-next-line
-    binding = binding.toLowerCase();
+  registerBinding(rawBinding: string, actionId: string) {
+    const binding = formatBinding(rawBinding);
     // prevent duplicates
     this.removeBinding(binding);
     // drop invalid bindings
-    if (!validateKeys(binding.split("+"))) return;
+    if (!validateBinding(binding)) return;
     // add binding to hotkeys
     this.bindings.set(binding, actionId);
     hotkeys(binding, HOTKEYS_CONFIG, (e) => {
@@ -56,7 +67,7 @@ export class ActionManager {
   getAssignedBindings(action: Action) {
     const bindings: string[] = [];
     this.bindings.forEach((actionId, binding) => {
-      if(action.id === actionId) {
+      if (action.id === actionId) {
         bindings.push(binding);
       }
     });
@@ -69,10 +80,10 @@ export class ActionManager {
     });
   }
 
-  removeBinding(binding: string) {
-    if(!binding) return;
-    // eslint-disable-next-line
-    binding = binding.toLowerCase();
+  removeBinding(rawBinding: string) {
+    const binding = formatBinding(rawBinding);
+    if (!rawBinding) return;
+
     hotkeys.unbind(binding, HOTKEYS_ENABLED_SCOPE);
     this.bindings.delete(binding);
   }
@@ -85,12 +96,14 @@ export class ActionManager {
     hotkeys.setScope(HOTKEYS_DISABLED_SCOPE);
   }
 
-  executeBinding(binding: string) {
-    const mappedActionId = this.bindings.get(binding.toLowerCase());
-    if(!mappedActionId) return;
+  executeBinding(rawBinding: string) {
+    const binding = formatBinding(rawBinding);
+
+    const mappedActionId = this.bindings.get(binding);
+    if (!mappedActionId) return;
 
     const mappedAction = actionMap.get(mappedActionId);
-    if(!mappedAction) return;
+    if (!mappedAction) return;
 
     this.executeAction(mappedAction);
   }
@@ -102,7 +115,7 @@ export class ActionManager {
   getInvalidBindings() {
     const invalid: string[] = [];
     this.bindings.forEach((actionId, binding) => {
-      if(!actionMap.has(actionId)) invalid.push(binding);
+      if (!actionMap.has(actionId)) invalid.push(binding);
     });
 
     return invalid;
