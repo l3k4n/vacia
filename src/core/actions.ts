@@ -76,6 +76,38 @@ export const DeleteSelectionAction = registerAction({
   },
 });
 
+export const SendBackwardsAction = registerAction({
+  id: "core:selection.move.back.one",
+  label: "Send backwards",
+  exec(app) {
+    app.elementLayer().moveBackWard(app.elementLayer().getSelectedElements());
+  },
+});
+
+export const SendToBackAction = registerAction({
+  id: "core:selection.move.back.all",
+  label: "Send to back",
+  exec(app) {
+    app.elementLayer().sendToBack(app.elementLayer().getSelectedElements());
+  },
+});
+
+export const BringForwardAction = registerAction({
+  id: "core:selection.move.front.one",
+  label: "Bring forward",
+  exec(app) {
+    app.elementLayer().moveForward(app.elementLayer().getSelectedElements());
+  },
+});
+
+export const BringToFrontAction = registerAction({
+  id: "core:selection.move.front.all",
+  label: "Bring to front",
+  exec(app) {
+    app.elementLayer().sendToFront(app.elementLayer().getSelectedElements());
+  },
+});
+
 // ================================ Elements ==================================
 
 export const UnlockAllAction = registerAction({

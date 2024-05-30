@@ -272,3 +272,18 @@ export function applyElementMutations(
   elem.w = +elem.w.toFixed(precision);
   elem.h = +elem.h.toFixed(precision);
 }
+
+export function arrayMove(arr: unknown[], from: number, to: number) {
+  if (from === to) return;
+
+  const delta = from > to ? -1 : 1;
+  const temp = arr[from];
+
+  for (let i = from; i !== to; i += delta) {
+    // eslint-disable-next-line no-param-reassign
+    arr[i] = arr[i + delta];
+  }
+
+  // eslint-disable-next-line no-param-reassign
+  arr[to] = temp;
+}

@@ -17,10 +17,6 @@ export class ElementHistory {
 
   constructor(elements: () => CanvasElement[]) {
     this.elements = elements;
-    window.c = () => {
-      console.log(this.undoStack);
-      console.log(this.redoStack);
-    };
   }
 
   push(op: AtomicOperation) {

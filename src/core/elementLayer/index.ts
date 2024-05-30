@@ -3,7 +3,7 @@ import { ELEMENT_PRECISION } from "@constants";
 import { CanvasElement } from "@core/elements/types";
 import { ElementOperation } from "@core/operations/elements";
 import { Mutable } from "@core/types";
-import { applyElementMutations, isInteractive } from "@core/utils";
+import { applyElementMutations, isInteractive, arrayMove } from "@core/utils";
 
 export default class ElementLayer {
   private elements: CanvasElement[] = [];
@@ -29,7 +29,6 @@ export default class ElementLayer {
     this.onChange();
   }
 
-
   lockElement(element: Mutable<CanvasElement>) {
     this.history.push(ElementOperation.Lock.create(element));
     // eslint-disable-next-line
@@ -42,6 +41,68 @@ export default class ElementLayer {
     this.history.push(ElementOperation.Unlock.create(element));
     // eslint-disable-next-line
     element.locked = false;
+    this.onChange();
+  }
+
+  moveBackWard(elements: CanvasElement[]) {
+    const sortedElements = this.sortByOrder(elements);
+
+    for (let i = 0; i < sortedElements.length; i += 1) {
+      const element = sortedElements[i];
+      const index = this.elements.indexOf(element);
+      if (index <= 0) return;
+
+      arrayMove(this.elements, index, index - 1);
+    }
+
+    this.onChange();
+  }
+
+  moveForward(elements: CanvasElement[]) {
+    const sortedElements = this.sortByOrder(elements);
+
+    // reverse loop to prevent shuffling
+    // e.g in [0,1,2] 0 goes above 1 and 1 goes back above 0
+    for (let i = sortedElements.length - 1; i >= 0; i -= 1) {
+      const element = sortedElements[i];
+      const index = this.elements.indexOf(element);
+      if (index === -1 || index >= this.elements.length - 1) return;
+
+      arrayMove(this.elements, index, index + 1);
+    }
+
+    this.onChange();
+  }
+
+  sendToBack(elements: CanvasElement[]) {
+    const sortedElements = this.sortByOrder(elements);
+
+    for (let i = 0, j = 0; i < sortedElements.length; i += 1, j += 1) {
+      const element = sortedElements[i];
+      const index = this.elements.indexOf(element);
+      if (index <= j) return;
+
+      arrayMove(this.elements, index, j);
+    }
+
+    this.onChange();
+  }
+
+  sendToFront(elements: CanvasElement[]) {
+    const sortedElements = this.sortByOrder(elements);
+
+    for (
+      let i = sortedElements.length - 1, j = this.elements.length - 1;
+      i >= 0;
+      i -= 1, j -= 1
+    ) {
+      const element = sortedElements[i];
+      const index = this.elements.indexOf(element);
+      if (index === -1 || index >= j) return;
+
+      arrayMove(this.elements, index, j);
+    }
+
     this.onChange();
   }
 
@@ -94,6 +155,12 @@ export default class ElementLayer {
   redo() {
     this.history.redo();
     this.onChange();
+  }
+
+  sortByOrder(elements: CanvasElement[]) {
+    return elements.sort(
+      (a, b) => this.elements.indexOf(a) - this.elements.indexOf(b),
+    );
   }
 
   /* completely erases all traces of element */

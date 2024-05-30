@@ -1,9 +1,13 @@
 import { ActionManager } from "./actionManager";
 import { Action } from "./actionManager/types";
 import {
+  BringForwardAction,
+  BringToFrontAction,
   DeleteSelectionAction,
   LockSelectionAction,
   SelectAllAction,
+  SendBackwardsAction,
+  SendToBackAction,
   ToggleGridAction,
   UnlockAllAction,
 } from "./actions";
@@ -62,6 +66,15 @@ export function createContextMenuItems(
     }),
   ]);
 
+  // ordering
+  const disableOrdering = elementLayer.getInteractiveElements().length <= 1;
+  addGroup(hit.type !== null, [
+    entry(SendBackwardsAction, { type: "button", disabled: disableOrdering }),
+    entry(BringForwardAction, { type: "button", disabled: disableOrdering }),
+    entry(SendToBackAction, { type: "button", disabled: disableOrdering }),
+    entry(BringToFrontAction, { type: "button", disabled: disableOrdering }),
+  ]);
+
   // preferences
   addGroup(hit.type === null, [
     entry(ToggleGridAction, {
@@ -79,7 +92,7 @@ export function createContextMenuItems(
   ]);
 
   // delete
-  addGroup(hit.type !== null, [
+  addGroup(hit.type === "element" || hit.type === "selectionBox", [
     entry(DeleteSelectionAction, { type: "button", danger: true }),
   ]);
 
