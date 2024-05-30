@@ -1,9 +1,8 @@
 import { ElementHistory } from "./history";
-import { ELEMENT_PRECISION } from "@constants";
 import { CanvasElement } from "@core/elements/types";
-import { ElementOperation } from "@core/operations/elements";
+import { ElementOperation, OrderedElement } from "@core/operations/elements";
 import { Mutable } from "@core/types";
-import { applyElementMutations, isInteractive, arrayMove } from "@core/utils";
+import { isInteractive } from "@core/utils";
 
 export default class ElementLayer {
   private elements: CanvasElement[] = [];
@@ -16,35 +15,29 @@ export default class ElementLayer {
   }
 
   addElement(element: CanvasElement) {
-    this.history.push(ElementOperation.Add.create(element));
-    this.elements.push(element);
+    this.history.performAndCapture(ElementOperation.Add.create(element));
     this.onChange();
   }
 
   deleteElement(element: Mutable<CanvasElement>) {
-    this.history.push(ElementOperation.Delete.create(element));
-    // eslint-disable-next-line
-    element.deleted = true;
+    this.history.performAndCapture(ElementOperation.Delete.create(element));
     this.selectedElements.delete(element);
     this.onChange();
   }
 
   lockElement(element: Mutable<CanvasElement>) {
-    this.history.push(ElementOperation.Lock.create(element));
-    // eslint-disable-next-line
-    element.locked = true;
+    this.history.performAndCapture(ElementOperation.Lock.create(element));
     this.selectedElements.delete(element);
     this.onChange();
   }
 
   unlockElement(element: Mutable<CanvasElement>) {
-    this.history.push(ElementOperation.Unlock.create(element));
-    // eslint-disable-next-line
-    element.locked = false;
+    this.history.performAndCapture(ElementOperation.Unlock.create(element));
     this.onChange();
   }
 
   moveBackWard(elements: CanvasElement[]) {
+    const opEntries: OrderedElement[] = [];
     const sortedElements = this.sortByOrder(elements);
 
     for (let i = 0; i < sortedElements.length; i += 1) {
@@ -52,13 +45,17 @@ export default class ElementLayer {
       const index = this.elements.indexOf(element);
       if (index <= 0) return;
 
-      arrayMove(this.elements, index, index - 1);
+      opEntries.push({ element, prev: index, next: index - 1 });
     }
 
+    if (!opEntries.length) return;
+
+    this.history.performAndCapture(ElementOperation.Order.create(opEntries));
     this.onChange();
   }
 
   moveForward(elements: CanvasElement[]) {
+    const opEntries: OrderedElement[] = [];
     const sortedElements = this.sortByOrder(elements);
 
     // reverse loop to prevent shuffling
@@ -68,13 +65,17 @@ export default class ElementLayer {
       const index = this.elements.indexOf(element);
       if (index === -1 || index >= this.elements.length - 1) return;
 
-      arrayMove(this.elements, index, index + 1);
+      opEntries.push({ element, prev: index, next: index + 1 });
     }
 
+    if (!opEntries.length) return;
+
+    this.history.performAndCapture(ElementOperation.Order.create(opEntries));
     this.onChange();
   }
 
   sendToBack(elements: CanvasElement[]) {
+    const opEntries: OrderedElement[] = [];
     const sortedElements = this.sortByOrder(elements);
 
     for (let i = 0, j = 0; i < sortedElements.length; i += 1, j += 1) {
@@ -82,13 +83,17 @@ export default class ElementLayer {
       const index = this.elements.indexOf(element);
       if (index <= j) return;
 
-      arrayMove(this.elements, index, j);
+      opEntries.push({ element, prev: index, next: j });
     }
 
+    if (!opEntries.length) return;
+
+    this.history.performAndCapture(ElementOperation.Order.create(opEntries));
     this.onChange();
   }
 
   sendToFront(elements: CanvasElement[]) {
+    const opEntries: OrderedElement[] = [];
     const sortedElements = this.sortByOrder(elements);
 
     for (
@@ -100,9 +105,12 @@ export default class ElementLayer {
       const index = this.elements.indexOf(element);
       if (index === -1 || index >= j) return;
 
-      arrayMove(this.elements, index, j);
+      opEntries.push({ element, prev: index, next: j });
     }
 
+    if (!opEntries.length) return;
+
+    this.history.performAndCapture(ElementOperation.Order.create(opEntries));
     this.onChange();
   }
 
@@ -174,8 +182,9 @@ export default class ElementLayer {
   }
 
   mutateElement(element: CanvasElement, mutations: object) {
-    this.history.push(ElementOperation.Mutate.create(element, mutations));
-    applyElementMutations(element, mutations, ELEMENT_PRECISION);
+    this.history.performAndCapture(
+      ElementOperation.Mutate.create(element, mutations),
+    );
     this.onChange();
   }
 }

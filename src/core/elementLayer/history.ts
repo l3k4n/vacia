@@ -19,7 +19,9 @@ export class ElementHistory {
     this.elements = elements;
   }
 
-  push(op: AtomicOperation) {
+  performAndCapture(op: AtomicOperation) {
+    perform(this.elements(), op);
+
     if (this.batchOperation) {
       merge(this.batchOperation, op);
       return;
@@ -69,15 +71,26 @@ export class ElementHistory {
 
   discardOperationsWithElement(element: CanvasElement) {
     const filter = (op: AtomicOperation | BatchOperation) => {
-      if(op.type !== OperationType.BATCHED) return op.element !== element;
-      // eslint-disable-next-line
-      op.entries = op.entries.filter((operation) => filter(operation));
-      return op.entries.length === 0;
-    }
+      if (op.type === OperationType.ORDER) {
+        // eslint-disable-next-line
+        op.elements = op.elements.filter(
+          (orderedElement) => orderedElement.element !== element,
+        );
+        return op.elements.length === 0;
+      }
+      
+      if (op.type === OperationType.BATCHED) {
+        // eslint-disable-next-line
+        op.entries = op.entries.filter(filter);
+        return op.entries.length === 0;
+      }
+
+      return op.element !== element;
+    };
 
     this.undoStack = this.undoStack.filter(filter);
     this.redoStack = this.redoStack.filter(filter);
-    if(!this.batchOperation) return;
+    if (!this.batchOperation) return;
     this.batchOperation.entries = this.batchOperation.entries.filter(filter);
   }
 }

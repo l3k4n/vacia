@@ -3,7 +3,7 @@
 import { ELEMENT_PRECISION } from "@constants";
 import { CanvasElement } from "@core/elements/types";
 import { Mutable } from "@core/types";
-import { applyElementMutations } from "@core/utils";
+import { applyElementMutations, arrayMove } from "@core/utils";
 
 export const enum OperationType {
   ADD,
@@ -11,10 +11,16 @@ export const enum OperationType {
   LOCK,
   UNLOCK,
   MUTATE,
+  ORDER,
   BATCHED,
 }
 
 type OperationElement = Mutable<CanvasElement>;
+export type OrderedElement = {
+  element: OperationElement;
+  prev: number;
+  next: number;
+};
 
 interface AddOperation {
   type: OperationType.ADD;
@@ -32,6 +38,10 @@ interface DeleteOperation {
   type: OperationType.DELETE;
   element: OperationElement;
 }
+interface OrderOperation {
+  type: OperationType.ORDER;
+  elements: OrderedElement[];
+}
 interface MutateOperation {
   type: OperationType.MUTATE;
   element: OperationElement;
@@ -44,6 +54,7 @@ export type AtomicOperation =
   | LockOperation
   | UnlockOperation
   | DeleteOperation
+  | OrderOperation
   | MutateOperation;
 
 export interface BatchOperation {
@@ -120,11 +131,32 @@ const Delete = {
   },
 };
 
+const Order = {
+  create(elements: OrderedElement[]): OrderOperation {
+    return { type: OperationType.ORDER, elements };
+  },
+  perform: (elements: CanvasElement[], op: OrderOperation) => {
+    for (let i = 0; i < op.elements.length; i += 1) {
+      const element = op.elements[i];
+      arrayMove(elements, element.prev, element.next);
+    }
+  },
+  revert: (elements: CanvasElement[], op: OrderOperation) => {
+    for (let i = op.elements.length - 1; i >= 0; i -= 1) {
+      const element = op.elements[i];
+      arrayMove(elements, element.next, element.prev);
+    }
+  },
+  merge(first: OrderOperation, second: AtomicOperation): boolean {
+    if (second.type !== OperationType.ORDER) return false;
+
+    first.elements.push(...second.elements);
+    return true;
+  },
+};
+
 const Mutate = {
-  create(
-    element: CanvasElement,
-    mutations: object,
-  ): MutateOperation {
+  create(element: CanvasElement, mutations: object): MutateOperation {
     const prevMutation: Record<string, unknown> = {};
     const nextMutation: Record<string, unknown> = {};
 
@@ -210,6 +242,8 @@ function performOperation(
       return Lock.perform(elements, op);
     case OperationType.UNLOCK:
       return Unlock.perform(elements, op);
+    case OperationType.ORDER:
+      return Order.perform(elements, op);
     case OperationType.BATCHED:
       return op.entries.forEach((operation) =>
         performOperation(elements, operation),
@@ -234,6 +268,8 @@ function revertOperation(
       return Lock.revert(elements, op);
     case OperationType.UNLOCK:
       return Unlock.revert(elements, op);
+    case OperationType.ORDER:
+      return Order.revert(elements, op);
     case OperationType.BATCHED:
       return op.entries.forEach((operation) =>
         revertOperation(elements, operation),
@@ -258,6 +294,8 @@ function mergeOperation(
       return Lock.merge(first, second);
     case OperationType.UNLOCK:
       return Unlock.merge(first, second);
+    case OperationType.ORDER:
+      return Order.merge(first, second);
     case OperationType.BATCHED:
       return Batched.merge(first, second);
     default:
@@ -268,4 +306,12 @@ function mergeOperation(
 export const perform = performOperation;
 export const revert = revertOperation;
 export const merge = mergeOperation;
-export const ElementOperation = { Batched, Add, Mutate, Lock, Unlock, Delete };
+export const ElementOperation = {
+  Batched,
+  Add,
+  Mutate,
+  Lock,
+  Unlock,
+  Delete,
+  Order,
+};
