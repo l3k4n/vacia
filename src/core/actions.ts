@@ -9,7 +9,7 @@ import {
 // ==================================== UI =====================================
 export const ZoomInAction = registerAction({
   id: "core:ui.zoom.in",
-  label: "zoom in",
+  label: "Zoom in",
   exec(app) {
     const state = app.state();
     const value = state.zoom + ZOOM_STEP;
@@ -21,7 +21,7 @@ export const ZoomInAction = registerAction({
 
 export const ZoomOutAction = registerAction({
   id: "core:ui.zoom.out",
-  label: "zoom in",
+  label: "Zoom out",
   exec(app) {
     const state = app.state();
     const value = state.zoom - ZOOM_STEP;
@@ -33,7 +33,7 @@ export const ZoomOutAction = registerAction({
 
 export const ZoomResetAction = registerAction({
   id: "core:ui.zoom.reset",
-  label: "zoom out",
+  label: "Reset zoom",
   exec: ({ state, setState }) => {
     const centerCoords = getScreenCenterCoords(state());
     const zoomState = getNewZoomState(1, centerCoords, state());
@@ -45,7 +45,7 @@ export const ZoomResetAction = registerAction({
 
 export const LockSelectionAction = registerAction({
   id: "core:selection.lock",
-  label: "lock",
+  label: "Lock",
   exec(app) {
     const elementLayer = app.elementLayer();
     elementLayer.getSelectedElements().forEach((element) => {
@@ -56,7 +56,7 @@ export const LockSelectionAction = registerAction({
 
 export const EditSelectionAction = registerAction({
   id: "core:selection.edit",
-  label: "select all",
+  label: "Edit",
   exec(app) {
     const selected = app.elementLayer().getSelectedElements();
     if (selected.length !== 1) return;
@@ -66,7 +66,7 @@ export const EditSelectionAction = registerAction({
 
 export const DeleteSelectionAction = registerAction({
   id: "core:selection.delete",
-  label: "delete",
+  label: "Delete",
   exec(app) {
     const elementLayer = app.elementLayer();
     if (app.state().usermode !== USERMODE.IDLE) return;
@@ -80,7 +80,7 @@ export const DeleteSelectionAction = registerAction({
 
 export const UnlockAllAction = registerAction({
   id: "core:elements.unlock.all",
-  label: "unlock",
+  label: "Unlock all",
   exec(app) {
     const elementLayer = app.elementLayer();
     elementLayer.getAllElements().forEach((element) => {
@@ -92,7 +92,7 @@ export const UnlockAllAction = registerAction({
 
 export const SelectAllAction = registerAction({
   id: "core:elements.interactive.select",
-  label: "select all",
+  label: "Select all",
   exec(app) {
     const elementLayer = app.elementLayer();
     elementLayer.unselectAllElements();
@@ -105,7 +105,7 @@ export const SelectAllAction = registerAction({
 
 export const HistoryUndoAction = registerAction({
   id: "core:history.undo",
-  label: "undo",
+  label: "Undo",
   exec(app) {
     const elementLayer = app.elementLayer();
     elementLayer.undo();
@@ -115,7 +115,7 @@ export const HistoryUndoAction = registerAction({
 
 export const HistoryRedoAction = registerAction({
   id: "core:history.redo",
-  label: "redo",
+  label: "Redo",
   exec(app) {
     app.elementLayer().redo();
   },
@@ -125,7 +125,7 @@ export const HistoryRedoAction = registerAction({
 
 export const ToggleGridAction = registerAction({
   id: "core:preferences.grid.toggle",
-  label: "toggle grid",
+  label: "Show / Hide grid",
   exec(app) {
     const state = app.state();
     const { grid } = state.preferences;

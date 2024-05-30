@@ -1,16 +1,11 @@
 import React from "react";
-import ContextMenu, { ContextMenuItem } from "@components/ContextMenu";
+import ContextMenu from "@components/ContextMenu";
 import DesignMenu from "@components/DesignMenu";
 import QuickActions from "@components/QuickActions";
 import ToolBar from "@components/ToolBar";
 import { USERMODE, ZOOM_STEP, DEFAULT_TOOL } from "@constants";
 import { ActionManager } from "@core/actionManager";
-import {
-  DeleteSelectionAction,
-  LockSelectionAction,
-  SelectAllAction,
-  ToggleGridAction,
-} from "@core/actions";
+import { createContextMenuItems } from "@core/contextMenuItems";
 import * as DefaultObjects from "@core/defaultObjects";
 import ElementLayer from "@core/elementLayer";
 import {
@@ -32,7 +27,6 @@ import {
   CanvasElement,
   TransformingElement,
   CanvasObject,
-  NonInteractiveElementObject,
 } from "@core/elements/types";
 import {
   hitTestRotatedBoxInBox,
@@ -505,52 +499,14 @@ class App extends React.Component<Record<string, never>, AppState> {
 
     this.makeUserIdle();
 
-    const allContextMenuItems: (ContextMenuItem & { predicate?: boolean })[] = [
-      {
-        type: "button",
-        label: "Select All",
-        disabled: this.elementLayer.getInteractiveElements().length < 1,
-        exec: () => this.actionManager.executeAction(SelectAllAction),
-      },
-      {
-        predicate: hit.type === null,
-        type: "checkbox",
-        label: "Show grid",
-        checked: !this.state.preferences.grid.disabled,
-        exec: () => this.actionManager.executeAction(ToggleGridAction),
-      },
-      {
-        predicate: hit.type === "element" || hit.type === "selectionBox",
-        type: "button",
-        label: "Lock",
-        exec: () => this.actionManager.executeAction(LockSelectionAction),
-      },
-      {
-        predicate: hit.type === "nonInteractiveElement",
-        type: "button",
-        label: "Unlock",
-        exec: () => {
-          const { element } = hit as NonInteractiveElementObject;
-          this.elementLayer.unlockElement(element);
-          this.elementLayer.unselectAllElements();
-          this.elementLayer.selectElements([element]);
-        },
-      },
-      {
-        predicate: hit.type === "element" || hit.type === "selectionBox",
-        type: "button",
-        label: "Delete",
-        danger: true,
-        exec: () => this.actionManager.executeAction(DeleteSelectionAction),
-      },
-    ];
-
-    const filteredContextMenuItems = allContextMenuItems.filter((entry) => {
-      if (Object.hasOwn(entry, "predicate")) return entry.predicate;
-      return true;
+    this.setState({
+      contextMenuItems: createContextMenuItems(
+        hit,
+        this.state,
+        this.elementLayer,
+        this.actionManager,
+      ),
     });
-
-    this.setState({ contextMenuItems: filteredContextMenuItems });
 
     if (hit.type === "element" || hit.type === "selectionBox") {
       // @ts-ignore

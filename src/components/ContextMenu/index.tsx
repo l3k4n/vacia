@@ -33,7 +33,7 @@ export interface ContextMenuCheckbox {
   type: "checkbox";
   label: string;
   binding?: string;
-  checked?: boolean;
+  checked: boolean;
   disabled?: boolean;
   exec: () => void;
 }
@@ -83,7 +83,7 @@ function CMenuButton({ item }: { item: ContextMenuButton }) {
       className={`CMenuEntry ${item.danger ? "CMenuEntry-danger" : ""}`}
       onSelect={item.exec}>
       {item.label}
-      <div className="CMenuBinding">⌘+S</div>
+      <div className="CMenuBinding">{item.binding}</div>
     </Item>
   );
 }
@@ -103,7 +103,7 @@ function CMenuCheckBox(props: { item: ContextMenuCheckbox }) {
         </svg>
       </ItemIndicator>
       {label}
-      <div className="CMenuBinding" children={"⌘+B"} />
+      <div className="CMenuBinding" children={props.item.binding} />
     </CheckboxItem>
   );
 }

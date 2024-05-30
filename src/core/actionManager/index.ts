@@ -35,10 +35,12 @@ export class ActionManager {
   }
 
   isBindingSet(binding: string) {
-    return this.bindings.has(binding);
+    return this.bindings.has(binding.toLowerCase());
   }
 
   registerBinding(binding: string, actionId: string) {
+    // eslint-disable-next-line
+    binding = binding.toLowerCase();
     // prevent duplicates
     this.removeBinding(binding);
     // drop invalid bindings
@@ -51,6 +53,16 @@ export class ActionManager {
     });
   }
 
+  getAssignedBindings(action: Action) {
+    const bindings: string[] = [];
+    this.bindings.forEach((actionId, binding) => {
+      if(action.id === actionId) {
+        bindings.push(binding);
+      }
+    });
+    return bindings;
+  }
+
   registerBindingMap(map: Record<string, string>) {
     Object.keys(map).forEach((key) => {
       this.registerBinding(key, map[key]);
@@ -59,6 +71,8 @@ export class ActionManager {
 
   removeBinding(binding: string) {
     if(!binding) return;
+    // eslint-disable-next-line
+    binding = binding.toLowerCase();
     hotkeys.unbind(binding, HOTKEYS_ENABLED_SCOPE);
     this.bindings.delete(binding);
   }
@@ -72,7 +86,7 @@ export class ActionManager {
   }
 
   executeBinding(binding: string) {
-    const mappedActionId = this.bindings.get(binding);
+    const mappedActionId = this.bindings.get(binding.toLowerCase());
     if(!mappedActionId) return;
 
     const mappedAction = actionMap.get(mappedActionId);
