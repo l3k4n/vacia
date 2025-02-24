@@ -645,7 +645,6 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     const modesToHideBoundingBox = [
-      USERMODE.CREATING,
       USERMODE.ROTATING,
       USERMODE.EDITING,
     ];
