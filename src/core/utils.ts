@@ -137,7 +137,7 @@ export function getScreenCenterCoords(state: AppState): XYCoords {
 }
 
 /** snaps the coordinates to the nearest grid point */
-export function snapToGrid({ x, y }: XYCoords, grid: GridData) {
+export function snapToGrid({ x, y }: XYCoords, grid: GridData): XYCoords {
   if (grid.disabled) return { x, y };
 
   const { size } = grid;
