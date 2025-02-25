@@ -38,11 +38,6 @@ export default function renderFrame(config: RenderConfig) {
       });
     }
 
-    ctx.fillStyle = "#ff0000";
-    ctx.font = "20px arial";
-    ctx.textBaseline = "top";
-    ctx.fillText(state.usermode.toUpperCase(), 0, 0);
-
     // apply scroll offset
     ctx.translate(
       state.scrollOffset.x / state.zoom,
