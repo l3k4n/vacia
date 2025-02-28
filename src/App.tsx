@@ -289,6 +289,7 @@ class App extends React.Component<Record<string, never>, AppState> {
   private addEventListeners = () => {
     window.addEventListener("pointermove", this.onWindowPointerMove);
     window.addEventListener("pointerup", this.onWindowPointerUp);
+    window.addEventListener("resize", this.onWindowResize);
     window.addEventListener("wheel", this.onWindowWheel, { passive: false });
   };
 
@@ -467,6 +468,10 @@ class App extends React.Component<Record<string, never>, AppState> {
       this.requestEditStart(elementBeingCreated);
     }
   };
+  
+  private onWindowResize = () => {
+    this.setState({});
+  }
 
   private onCanvasDblClick = (e: React.MouseEvent) => {
     // when user double clicks, attempt to edit selected element
