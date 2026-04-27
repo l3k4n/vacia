@@ -3,7 +3,6 @@
 **An Open-Source, Extendable Whiteboard Inspired by [Excalidraw](https://github.com/excalidraw/excalidraw)**
 
 Vacia is an infinite whiteboard that allows multiple people collaborate and share ideas seamlessly. It is designed with a modern UI and features to ensure all users be as expressive as they need to be with whatever designs they want to create. It also has an extendable API to allow develop create custom tools and features to fit their custom use cases.
-A [demo](https://raw.githubusercontent.com/l3k4n/vacia/refs/heads/master/vacia-demo.mp4) is provided to see how it works.
 
 ## 🌟 Features
 
@@ -18,6 +17,11 @@ A [demo](https://raw.githubusercontent.com/l3k4n/vacia/refs/heads/master/vacia-d
 - React
 - Sass
 - Radix UI
+
+## Demo
+<video src="https://github.com/user-attachments/assets/8d07563c-b831-4262-87a9-05ad2e2f0fe6" width="100%" controls>
+  Your browser does not support the video tag.
+</video>
 
 ## 🚀 Get Started
 
